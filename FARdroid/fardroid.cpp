@@ -860,9 +860,8 @@ bool fardroid::DeviceMenu(CString &text)
 void fardroid::SetItemText(FarMenuItem* item, const CString &text)
 {
   size_t len = text.GetLength() + 1;
-  wchar_t * buf = new wchar_t[len];;
+  wchar_t * buf = new wchar_t[len];
   wcscpy(buf, text);
-  //lstrcpyW(buf, _C(text));
   delete[] item->Text;
   item->Text = buf;
 }
