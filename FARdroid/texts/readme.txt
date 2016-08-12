@@ -1,5 +1,5 @@
 ﻿
-FARdroid v1.0
+FARdroid v2.0
 ~~~~~~~~~~~~~~~~~~~~~~~~
   Плагин к файл-менеджеру FAR v3.0.3000 и выше. Данная версия FAR находится в
   разработке, поэтому могут возникать проблемы с работой плагина.
@@ -38,8 +38,6 @@ FARdroid v1.0
 --------
 
  Плагин FARdroid для FAR менеджера.
- Copyright (C) 2010 Vladimir Kubyshev
 
-                                                              Владимир Кубышев
-                                                         mailto:crom83@mail.ru
-                                                       http://vovan.dankov.net
+ Copyright (C) 2010 Vladimir Kubyshev
+ BSD 3-Clause 2016 difmish

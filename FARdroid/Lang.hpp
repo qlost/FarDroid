@@ -37,11 +37,14 @@ enum
 	MProcessed,
 	MFrom,
 	MTo,
+  MProgress,
 
 	MGetFile,
 	MPutFile,
 	MDelFile,
 	MCreateDir,
+  MMoveFile,
+  MRenameFile,
 
 	MBreakWarn,
 

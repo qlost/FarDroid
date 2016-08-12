@@ -1,7 +1,17 @@
-﻿ "+" - добавлено
- "-" - убрано
- "*" - изменено
- "!" - замечание
+﻿ "+" - new
+ "-" - fixed
+ "*" - changed
+ "!" - warning
+
+ 18.08.16 v2.0.0
+  + Rename on Device (Shif+F6)
+  + Copy Progress
+  + MakeDir error handling
+  + Save last directory
+  - Permission Dialog (Ctrl+A)
+  - Refactoring
+  - Improve Dialog UI
+  ! Removed Renewal
 
  10.08.16 v1.0 build 47
   - добавлено меню выбора устройства, если их больше 1

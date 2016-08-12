@@ -2,13 +2,13 @@
 
 #define FDI_CONTROL( tp,x,y,x1,y1,f,s,fl,def,txt )			 { tp,            x,y,x1,y1,f,s,fl,def,txt }
 #define FDI_DOUBLEBOX2( x1,y1,x2,y2,txt )				FDI_CONTROL( DI_DOUBLEBOX,x1,y1,x2,y2,0,0, 0,  0,txt )
-#define FDI_DOUBLEBOX( x1,y1,txt )						FDI_CONTROL( DI_DOUBLEBOX,  0,0,x1,y1,0,0, 0,  0,txt )
+#define FDI_DOUBLEBOX( x1,y1,txt )						FDI_CONTROL( DI_DOUBLEBOX,  3,1,x1,y1,0,0, 0,  0,txt )
 #define FDI_SINGLEBOX( x,y, x1,y1,txt )				FDI_CONTROL( DI_SINGLEBOX,  x,y,x1,y1,0,0, 0,  0,txt )
 #define FDI_COLORSINGLEBOX(x,y, x1,y1,clr,txt)FDI_CONTROL( DI_SINGLEBOX,  x,y,x1,y1,0,0,DIF_SETCOLOR|(clr), 0,txt )
 #define FDI_AMPDOUBLEBOX( x1,y1,txt )					FDI_CONTROL( DI_DOUBLEBOX,  0,0,x1,y1,0,0,DIF_SHOWAMPERSAND,  0,txt )
 #define FDI_COMBOBOX( x,y,x1,fl,txt )					FDI_CONTROL( DI_COMBOBOX,		x,y,x1, 0,0,0,fl,  0,txt )
 #define FDI_LISTBOX( x,y,x1,y1,fl,txt )				FDI_CONTROL( DI_LISTBOX,		x,y,x1,y1,0,0,fl|DIF_LISTWRAPMODE,  0,txt )
-#define FDI_SEPARATOR( x,y,txt )              FDI_CONTROL( DI_TEXT,       x,y, 0, 0,0,0,DIF_SEPARATOR,  0,txt )
+#define FDI_SEPARATOR( y,txt )                FDI_CONTROL( DI_TEXT,       0,y, 0, 0,0,0,DIF_SEPARATOR,  0,txt )
 #define FDI_LABEL( x,y,txt )                  FDI_CONTROL( DI_TEXT,       x,y, 0, 0,0,0, 0,  0,txt )
 #define FDI_COLORLABEL( x,y,clr,txt )         FDI_CONTROL( DI_TEXT,       x,y, 0, 0,0,0,DIF_SETCOLOR|(clr),0,txt )
 #define FDI_AMPCOLORLABEL( x,y,clr,txt )      FDI_CONTROL( DI_TEXT,       x,y, 0, 0,0,0,DIF_SHOWAMPERSAND|DIF_SETCOLOR|(clr),0,txt )
@@ -30,7 +30,7 @@
 
 void Text(int X, int Y, DWORD Color, const CString& str);
 void InitDialogItems(InitDialogItem *Init, FarDialogItem *Item,	int ItemsNumber);
-const farStr *GetMsg(int MsgId);
+const farStr *LOC(int MsgId);
 int ShowMessage(const farStr* msg, int buttons, const farStr* help, bool Warning = false);
 void ShowMessageWait(const farStr *const*msg, int msgsize);
 bool ShowInputBox(const farStr* title, const farStr* prompt, const farStr* history, const farStr* help, const farStr* src, CString &dst);

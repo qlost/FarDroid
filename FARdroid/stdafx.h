@@ -27,12 +27,12 @@
 #define WIN32_LEAN_AND_MEAN		// Exclude rarely-used stuff from Windows headers
 // Windows Header Files:
 
-//#define _ATL_MIN_CRT 
 #include <windows.h>
 #include <shellapi.h>
 #include <atlbase.h>
 #include <atlapp.h>
 #define _WTL_USE_CSTRING
+#define _ATL_USE_CSTRING_FLOAT
 #include <atlmisc.h>
 #include "SortedArray.h"
 
