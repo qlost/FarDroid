@@ -11,6 +11,5 @@ Backup*/
 UpgradeLog*.XML
 UpgradeLog*.htm*
 
-
-FARdroid/Setup/*.7z
-FARdroid/Setup/x*/
+Setup/*.7z
+Setup/x*/

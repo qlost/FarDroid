@@ -1,5 +1,0 @@
-LIBRARY RIP_VID
-EXPORTS
-        FormatCheck
-        PluginInfo
-        PluginInfoFree

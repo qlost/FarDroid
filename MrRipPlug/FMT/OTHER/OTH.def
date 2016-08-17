@@ -1,5 +1,0 @@
-LIBRARY ZRIP_OTH
-EXPORTS
-        FormatCheck
-        PluginInfo
-        PluginInfoFree

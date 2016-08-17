@@ -1,5 +1,0 @@
-LIBRARY RIP_GRP
-EXPORTS
-        FormatCheck
-        PluginInfo
-        PluginInfoFree
