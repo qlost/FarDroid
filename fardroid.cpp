@@ -270,7 +270,7 @@ bool fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStri
       if (m_procStruct.Lock())
       {
         m_procStruct.nStartTime = GetTickCount();
-        m_procStruct.spos.Format(_T("%s %d/%d"), LOC(MProcessed), i, ItemsNumber);
+        m_procStruct.spos.Format(_T("%d/%d"), i, ItemsNumber);
         m_procStruct.from = srcfile;
         m_procStruct.to = dstfile;
         m_procStruct.bSilent = bSilent;
@@ -301,7 +301,7 @@ bool fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStri
     if (m_procStruct.Lock())
     {
       m_procStruct.nStartTime = GetTickCount();
-      m_procStruct.spos.Format(_T("%s %d/%d"), LOC(MProcessed), i, ItemsNumber);
+      m_procStruct.spos.Format(_T("%d/%d"), i, ItemsNumber);
       m_procStruct.from = srcfile;
       m_procStruct.to = dstfile;
       m_procStruct.nFileSize = PanelItem[i].FileSize;
@@ -1768,7 +1768,22 @@ bool fardroid::ShowProgressMessage() const
       sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSpeed(speed));
 
       static CString sProgress;
-      int size = max(sInfo.GetLength(), max(m_procStruct.from.GetLength(), m_procStruct.to.GetLength())) - 5;
+      int size = sInfo.GetLength() - 5;
+      CString sFrom = m_procStruct.from;
+      if (m_procStruct.from.GetLength() >= size)
+      {
+        sFrom.Delete(0, m_procStruct.from.GetLength() - size - 2);
+        sFrom = "..." + sFrom;
+      }
+      CString sTo = m_procStruct.to;
+      if (m_procStruct.to.GetLength() >= size)
+      {
+        sTo.Delete(0, m_procStruct.to.GetLength() - size - 2);
+        sTo = "..." + sTo;
+      }
+      CString sProc;
+      sProc.Format(_T("%s %s"), LOC(MProcessed), m_procStruct.spos);
+
       double pc = static_cast<double>(m_procStruct.nTransmitted) / static_cast<double>(m_procStruct.nFileSize);
       int fn = static_cast<int>(pc * size);
       int en = size - fn;
@@ -1781,10 +1796,12 @@ bool fardroid::ShowProgressMessage() const
       *bp++ = 0x0;
       sProgress.Format(_T("%s %3d%%"), buf, static_cast<int>(pc * 100));
 
-      const farStr* MsgItems[] = { m_procStruct.title, LOC(MFrom), m_procStruct.from, LOC(MTo), m_procStruct.to, _T(""), sProgress, _T(""), m_procStruct.spos, sInfo };
+      const farStr* MsgItems[] = { m_procStruct.title, LOC(MFrom), sFrom, LOC(MTo), sTo, _T(""), sProgress, _T(""), sProc, sInfo };
       ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
     }
     else {
+      CString sProc;
+      sProc.Format(_T("%s %s"), LOC(MProcessed), m_procStruct.spos);
       const farStr* MsgItems[] = { m_procStruct.title, LOC(MFrom), m_procStruct.from, LOC(MTo), m_procStruct.to, _T(""), m_procStruct.spos };
       ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
     }
@@ -1858,9 +1875,10 @@ bool fardroid::DelItems(PluginPanelItem* PanelItem, int ItemsNumber, bool& noPro
       if (m_procStruct.Lock())
       {
         m_procStruct.nStartTime = GetTickCount();
-        m_procStruct.spos.Format(_T("%s %d/%d"), LOC(MProcessed), i, ItemsNumber);
+        m_procStruct.spos.Format(_T("%d/%d"), i, ItemsNumber);
         m_procStruct.from = srcfile;
         m_procStruct.to = _T("");
+        m_procStruct.nFileSize = 0;
         m_procStruct.bSilent = bSilent;
 
         m_procStruct.Unlock();

@@ -15,7 +15,7 @@ int ShowMessage(const farStr* msg, int buttons, const farStr* help, bool Warning
 
 void ShowMessageWait(const farStr* const* msg, int msgsize)
 {
-  fInfo.Message(&MainGuid, &MsgWaitGuid, 0/*FMSG_LEFTALIGN*/, nullptr, msg, msgsize, 0);
+  fInfo.Message(&MainGuid, &MsgWaitGuid, FMSG_LEFTALIGN, nullptr, msg, msgsize, 0);
 }
 
 int ShowDialog(int width, int height, const farStr* help, FarDialogItem* items, int count, HANDLE& hDlg)
