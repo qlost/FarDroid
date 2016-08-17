@@ -4,7 +4,7 @@
  "!" - warning
 
  18.08.16 v2.0.0
-  + Rename on Device (Shif+F6)
+  + Rename on Device (Shift+F6)
   + Copy Progress
   + MakeDir error handling
   + Save last directory
