@@ -1768,7 +1768,7 @@ bool fardroid::ShowProgressMessage() const
       sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSpeed(speed));
 
       static CString sProgress;
-      int size = max(sInfo.GetLength(), m_procStruct.from.GetLength(), m_procStruct.to.GetLength()) - 5;
+      int size = max(sInfo.GetLength(), max(m_procStruct.from.GetLength(), m_procStruct.to.GetLength())) - 5;
       double pc = static_cast<double>(m_procStruct.nTransmitted) / static_cast<double>(m_procStruct.nFileSize);
       int fn = static_cast<int>(pc * size);
       int en = size - fn;
@@ -1834,7 +1834,7 @@ CString fardroid::FormatSpeed(int cb)
   return res;
 }
 
-CString fardroid::FormatTime(int64_t time)
+CString fardroid::FormatTime(int time)
 {
   CString res;
   res.Format(_T("%2.2d:%2.2d:%2.2d"), time / 3600, (time % 3600) / 60, time % 3600 % 60);

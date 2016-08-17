@@ -297,7 +297,7 @@ public:
 
 	bool ShowProgressMessage() const;
   static CString FormatSpeed(int cb);
-  static CString FormatTime(int64_t time);
+  static CString FormatTime(int time);
   bool BreakProcessDialog(LPCTSTR sTitle);
 	int CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
   static void ShowError(CString& error);
