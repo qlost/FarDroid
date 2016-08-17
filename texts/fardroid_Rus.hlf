@@ -2,7 +2,7 @@
 .PluginContents=fardroid
 
 @Contents
-$^#FARdroid v1.0#
+$^#FARdroid v2.0#
    Плагин для работы с мобильными устройствами на операционной системе Android.
 
    ~Настройка~@Config@
