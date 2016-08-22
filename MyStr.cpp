@@ -396,3 +396,33 @@ CString UTF8toW(LPCTSTR str)
   s.ReleaseBuffer();
   return s;
 }
+
+CString FormatNumber(int str)
+{
+  static bool first = true;
+  static NUMBERFMT fmt;
+  static wchar_t DecimalSep[4] = {};
+  static wchar_t ThousandSep[4] = {};
+
+  if (first)
+  {
+    GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_SDECIMAL, DecimalSep, static_cast<int>(sizeof(DecimalSep)));
+    GetLocaleInfo(LOCALE_USER_DEFAULT, LOCALE_STHOUSAND, ThousandSep, static_cast<int>(sizeof(ThousandSep)));
+
+    fmt.LeadingZero = 1;
+    fmt.Grouping = 3;
+    fmt.lpDecimalSep = DecimalSep;
+    fmt.lpThousandSep = ThousandSep;
+    fmt.NegativeOrder = 1;
+    first = false;
+  }
+
+  CString src;
+  src.Format(L"%d", str);
+  wchar_t* buf = static_cast<wchar_t*>(my_malloc(255));
+  GetNumberFormat(LOCALE_USER_DEFAULT, 0, src, &fmt, buf, 255);
+  CString res;
+  res.Format(L"%s", buf);
+  my_free(buf);
+  return res;
+}

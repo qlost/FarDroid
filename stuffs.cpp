@@ -38,11 +38,7 @@ DWORD GetFileSizeS(const CString& path)
 CString GetVersionString()
 {
   CString ver;
-#ifndef _WIN64
-	ver.Format(_T("fardroid %u.%u build %u"), MAJORVERSION, MINORVERSION, BUILDNUMBER);
-#else
-  ver.Format(_T("fardroid %u.%u build %u (x64)"), MAJORVERSION, MINORVERSION, BUILDNUMBER);
-#endif
+  ver.Format(_T("FARDroid %u.%u.%u"), MAJORVERSION, MINORVERSION, BUILDNUMBER);
   return ver;
 }
 
@@ -120,6 +116,11 @@ bool CheckAndConvertParh(bool another, CString& res, bool selected, int i)
 }
 
 bool IsDirectory(DWORD attr)
+{
+  return (attr & FILE_ATTRIBUTE_DIRECTORY) ? true : false;
+}
+
+bool IsDirectory(uintptr_t attr)
 {
   return (attr & FILE_ATTRIBUTE_DIRECTORY) ? true : false;
 }
@@ -421,69 +422,75 @@ void CPerfCounter::Log( LPCTSTR lpMsg )
 }
 #endif
 
-BOOL IsPointDir(LPCTSTR sName)
+BOOL DeleteDir(LPCTSTR sSrc)
 {
-  return (lstrcmp(sName, _T(".")) == 0) || (lstrcmp(sName, _T("..")) == 0);
-}
-
-BOOL DeleteDir(CString& sName)
-{
-  AddEndSlash(sName);
-  CString saved = sName;
-
-  sName += _T("*.*");
+  CString sDir = sSrc;
+  AddEndSlash(sDir);
 
   WIN32_FIND_DATA fd;
-  HANDLE h = FindFirstFile(sName, &fd);
-  if (h == INVALID_HANDLE_VALUE) return FALSE;
+  HANDLE h = FindFirstFile(sDir + _T("*.*"), &fd);
+  if (h == INVALID_HANDLE_VALUE)
+    return FALSE;
 
-  BOOL bOk = TRUE;
+  auto result = TRUE;
   CString sname;
-  sname.Format(_T("%s%s"), saved, fd.cFileName);
-  if (!IsDirectory(fd.dwFileAttributes))
+  do
   {
-    if (!DeleteFile(sname)) bOk = FALSE;
-  }
-  else if (!IsPointDir(fd.cFileName))
-  {
-    if (!DeleteDir(sname)) bOk = FALSE;
-  }
+    if (lstrcmp(fd.cFileName, _T(".")) == 0 || lstrcmp(fd.cFileName, _T("..")) == 0)
+      continue;
 
-  while (FindNextFile(h, &fd) != 0)
-  {
-    sname.Format(_T("%s%s"), saved, fd.cFileName);
-    if (!IsDirectory(fd.dwFileAttributes))
+    sname.Format(_T("%s%s"), sDir, fd.cFileName);
+    if (IsDirectory(fd.dwFileAttributes))
     {
-      if (!DeleteFile(sname)) bOk = FALSE;
+      if (!DeleteDir(sname))
+      {
+        result = FALSE;
+        break;
+      }
     }
-    else if (!IsPointDir(fd.cFileName))
+    else
     {
-      if (!DeleteDir(sname)) bOk = FALSE;
+      if (!DeleteFile(sname))
+      {
+        result = FALSE;
+        break;
+      }
     }
-  }
+  } while (FindNextFile(h, &fd) != 0);
+
   FindClose(h);
 
-  return bOk;
+  if (result)
+    result = RemoveDirectory(sSrc);
+  return result;
 }
 
 BOOL DeletePanelItems(CString& sPath, struct PluginPanelItem* PanelItem, int ItemsNumber)
 {
-  BOOL bOk = TRUE;
+  BOOL result = TRUE;
   AddEndSlash(sPath);
   CString sName;
-  for (int i = 0; i < ItemsNumber; i++)
+
+  for (auto i = 0; i < ItemsNumber; i++)
   {
     sName.Format(_T("%s%s"), sPath, PanelItem[i].FileName);
-
     if (IsDirectory(PanelItem[i].FileAttributes))
     {
-      if (!DeleteDir(sName)) bOk = FALSE;
+      if (!DeleteDir(sName))
+      {
+        result = FALSE;
+        break;
+      }
     }
     else
     {
-      if (!DeleteFile(sName)) bOk = FALSE;
+      if (!DeleteFile(sName))
+      {
+        result = FALSE;
+        break;
+      }
     }
   }
 
-  return bOk;
+  return result;
 }

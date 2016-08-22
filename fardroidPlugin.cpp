@@ -266,7 +266,7 @@ intptr_t WINAPI GetFindDataW(struct GetFindDataInfo* Info)
     return FALSE;
 
   fardroid* android = static_cast<fardroid *>(Info->hPanel);
-  return android->GetFindData(&Info->PanelItem, &Info->ItemsNumber, static_cast<int>(Info->OpMode));
+  return android->GetFindData(&Info->PanelItem, &Info->ItemsNumber, Info->OpMode);
 }
 
 void WINAPI FreeFindDataW(const struct FreeFindDataInfo* Info)
@@ -296,12 +296,12 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
   {
     switch (Info->Rec.Event.KeyEvent.wVirtualKeyCode)
     {
-    case 0x41: /* VK_R */
+    case 0x41:
     {
       android->ChangePermissionsDialog();
       return TRUE;
     }
-    case 0x52: /* VK_R */
+    case 0x52:
     {
       android->Reread();
       fInfo.PanelControl(Info->hPanel, FCTL_UPDATEPANEL, 1, nullptr);
@@ -315,10 +315,10 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
   {
     switch (Info->Rec.Event.KeyEvent.wVirtualKeyCode)
     {
-    case VK_F6: /* VK_R */
+    case VK_F6:
     {
       CString file = ExtractName(GetCurrentFileName());
-      if (android->Rename(file))
+      if (android->Rename(file) == TRUE)
       {
         android->Reread();
         fInfo.PanelControl(Info->hPanel, FCTL_UPDATEPANEL, 1, nullptr);
@@ -340,14 +340,12 @@ intptr_t WINAPI ProcessPanelEventW(const struct ProcessPanelEventInfo* Info)
   switch (Info->Event)
   {
   case FE_CHANGEVIEWMODE:
-
     PanelInfo PInfo;
     fInfo.PanelControl(Info->hPanel, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
     conf.SortMode = PInfo.SortMode;
     conf.PanelMode = PInfo.ViewMode;
     conf.SortOrder = IS_FLAG(PInfo.Flags, PFLAGS_REVERSESORTORDER);
     conf.Save();
-
     break;
   }
 
@@ -362,27 +360,29 @@ intptr_t WINAPI GetFilesW(struct GetFilesInfo* Info)
   fardroid* android = static_cast<fardroid *>(Info->hPanel);
   static CString dest;
   dest = Info->DestPath;
-  if (!android->GetFiles(Info->PanelItem, Info->ItemsNumber, dest, Info->Move, static_cast<int>(Info->OpMode)))
+  auto result = android->GetFiles(Info->PanelItem, Info->ItemsNumber, dest, Info->Move, Info->OpMode);
+  if (result == FALSE)
     return FALSE;
 
-  if (Info->Move)
+  if (result == TRUE && Info->Move)
   {
-    //после удачного копирования удалим файлы
     Info->OpMode |= OPM_SILENT;
-    if (!android->DeleteFiles(Info->PanelItem, Info->ItemsNumber, static_cast<int>(Info->OpMode)))
+    if (android->DeleteFiles(Info->PanelItem, Info->ItemsNumber, Info->OpMode) == False)
       return FALSE;
+
+    Info->DestPath = _C(dest);
   }
-  Info->DestPath = _C(dest);
 
   return TRUE;
 }
 
 intptr_t WINAPI SetDirectoryW(const struct SetDirectoryInfo* Info)
 {
+  if (!Info->hPanel || INVALID_HANDLE_VALUE == Info->hPanel)
+    return FALSE;
+
   fardroid* android = static_cast<fardroid *>(Info->hPanel);
-  if (android)
-    return android->ChangeDir(Info->Dir, static_cast<int>(Info->OpMode));
-  return FALSE;
+  return android->ChangeDir(Info->Dir, Info->OpMode);
 }
 
 intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
@@ -391,14 +391,16 @@ intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
     return FALSE;
 
   fardroid* android = static_cast<fardroid *>(Info->hPanel);
-  if (!android->PutFiles(Info->PanelItem, Info->ItemsNumber, Info->SrcPath, Info->Move, static_cast<int>(Info->OpMode)))
+  auto result = android->PutFiles(Info->PanelItem, Info->ItemsNumber, Info->SrcPath, Info->Move, Info->OpMode);
+  if (result == FALSE)
     return FALSE;
 
-  if (Info->Move)
+  if (result == TRUE && Info->Move)
   {
     CString sPath = GetPanelPath();
     return DeletePanelItems(sPath, Info->PanelItem, Info->ItemsNumber);
   }
+
   return TRUE;
 }
 
@@ -408,7 +410,11 @@ intptr_t WINAPI DeleteFilesW(const struct DeleteFilesInfo* Info)
     return FALSE;
 
   fardroid* android = static_cast<fardroid *>(Info->hPanel);
-  return android->DeleteFiles(Info->PanelItem, Info->ItemsNumber, static_cast<int>(Info->OpMode));
+  auto result = android->DeleteFiles(Info->PanelItem, Info->ItemsNumber, Info->OpMode);
+  if (result == FALSE)
+    return FALSE;
+
+  return TRUE;
 }
 
 intptr_t WINAPI MakeDirectoryW(struct MakeDirectoryInfo* Info)
@@ -420,9 +426,14 @@ intptr_t WINAPI MakeDirectoryW(struct MakeDirectoryInfo* Info)
 
   static CString dest;
   dest = Info->Name;
-  if (android->CreateDir(dest, static_cast<int>(Info->OpMode)) == 0)
+  auto result = android->CreateDir(dest, static_cast<int>(Info->OpMode));
+  if (result == FALSE)
     return FALSE;
 
-  Info->Name = _C(dest);
+  if (result == TRUE)
+  {
+    Info->Name = _C(dest);
+  }
+
   return TRUE;
 }

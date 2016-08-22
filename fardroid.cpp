@@ -1,23 +1,24 @@
 #include "StdAfx.h"
 #include "fardroid.h"
 #include <vector>
+#include <ctime>
 
 DWORD WINAPI ProcessThreadProc(LPVOID lpParam)
 {
-  fardroid* android = static_cast<fardroid *>(lpParam);
-  if (android)
+  auto android = static_cast<fardroid *>(lpParam);
+  if (!android)
+    return 0;
+
+  while (true)
   {
-    while (true)
-    {
-      if (CheckForKey(VK_ESCAPE) &&
-        android->BreakProcessDialog(LOC(MGetFile)))
-        android->m_bForceBreak = true;
+    if (CheckForKey(VK_ESCAPE) && android->BreakProcessDialog()) 
+      android->m_bForceBreak = true;
 
-      if (!android->ShowProgressMessage())
-        break;
+    if (android->m_bForceBreak)
+      break;
 
-      Sleep(10);
-    }
+    android->ShowProgressMessage();
+    Sleep(100);
   }
 
   return 0;
@@ -41,26 +42,11 @@ fardroid::~fardroid(void)
   DeleteRecords(records);
 }
 
-bool fardroid::CopyFilesDialog(CString& dest, int move)
+bool fardroid::CopyFilesDialog(CString& dest, const wchar_t* title)
 {
-  farStr * title;
-
-  switch (move)
-  {
-  case 1:
-    title = reinterpret_cast<farStr *>(MMoveFile);
-    break;
-  case 2:
-    title = reinterpret_cast<farStr *>(MRenameFile);
-    break;
-  default:
-    title = reinterpret_cast<farStr *>(MGetFile);
-    break;
-  }
-
   const auto width = 55;
   struct InitDialogItem InitItems[] = {
-    /*00*/FDI_DOUBLEBOX(width - 4, 6,title),
+    /*00*/FDI_DOUBLEBOX(width - 4, 6, (farStr *)title),
     /*01*/FDI_LABEL(5, 2, (farStr *)MCopyDest),
     /*02*/FDI_EDIT(5, 3, width - 6, _F("fardroidDestinationDir")),
     /*03*/FDI_DEFCBUTTON(5,(farStr *)MOk),
@@ -148,12 +134,12 @@ bool fardroid::DeleteFilesDialog()
   return ShowMessage(msg, 2, nullptr, true) == 0;
 }
 
-bool fardroid::BreakProcessDialog(LPCTSTR sTitle)
+bool fardroid::BreakProcessDialog()
 {
   if (m_procStruct.Hide())
   {
     CString msg;
-    msg.Format(L"%s\n%s\n%s\n%s", sTitle, LOC(MBreakWarn), LOC(MYes), LOC(MNo));
+    msg.Format(L"%s\n%s\n%s\n%s", m_procStruct.title, LOC(MBreakWarn), LOC(MYes), LOC(MNo));
 
     bool bOk = ShowMessage(msg, 2, nullptr, true) == 0;
     m_procStruct.Restore();
@@ -252,70 +238,191 @@ HANDLE fardroid::OpenFromCommandLine(const CString& cmd)
   return INVALID_HANDLE_VALUE;
 }
 
-bool fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool& noPromt, bool& ansYes, bool bSilent)
+int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent)
 {
+  CString sdir = srcdir;
+  CString ddir = dstdir;
+  AddEndSlash(sdir, true);
+  AddEndSlash(ddir);
 
-  for (int i = 0; i < ItemsNumber; i++)
+  CString sname;
+  CString dname;
+  CCopyRecords files;
+  for (auto i = 0; i < ItemsNumber; i++)
   {
-    if (!bSilent && CheckForKey(VK_ESCAPE) && BreakProcessDialog(LOC(MGetFile)))
-      return true;
+    if (m_bForceBreak)
+      return ABORT;
 
-    CFileRecord* item = records[reinterpret_cast<int>(PanelItem[i].UserData.Data)];
-    if (item)
+    sname.Format(_T("%s%s"), sdir, PanelItem[i].FileName);
+    dname.Format(_T("%s%s"), ddir, PanelItem[i].FileName);
+
+    if (IsDirectory(PanelItem[i].FileAttributes))
     {
-      CString dstfile = dstdir;
-      CString srcfile = srcdir;
-      srcfile += item->filename;
-      dstfile += item->filename;
-      if (m_procStruct.Lock())
-      {
-        m_procStruct.nStartTime = GetTickCount();
-        m_procStruct.spos.Format(_T("%d/%d"), i, ItemsNumber);
-        m_procStruct.from = srcfile;
-        m_procStruct.to = dstfile;
-        m_procStruct.bSilent = bSilent;
-        m_procStruct.nTransmitted = 0;
-        m_procStruct.nFileSize = static_cast<DWORD>(item->size);
-
-        m_procStruct.Unlock();
-      }
-
-      if (!CopyFileFrom(srcfile, dstfile, noPromt, ansYes, bSilent))
-        return false;
+      ADBPullDirGetFiles(sname, dname, files);
+    }
+    else
+    {
+      auto rec = new CCopyRecord;
+      rec->src = sname;
+      rec->dst = dname;
+      rec->size = PanelItem[i].FileSize;
+      files.Add(rec);
     }
   }
-  return true;
-}
 
-bool fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool& noPromt, bool& ansYes, bool bSilent)
-{
-  for (int i = 0; i < ItemsNumber; i++)
+  UINT64 totalSize = 0;
+  int filesSize = files.GetSize();
+  for (auto i = 0; i < files.GetSize(); i++)
+    totalSize += files[i]->size;
+
+  if (m_procStruct.Lock())
   {
-    if (!bSilent && CheckForKey(VK_ESCAPE) && BreakProcessDialog(LOC(MGetFile)))
-      return true;
+    m_procStruct.nTotalStartTime = GetTickCount();
+    m_procStruct.nTotalFileSize = totalSize;
+    m_procStruct.nTotalFiles = filesSize;
+    m_procStruct.Unlock();
+  }
 
-    CString dstfile = dstdir;
-    CString srcfile = srcdir;
-    dstfile += PanelItem[i].FileName;
-    srcfile += PanelItem[i].FileName;
+  int result = TRUE;
+  for (auto i = 0; i < filesSize; i++)
+  {
+    if (m_bForceBreak)
+      break;
+
     if (m_procStruct.Lock())
     {
       m_procStruct.nStartTime = GetTickCount();
-      m_procStruct.spos.Format(_T("%d/%d"), i, ItemsNumber);
-      m_procStruct.from = srcfile;
-      m_procStruct.to = dstfile;
-      m_procStruct.nFileSize = PanelItem[i].FileSize;
-      m_procStruct.bSilent = bSilent;
-
+      m_procStruct.nPosition = i;
+      m_procStruct.from = files[i]->src;
+      m_procStruct.to = files[i]->dst;
+      m_procStruct.nTransmitted = 0;
+      m_procStruct.nFileSize = files[i]->size;
       m_procStruct.Unlock();
     }
 
-    if (!CopyFileTo(srcfile, dstfile, noPromt, ansYes, bSilent))
-      return false;
+    if (FileExists(files[i]->dst))
+    {
+      if (!noPromt)
+      {
+        auto exResult = FileExistsDialog(files[i]->dst);
+        if (exResult < 0 || exResult > 3)
+        {
+          m_bForceBreak = true;
+          break;
+        }
+
+        ansYes = exResult == 0 || exResult == 2;
+        noPromt = exResult == 2 || exResult == 3;
+      }
+
+      if (!ansYes)
+      {
+        if (m_procStruct.Lock())
+        {
+          m_procStruct.nTotalFileSize -= m_procStruct.nFileSize;
+          m_procStruct.Unlock();
+        }
+        continue;
+      }
+
+      if (!DeleteFile(files[i]->dst, false))
+      {
+        result = FALSE;
+        break;
+      }
+    }
+
+    if (!CopyFileFrom(files[i]->src, files[i]->dst, noPromt, ansYes, bSilent))
+    {
+      result = FALSE;
+      break;
+    }
   }
 
+  DeleteRecords(files);
+
+  if (m_bForceBreak)
+    return ABORT;
+
+  return result;
+}
+
+int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool& noPromt, bool& ansYes, bool bSilent)
+{
+  CString sdir = srcdir;
+  CString ddir = dstdir;
+  AddEndSlash(sdir);
+  AddEndSlash(ddir, true);
+
+  CString sname;
+  CString dname;
+  CCopyRecords files;
+  for (auto i = 0; i < ItemsNumber; i++)
+  {
+    if (m_bForceBreak)
+      return ABORT;
+
+    sname.Format(_T("%s%s"), sdir, PanelItem[i].FileName);
+    dname.Format(_T("%s%s"), ddir, PanelItem[i].FileName);
+
+    if (IsDirectory(PanelItem[i].FileAttributes))
+    {
+      ADBPushDirGetFiles(sname, dname, files);
+    }
+    else
+    {
+      auto rec = new CCopyRecord;
+      rec->src = sname;
+      rec->dst = dname;
+      rec->size = PanelItem[i].FileSize;
+      files.Add(rec);
+    }
+  }
+
+  UINT64 totalSize = 0;
+  int filesSize = files.GetSize();
+  for (auto i = 0; i < files.GetSize(); i++)
+    totalSize += files[i]->size;
+
+  if (m_procStruct.Lock())
+  {
+    m_procStruct.nTotalStartTime = GetTickCount();
+    m_procStruct.nTotalFileSize = totalSize;
+    m_procStruct.nTotalFiles = filesSize;
+    m_procStruct.Unlock();
+  }
+
+  auto result = TRUE;
+  for (auto i = 0; i < filesSize; i++)
+  {
+    if (m_bForceBreak)
+      break;
+
+    if (m_procStruct.Lock())
+    {
+      m_procStruct.nStartTime = GetTickCount();
+      m_procStruct.nPosition = i;
+      m_procStruct.from = files[i]->src;
+      m_procStruct.to = files[i]->dst;
+      m_procStruct.nTransmitted = 0;
+      m_procStruct.nFileSize = files[i]->size;
+      m_procStruct.Unlock();
+    }
+
+    if (!CopyFileTo(files[i]->src, files[i]->dst, noPromt, ansYes, bSilent))
+    {
+      result = FALSE;
+      break;
+    }
+  }
+
+  DeleteRecords(files);
   Reread();
-  return true;
+
+  if (m_bForceBreak)
+    return ABORT;
+
+  return result;
 }
 
 bool fardroid::DeleteFile(const CString& name, bool bSilent)
@@ -344,45 +451,6 @@ deltry:
 
 bool fardroid::CopyFileFrom(const CString& src, const CString& dst, bool& noPromt, bool& ansYes, bool bSilent)
 {
-  if (FileExists(dst))
-  {
-    if (!noPromt)
-    {
-      switch (FileExistsDialog(dst))
-      {
-      case 0:
-        if (!DeleteFile(dst, false))
-          return false;
-        break;
-      case 1:
-        return true;
-      case 2:
-        noPromt = true;
-        ansYes = true;
-        if (!DeleteFile(dst, false))
-          return false;
-        break;
-      case 3:
-        noPromt = true;
-        ansYes = false;
-        return true;
-      default:
-        return false;
-      }
-    }
-    else
-    {
-      if (ansYes)
-      {
-        if (!DeleteFile(dst, true))
-          return false;
-      }
-      else
-        return true;
-    }
-  }
-
-  CString sRes;
 repeatcopy:
   // "adb.exe pull" в принципе не может читать файл с устройства с правами Superuser.
   // Если у файла не установлены права доступа на чтения для простых пользователей,
@@ -392,6 +460,7 @@ repeatcopy:
   // для простых пользователей. А затем вернем оригинальные права доступа к файлу.
   // Этот работает только в Native Mode с включенным Superuser, при включенном ExtendedAccess
 
+  CString sRes;
   CString old_permissions;
   bool UseChmod = (conf.WorkMode == WORKMODE_NATIVE && conf.UseSU && conf.UseExtendedAccess);
   if (UseChmod)
@@ -438,7 +507,7 @@ repeatcopy:
     switch (ret)
     {
     case 0:
-      sRes = _T("");
+      sRes.Empty();
       goto repeatcopy;
     case 1:
       return true;
@@ -544,7 +613,16 @@ void fardroid::DeleteRecords(CFileRecords& recs)
   recs.RemoveAll();
 }
 
-int fardroid::GetFindData(struct PluginPanelItem** pPanelItem, size_t* pItemsNumber, int OpMode)
+void fardroid::DeleteRecords(CCopyRecords& recs)
+{
+  for (auto i = 0; i < recs.GetSize(); i++)
+  {
+    delete recs[i];
+  }
+  recs.RemoveAll();
+}
+
+int fardroid::GetFindData(struct PluginPanelItem** pPanelItem, size_t* pItemsNumber, OPERATION_MODES OpMode)
 {
   *pPanelItem = nullptr;
   *pItemsNumber = 0;
@@ -600,7 +678,7 @@ void fardroid::FreeFindData(struct PluginPanelItem* PanelItem, int ItemsNumber)
   }
 }
 
-int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& DestPath, BOOL Move, int OpMode)
+int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& DestPath, BOOL Move, OPERATION_MODES OpMode)
 {
   CString srcdir = m_currentPath;
   AddBeginSlash(srcdir);
@@ -611,44 +689,38 @@ int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& Des
   bool bSilent = IS_FLAG(OpMode, OPM_SILENT) || IS_FLAG(OpMode, OPM_FIND);
   bool noPromt = bSilent;
 
-  if (IS_FLAG(OpMode, OPM_VIEW))
+  if (IS_FLAG(OpMode, OPM_VIEW) || IS_FLAG(OpMode, OPM_QUICKVIEW) || IS_FLAG(OpMode, OPM_EDIT))
     bSilent = false;
 
-  if (!IS_FLAG(OpMode, OPM_QUICKVIEW) &&
-    !IS_FLAG(OpMode, OPM_VIEW) &&
-    !bSilent)
+  if (!bSilent && !IS_FLAG(OpMode, OPM_QUICKVIEW) && !IS_FLAG(OpMode, OPM_VIEW) && !IS_FLAG(OpMode, OPM_EDIT))
   {
-    if (!CopyFilesDialog(path, Move))
-      return FALSE;
-
-    DestPath = path;
+    if (!CopyFilesDialog(DestPath, Move ? LOC(MMoveFile) : LOC(MGetFile)))
+      return ABORT;
   }
 
-  AddEndSlash(path);
-
+  m_bForceBreak = false;
   if (m_procStruct.Lock())
   {
-    m_procStruct.bSilent = true;
-    m_procStruct.docontinue = true;
-    m_procStruct.title = LOC(MGetFile);
-
+    m_procStruct.title = Move ? LOC(MMoveFile) : LOC(MGetFile);
+    m_procStruct.bIsDelete = false;
+    m_procStruct.bSilent = false;
+    m_procStruct.nTransmitted = 0;
+    m_procStruct.nTotalTransmitted = 0;
+    m_procStruct.nFileSize = 0;
+    m_procStruct.nTotalFileSize = 0;
     m_procStruct.Unlock();
   }
 
   DWORD threadID = 0;
   HANDLE hThread = CreateThread(nullptr, 0, ProcessThreadProc, this, 0, &threadID);
 
-  BOOL bOk = GetItems(PanelItem, ItemsNumber, srcdir, path, noPromt, noPromt, bSilent) ? TRUE : FALSE;
+  auto result = GetItems(PanelItem, ItemsNumber, srcdir, DestPath, noPromt, noPromt, bSilent);
 
-  if (m_procStruct.Lock())
-  {
-    m_procStruct.docontinue = false;
-    m_procStruct.Unlock();
-  }
-
+  m_bForceBreak = true;
   CloseHandle(hThread);
+  taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
 
-  return bOk;
+  return result;
 }
 
 int fardroid::UpdateInfoLines()
@@ -680,10 +752,9 @@ int fardroid::UpdateInfoLines()
 
 void fardroid::PreparePanel(OpenPanelInfo* Info)
 {
-  //TODO!!! - сделать динамические массивы
-  Info->HostFile = _C(fileUnderCursor);
-
   panelTitle.Format(_T("%s/%s "), m_currentDevice, m_currentPath);
+
+  Info->HostFile = _C(fileUnderCursor);
   Info->PanelTitle = _C(panelTitle);
   Info->CurDir = _C(m_currentPath);
 
@@ -693,17 +764,15 @@ void fardroid::PreparePanel(OpenPanelInfo* Info)
     InfoPanelLineArray = nullptr;
   }
 
-  int len = lines.GetSize();
-
+  auto len = lines.GetSize();
   if (len > 0)
   {
     InfoPanelLineArray = new InfoPanelLine[len];
-
-    for (int i = 0; i < len; i++)
+    for (auto i = 0; i < len; i++)
     {
       InfoPanelLineArray[i].Text = lines[i].text;
       InfoPanelLineArray[i].Data = lines[i].data;
-      InfoPanelLineArray[i].Flags = (lines[i].separator ? IPLFLAGS_SEPARATOR : 0);
+      InfoPanelLineArray[i].Flags = lines[i].separator ? IPLFLAGS_SEPARATOR : 0;
     }
   }
 
@@ -865,7 +934,7 @@ void fardroid::Reread()
   ChangeDir(p);
 }
 
-int fardroid::ChangeDir(LPCTSTR sDir, int OpMode)
+int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode)
 {
   CString s = sDir;
   CFileRecord* item = GetFileRecord(sDir);
@@ -961,15 +1030,6 @@ bool fardroid::ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t& mtime)
   if (hFile == INVALID_HANDLE_VALUE)
     return false;
 
-  if (m_procStruct.Lock())
-  {
-    m_procStruct.nStartTime = GetTickCount();
-    m_procStruct.nTransmitted = 0;
-    m_procStruct.nFileSize = GetFileSize(hFile, nullptr);
-    m_bForceBreak = false;
-    m_procStruct.Unlock();
-  }
-
   FILETIME ft;
   SYSTEMTIME st;
   GetFileTime(hFile, nullptr, nullptr, &ft);
@@ -979,52 +1039,41 @@ bool fardroid::ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t& mtime)
   syncsendbuf* sbuf = new syncsendbuf;
   sbuf->id = ID_DATA;
 
-  bool bOK;
-  for (;;)
+  auto result = true;
+  while (true)
   {
     DWORD readed = 0;
     if (!ReadFile(hFile, sbuf->data, SYNC_DATA_MAX, &readed, nullptr))
     {
-      bOK = false;
+      result = false;
       break;
     }
 
     if (readed == 0)
-    {
-      bOK = true;
       break;
-    }
 
     sbuf->size = readed;
     if (!SendADBPacket(sockADB, sbuf, sizeof(unsigned) * 2 + readed))
     {
-      bOK = false;
+      result = false;
       break;
     }
 
     if (m_procStruct.Lock())
     {
       m_procStruct.nTransmitted += readed;
+      m_procStruct.nTotalTransmitted += readed;
       m_procStruct.Unlock();
     }
 
     if (m_bForceBreak)
-    {
-      bOK = true;
       break;
-    }
-  }
-
-  if (m_procStruct.Lock())
-  {
-    m_procStruct.nFileSize = 0;
-    m_procStruct.Unlock();
   }
 
   delete sbuf;
   CloseHandle(hFile);
 
-  return bOK;
+  return result;
 }
 
 bool fardroid::ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, int mode)
@@ -1106,16 +1155,70 @@ bool fardroid::ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& s
 
   CString sname, dname;
   do {
+    if (m_bForceBreak)
+      break;
+
+    if (lstrcmp(fd.cFileName, _T(".")) == 0 || lstrcmp(fd.cFileName, _T("..")) == 0)
+      continue;
+
     sname.Format(_T("%s%s"), ssaved, fd.cFileName);
     dname.Format(_T("%s%s"), dsaved, fd.cFileName);
-    if (!IsDirectory(fd.dwFileAttributes))
-      ADBPushFile(sockADB, sname, dname, sRes);
-    else if (lstrcmp(fd.cFileName, _T(".")) != 0 && lstrcmp(fd.cFileName, _T("..")) != 0)
+    if (IsDirectory(fd.dwFileAttributes))
       ADBPushDir(sockADB, sname, dname, sRes);
-  } while (!m_bForceBreak && FindNextFile(h, &fd) != 0);
+    else
+      ADBPushFile(sockADB, sname, dname, sRes);
+  } while (FindNextFile(h, &fd) != 0);
 
   FindClose(h);
   return true;
+}
+
+void fardroid::ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files)
+{
+  if (m_procStruct.Lock())
+  {
+    m_procStruct.from = sSrc;
+    m_procStruct.Unlock();
+  }
+
+  CString sdir = sSrc;
+  CString ddir = sDst;
+  AddEndSlash(sdir);
+  AddEndSlash(ddir, true);
+
+  WIN32_FIND_DATA fd;
+  HANDLE h = FindFirstFile(sdir + _T("*.*"), &fd);
+  if (h == INVALID_HANDLE_VALUE)
+    return;
+
+  CString sname;
+  CString dname;
+  do {
+    if (m_bForceBreak)
+      break;
+
+    if (lstrcmp(fd.cFileName, _T(".")) == 0 || lstrcmp(fd.cFileName, _T("..")) == 0)
+      continue;
+
+    sname.Format(_T("%s%s"), sdir, fd.cFileName);
+    dname.Format(_T("%s%s"), ddir, fd.cFileName);
+
+    if (IsDirectory(fd.dwFileAttributes))
+    {
+      ADBPushDirGetFiles(sname, dname, files);
+    } 
+    else
+    {
+      auto rec = new CCopyRecord;
+      rec->src = sname;
+      rec->dst = dname;
+      rec->size = fd.nFileSizeHigh * (MAXDWORD + UINT64(1)) + fd.nFileSizeLow;
+      files.Add(rec);
+    }
+
+  } while (FindNextFile(h, &fd) != 0);
+
+  FindClose(h);
 }
 
 BOOL fardroid::ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes)
@@ -1201,7 +1304,7 @@ bool fardroid::ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& s
           m_procStruct.from = sname;
           m_procStruct.to = dname;
           m_procStruct.nTransmitted = 0;
-          m_procStruct.nFileSize = static_cast<DWORD>(recs[i]->size);
+          m_procStruct.nFileSize = recs[i]->size;
           m_procStruct.Unlock();
         }
         ADBPullFile(sockADB, sname, dname, sRes);
@@ -1215,6 +1318,51 @@ bool fardroid::ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& s
   return true;
 }
 
+void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files)
+{
+  if (m_procStruct.Lock())
+  {
+    m_procStruct.from = sSrc;
+    m_procStruct.Unlock();
+  }
+
+  CString sdir = sSrc;
+  CString ddir = sDst;
+  AddEndSlash(sdir, true);
+  AddEndSlash(ddir);
+
+  CString sRes;
+  CFileRecords recs;
+  if (ADB_ls(WtoUTF8(sSrc), recs, sRes, true))
+  {
+    CString sname;
+    CString dname;
+    for (auto i = 0; i < recs.GetSize(); i++)
+    {
+      if (m_bForceBreak)
+        break;
+
+      sname.Format(_T("%s%s"), sdir, recs[i]->filename);
+      dname.Format(_T("%s%s"), ddir, recs[i]->filename);
+
+      if (IsDirectory(recs[i]->attr))
+      {
+        sname.Format(_T("%s%s"), sdir, recs[i]->filename);
+        ADBPullDirGetFiles(sname, dname, files);
+      }
+      else
+      {
+        auto rec = new CCopyRecord;
+        rec->src = sname;
+        rec->dst = dname;
+        rec->size = recs[i]->size;
+        files.Add(rec);
+      }
+    }
+  }
+  DeleteRecords(recs);
+}
+
 BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes)
 {
   syncmsg msg;
@@ -1223,7 +1371,6 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   unsigned id;
   CString file = WtoUTF8(sSrc);
 
-  m_bForceBreak = false;
   len = lstrlen(file);
   if (len > 1024) return FALSE;
 
@@ -1254,7 +1401,7 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   char* buffer = new char[SYNC_DATA_MAX];
   DWORD written = 0;
   bool bFirst = true;
-  for (;;)
+  while (true)
   {
     if (!bFirst)
     {
@@ -1301,6 +1448,7 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
     if (m_procStruct.Lock())
     {
       m_procStruct.nTransmitted += written;
+      m_procStruct.nTotalTransmitted += written;
       m_procStruct.Unlock();
     }
 
@@ -1312,12 +1460,6 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
       return TRUE;
     }
     bFirst = false;
-  }
-
-  if (m_procStruct.Lock())
-  {
-    m_procStruct.nFileSize = 0;
-    m_procStruct.Unlock();
   }
 
   delete [] buffer;
@@ -1452,8 +1594,7 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
 
             buf[len] = 0;
 
-            if (lstrcmpA(buf, ".") != 0 &&
-              lstrcmpA(buf, "..") != 0)
+            if (lstrcmpA(buf, ".") != 0 && lstrcmpA(buf, "..") != 0)
             {
               CFileRecord* rec = new CFileRecord;
               rec->attr = ModeToAttr(msg.dent.mode);
@@ -1742,32 +1883,71 @@ void fardroid::ShowADBExecError(CString err, bool bSilent)
   }
 }
 
-bool fardroid::ShowProgressMessage() const
+void fardroid::DrawProgress(CString& sProgress, int size, double pc)
+{
+  int fn = static_cast<int>(pc * size);
+  int en = size - fn;
+  wchar_t buf[512];
+  wchar_t *bp = buf;
+  for (auto i = 0; i < fn; i++)
+    *bp++ = 0x2588; //'█'
+  for (auto i = 0; i < en; i++)
+    *bp++ = 0x2591; //'░'
+  // ReSharper disable once CppAssignedValueIsNeverUsed
+  *bp++ = 0x0;
+  sProgress.Format(_T("%s %3d%%"), buf, static_cast<int>(pc * 100));
+}
+
+void fardroid::DrawProgress(CString& sProgress, int size, LPCTSTR current, LPCTSTR total)
+{
+  CString left = sProgress;
+  CString right, center;
+  right.Format(_T("%s / %s"), current, total);
+  for (auto i = 0; i < size - (left.GetLength() + right.GetLength()); i++)
+  {
+    center += " ";
+  }
+  sProgress.Format(_T("%s%s%s"), left, center, right);
+}
+
+void fardroid::ShowProgressMessage()
 {
   if (m_procStruct.Lock())
   {
     static DWORD time = 0;
 
-    if (m_procStruct.bSilent || GetTickCount() - time < 1000)
+    if (m_procStruct.bSilent || GetTickCount() - time < 500)
     {
       m_procStruct.Unlock();
-      return m_procStruct.docontinue;
+      return;
     }
 
     time = GetTickCount();
 
-    if (m_procStruct.nFileSize > 0) {
+    if (m_procStruct.bIsDelete)
+    {
+      CString sProc;
+      sProc.Format(_T("%s %d / %d"), LOC(MFiles), m_procStruct.nPosition, m_procStruct.nTotalFiles);
+      const farStr* MsgItems[] = { m_procStruct.title, LOC(MFrom), m_procStruct.from, _T("\x1"), sProc };
+      ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
+    } 
+    else
+    {
+      CString mFrom = m_procStruct.nTotalFileSize == 0 ? LOC(MScanDirectory) : LOC(MFrom);
+      CString mTo = m_procStruct.nTotalFileSize == 0 ? _T("") : LOC(MTo);
+      CString mTotal;
+      mTotal.Format(_T("\x1%s"), LOC(MTotal));
+
       static CString sInfo;
-      int elapsed = (time - m_procStruct.nStartTime) / 1000;
-      int speed = 0;
-      int remain = 0;
+      int elapsed = m_procStruct.nTotalFileSize == 0 ? 0 : (time - m_procStruct.nTotalStartTime) / 1000;
+      auto speed = 0;
+      auto remain = 0;
       if (elapsed > 0)
-        speed = m_procStruct.nTransmitted / elapsed;
+        speed = m_procStruct.nTotalTransmitted / elapsed;
       if (speed > 0)
-        remain = (m_procStruct.nFileSize - m_procStruct.nTransmitted) / speed;
+        remain = (m_procStruct.nTotalFileSize - m_procStruct.nTotalTransmitted) / speed;
       sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSpeed(speed));
 
-      static CString sProgress;
       int size = sInfo.GetLength() - 5;
       CString sFrom = m_procStruct.from;
       if (m_procStruct.from.GetLength() >= size)
@@ -1781,35 +1961,32 @@ bool fardroid::ShowProgressMessage() const
         sTo.Delete(0, m_procStruct.to.GetLength() - size - 2);
         sTo = "..." + sTo;
       }
-      CString sProc;
-      sProc.Format(_T("%s %s"), LOC(MProcessed), m_procStruct.spos);
 
-      double pc = static_cast<double>(m_procStruct.nTransmitted) / static_cast<double>(m_procStruct.nFileSize);
-      int fn = static_cast<int>(pc * size);
-      int en = size - fn;
-      wchar_t buf[512];
-      wchar_t *bp = buf;
-      for (auto i = 0; i < fn; i++)
-        *bp++ = 0x2588; //'█'
-      for (auto i = 0; i < en; i++)
-        *bp++ = 0x2591; //'░'
-      *bp++ = 0x0;
-      sProgress.Format(_T("%s %3d%%"), buf, static_cast<int>(pc * 100));
+      CString sFiles = LOC(MFiles);
+      CString sBytes = LOC(MBytes);
+      DrawProgress(sFiles, size, FormatNumber(m_procStruct.nPosition), FormatNumber(m_procStruct.nTotalFiles));
+      DrawProgress(sBytes, size, FormatNumber(m_procStruct.nTotalTransmitted), FormatNumber(m_procStruct.nTotalFileSize));
 
-      const farStr* MsgItems[] = { m_procStruct.title, LOC(MFrom), sFrom, LOC(MTo), sTo, _T(""), sProgress, _T(""), sProc, sInfo };
-      ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
-    }
-    else {
-      CString sProc;
-      sProc.Format(_T("%s %s"), LOC(MProcessed), m_procStruct.spos);
-      const farStr* MsgItems[] = { m_procStruct.title, LOC(MFrom), m_procStruct.from, LOC(MTo), m_procStruct.to, _T(""), m_procStruct.spos };
-      ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
+      double pc = m_procStruct.nFileSize > 0 ? static_cast<double>(m_procStruct.nTransmitted) / static_cast<double>(m_procStruct.nFileSize) : 0;
+      double tpc = m_procStruct.nTotalFileSize > 0 ? static_cast<double>(m_procStruct.nTotalTransmitted) / static_cast<double>(m_procStruct.nTotalFileSize) : 0;
+
+      static CString sProgress;
+      DrawProgress(sProgress, size, pc);
+
+      if (m_procStruct.nTotalFiles > 1) {
+        static CString sTotalProgress;
+        DrawProgress(sTotalProgress, size, tpc);
+        const farStr* MsgItems[] = { m_procStruct.title, mFrom, sFrom, mTo, sTo, sProgress, mTotal, sFiles, sBytes, sTotalProgress, _T("\x1"), sInfo };
+        ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
+      } else{
+        const farStr* MsgItems[] = { m_procStruct.title, mFrom, sFrom, mTo, sTo, sProgress, mTotal, sFiles, sBytes, _T("\x1"), sInfo };
+        ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
+      }
+      taskbarIcon.SetState(taskbarIcon.S_PROGRESS, tpc);
     }
 
     m_procStruct.Unlock();
   }
-
-  return m_procStruct.docontinue;
 }
 
 CString fardroid::FormatSpeed(int cb)
@@ -1858,130 +2035,113 @@ CString fardroid::FormatTime(int time)
   return res;
 }
 
-bool fardroid::DelItems(PluginPanelItem* PanelItem, int ItemsNumber, bool& noPromt, bool& ansYes, bool bSilent)
+int fardroid::DelItems(PluginPanelItem* PanelItem, int ItemsNumber, bool& noPromt, bool& ansYes, bool bSilent)
 {
-  for (int i = 0; i < ItemsNumber; i++)
+  CString sdir = m_currentPath;
+  AddBeginSlash(sdir);
+  AddEndSlash(sdir, true);
+
+  CString sname;
+  auto result = TRUE;
+  for (auto i = 0; i < ItemsNumber; i++)
   {
-    if (!bSilent && CheckForKey(VK_ESCAPE) && BreakProcessDialog(LOC(MGetFile)))
-      return true;
+    if (m_bForceBreak)
+      break;
 
-    CFileRecord* item = records[reinterpret_cast<int>(PanelItem[i].UserData.Data)];
-    if (item)
+    sname.Format(_T("%s%s"), sdir, PanelItem[i].FileName);
+    if (m_procStruct.Lock())
     {
-      CString srcfile = m_currentPath;
-      AddBeginSlash(srcfile);
-      AddEndSlash(srcfile, true);
-      srcfile += item->filename;
-      if (m_procStruct.Lock())
-      {
-        m_procStruct.nStartTime = GetTickCount();
-        m_procStruct.spos.Format(_T("%d/%d"), i, ItemsNumber);
-        m_procStruct.from = srcfile;
-        m_procStruct.to = _T("");
-        m_procStruct.nFileSize = 0;
-        m_procStruct.bSilent = bSilent;
+      m_procStruct.from = sname;
+      m_procStruct.nPosition = i;
+      m_procStruct.Unlock();
+    }
 
-        m_procStruct.Unlock();
-      }
-
-      if (!DeleteFileFrom(srcfile, noPromt, ansYes, bSilent))
-        return false;
+    if (!DeleteFileFrom(sname, noPromt, ansYes, bSilent))
+    {
+      result = FALSE;
+      break;
     }
   }
 
   Reread();
-  return true;
+
+  if (m_bForceBreak)
+    return ABORT;
+
+  return result;
 }
 
-int fardroid::DeleteFiles(PluginPanelItem* PanelItem, int ItemsNumber, int OpMode)
+int fardroid::DeleteFiles(PluginPanelItem* PanelItem, int ItemsNumber, OPERATION_MODES OpMode)
 {
   bool bSilent = IS_FLAG(OpMode, OPM_SILENT) || IS_FLAG(OpMode, OPM_FIND);
   bool noPromt = bSilent;
 
-  if (!IS_FLAG(OpMode, OPM_QUICKVIEW) &&
-    !IS_FLAG(OpMode, OPM_VIEW) &&
-    !bSilent)
+  if (!bSilent && !IS_FLAG(OpMode, OPM_QUICKVIEW) && !IS_FLAG(OpMode, OPM_VIEW) && !IS_FLAG(OpMode, OPM_EDIT))
   {
     if (!DeleteFilesDialog())
-      return FALSE;
+      return ABORT;
   }
 
+  m_bForceBreak = false;
   if (m_procStruct.Lock())
   {
-    m_procStruct.bSilent = true;
-    m_procStruct.docontinue = true;
     m_procStruct.title = LOC(MDelFile);
-
+    m_procStruct.bIsDelete = true;
+    m_procStruct.bSilent = false;
+    m_procStruct.nTotalFiles = ItemsNumber;
     m_procStruct.Unlock();
   }
 
   DWORD threadID = 0;
   HANDLE hThread = CreateThread(nullptr, 0, ProcessThreadProc, this, 0, &threadID);
 
-  BOOL bOk = DelItems(PanelItem, ItemsNumber, noPromt, noPromt, bSilent) ? TRUE : FALSE;
+  auto result = DelItems(PanelItem, ItemsNumber, noPromt, noPromt, bSilent);
 
-  if (m_procStruct.Lock())
-  {
-    m_procStruct.docontinue = false;
-    m_procStruct.Unlock();
-  }
-
+  m_bForceBreak = true;
   CloseHandle(hThread);
+  taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
 
-  return bOk;
+  return result;
 }
 
-int fardroid::PutFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString SrcPath, BOOL Move, int OpMode)
+int fardroid::PutFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString SrcPath, BOOL Move, OPERATION_MODES OpMode)
 {
   CString srcdir = SrcPath;
-
   CString path = m_currentPath;
+  AddBeginSlash(path);
 
   bool bSilent = IS_FLAG(OpMode, OPM_SILENT) || IS_FLAG(OpMode, OPM_FIND);
   bool noPromt = bSilent;
 
-  if (IS_FLAG(OpMode, OPM_VIEW))
+  if (IS_FLAG(OpMode, OPM_VIEW) || IS_FLAG(OpMode, OPM_QUICKVIEW) || IS_FLAG(OpMode, OPM_EDIT))
     bSilent = false;
 
-  if (!IS_FLAG(OpMode, OPM_QUICKVIEW) &&
-    !IS_FLAG(OpMode, OPM_VIEW) &&
-    !bSilent)
-  {
-    if (!CopyFilesDialog(path, Move))
-      return FALSE;
-  }
-
-  AddBeginSlash(path);
-  AddEndSlash(path, true);
-  AddEndSlash(srcdir);
-
+  m_bForceBreak = false;
   if (m_procStruct.Lock())
   {
-    m_procStruct.bSilent = true;
-    m_procStruct.docontinue = true;
-    m_procStruct.title = LOC(MPutFile);
+    m_procStruct.title = Move ? LOC(MMoveFile) : LOC(MGetFile);
+    m_procStruct.bIsDelete = false;
+    m_procStruct.bSilent = false;
     m_procStruct.nTransmitted = 0;
+    m_procStruct.nTotalTransmitted = 0;
     m_procStruct.nFileSize = 0;
-
+    m_procStruct.nTotalFileSize = 0;
     m_procStruct.Unlock();
   }
 
   DWORD threadID = 0;
   HANDLE hThread = CreateThread(nullptr, 0, ProcessThreadProc, this, 0, &threadID);
 
-  BOOL bOk = PutItems(PanelItem, ItemsNumber, srcdir, path, noPromt, noPromt, bSilent) ? TRUE : FALSE;
+  auto result = PutItems(PanelItem, ItemsNumber, srcdir, path, noPromt, noPromt, bSilent);
 
-  if (m_procStruct.Lock())
-  {
-    m_procStruct.docontinue = false;
-    m_procStruct.Unlock();
-  }
-
+  m_bForceBreak = true;
   CloseHandle(hThread);
-  return bOk;
+  taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
+
+  return result;
 }
 
-int fardroid::CreateDir(CString& DestPath, int OpMode)
+int fardroid::CreateDir(CString& DestPath, OPERATION_MODES OpMode)
 {
   CString path;
   CString srcdir = m_currentPath;
@@ -1990,15 +2150,13 @@ int fardroid::CreateDir(CString& DestPath, int OpMode)
 
   bool bSilent = IS_FLAG(OpMode, OPM_SILENT) || IS_FLAG(OpMode, OPM_FIND);
 
-  if (IS_FLAG(OpMode, OPM_VIEW))
+  if (IS_FLAG(OpMode, OPM_VIEW) || IS_FLAG(OpMode, OPM_QUICKVIEW) || IS_FLAG(OpMode, OPM_EDIT))
     bSilent = false;
 
-  if (!IS_FLAG(OpMode, OPM_QUICKVIEW) &&
-    !IS_FLAG(OpMode, OPM_VIEW) &&
-    !bSilent)
+  if (!bSilent && !IS_FLAG(OpMode, OPM_QUICKVIEW) && !IS_FLAG(OpMode, OPM_VIEW) && !IS_FLAG(OpMode, OPM_EDIT))
   {
     if (!CreateDirDialog(path))
-      return -1;
+      return ABORT;
 
     DestPath = path;
   }
@@ -2024,8 +2182,8 @@ int fardroid::Rename(CString& DestPath)
   AddEndSlash(srcdir, true);
 
   CString src = srcdir + DestPath;
-  if (!CopyFilesDialog(DestPath, 2))
-    return -1;
+  if (!CopyFilesDialog(DestPath, LOC(MRenameFile)))
+    return ABORT;
   CString dst = srcdir + DestPath;
 
   CString sRes;

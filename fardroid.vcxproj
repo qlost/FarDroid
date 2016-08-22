@@ -248,6 +248,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="stuffs.cpp" />
+    <ClCompile Include="taskbarIcon.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Config.h" />
@@ -260,6 +261,7 @@
     <ClInclude Include="resource.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="stuffs.h" />
+    <ClInclude Include="taskbarIcon.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="fardroid.rc" />

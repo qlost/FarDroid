@@ -3,6 +3,12 @@
  "*" - changed
  "!" - warning
 
+ 24.08.16 v2.1.0
+  + New Copy/Move Progress 
+  + Taskbar Progress
+  - Fix Move operation
+  - Fix Cancel Copy/Move
+
  17.08.16 v2.0.1
   + Support XP x86
   - Improve Copy Progress

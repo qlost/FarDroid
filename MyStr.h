@@ -18,6 +18,7 @@ int  utf8ToUnicode ( const char* lpMultiByteStr, WCHAR* lpWideCharStr, int cmbCh
 
 CString WtoUTF8(LPCTSTR str);
 CString UTF8toW(LPCTSTR str);
+CString FormatNumber(int str);
 
 void DelEndSlash(CString & str, bool bRev = false);
 void AddEndSlash(CString & str, bool bRev = false);

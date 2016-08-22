@@ -34,10 +34,12 @@ enum
 
 	MADBExecError,
 
-	MProcessed,
 	MFrom,
 	MTo,
   MProgress,
+  MTotal,
+  MFiles,
+  MBytes,
 
 	MGetFile,
 	MPutFile,
@@ -45,7 +47,8 @@ enum
 	MCreateDir,
   MMoveFile,
   MRenameFile,
-
+  MScanDirectory,
+  
 	MBreakWarn,
 
 	MDirName,

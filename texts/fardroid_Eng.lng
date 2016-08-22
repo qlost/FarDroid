@@ -2,13 +2,13 @@
 
 "FARdroid"
 
-"Ok"
-"Cancel"
-"Yes"
-"No"
-"Always Yes"
-"Always No"
-"Retry"
+"&Ok"
+"&Cancel"
+"&Yes"
+"&No"
+"&Always Yes"
+"A&lways No"
+"&Retry"
 
 "FARdroid: Settings"
 "Add FARdroid label to &disk menu"
@@ -32,10 +32,12 @@
 
 "ADB Execute Error"
 
-"Processed:"
 "From:"
 "To:"
-"Time: %s Remaining: %s %s"
+"Time: %s    Remaining: %s %s"
+"Total"
+"Files:"
+"Bytes:"
 
 "Copy"
 "Copy to device"
@@ -43,6 +45,7 @@
 "Creating directory on device"
 "Move"
 "Rename"
+"Scanning directory"
 
 "Break operation?"
 
@@ -50,7 +53,7 @@
 "Copying Selected Items"
 "Enter Destination Directory:"
 "Enter File Name:"
-"File\n%s\nalready exists! Overwrite it?"
+"File already exists. \n%s\n Overwrite it?"
 "Operation error. Try repeat?"
 "Deleting"
 "Are you sure?"

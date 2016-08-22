@@ -15,6 +15,8 @@
 #define 	S_IWRITE   S_IWUSR
 #define 	S_IREAD   S_IRUSR
 
+#define   ABORT     -1
+
 enum
 {
 	CodePage_Unicode,
@@ -32,10 +34,10 @@ int  rnd(int maxRnd);
 bool IsDevice(DWORD attr);
 bool IsLink(DWORD attr);
 bool IsDirectory(DWORD attr);
+bool IsDirectory(uintptr_t attr);
 bool IsDirectory(bool another, bool selected, int i);
 bool IsDirectory( LPCTSTR sPath);
 void PrepareInfoLine(const wchar_t * str, void *ansi, CString& line, CString format = _T("%s%s\n"));
-bool CheckAndConvertPath(bool another, CString & res, bool selected, int i);
 void PrepareInfoLineDate(const wchar_t * str, time_t * time, CString& line, bool b64);
 
 FILETIME UnixTimeToFileTime(time_t time);

@@ -16,6 +16,7 @@
 
 #define SWAP_WORD(x)  x = (x>>8) | (x<<8)
 #define SWAP_DWORD(x)  x = (x>>24) | ((x<<8) & 0x00FF0000) | ((x>>8) & 0x0000FF00) | (x<<24)
+#include "taskbarIcon.h"
 
 typedef union {
 	unsigned id;
@@ -119,22 +120,39 @@ struct CFileRecord
 
 typedef CSimpleArrayEx<CFileRecord*, CFileRecord*> CFileRecords;
 
+struct CCopyRecord
+{
+  CString src;
+  CString dst;
+  UINT64	size;
+};
+
+typedef CSimpleArrayEx<CCopyRecord*, CCopyRecord*> CCopyRecords;
+
 struct ProcessStruct
 {
-	CString from;
+  HANDLE mutex;
+
+  bool bSilent;
+  bool bPrevState;
+  bool bIsDelete;
+
+  CString from;
 	CString to;
 	CString title;
-	CString spos;
-	bool bSilent;
-	bool bPrevState;
-	HANDLE mutex;
-	bool docontinue;
 
-  DWORD nFileSize;
-  DWORD nTransmitted;
+  int nPosition;
+  int nTotalFiles;
+
+  UINT64 nFileSize;
+  UINT64 nTotalFileSize;
+  UINT64 nTransmitted;
+  UINT64 nTotalTransmitted;
+
   DWORD nStartTime;
+  DWORD nTotalStartTime;
 
-	ProcessStruct(): bSilent(false), bPrevState(false), docontinue(true), nFileSize(0), nTransmitted(0), nStartTime(0)
+	ProcessStruct(): bSilent(false), bPrevState(false), bIsDelete(false), nPosition(0), nTotalFiles(0), nFileSize(0), nTotalFileSize(0), nTransmitted(0), nTotalTransmitted(0), nStartTime(0), nTotalStartTime(0)
 	{
 	  mutex = CreateMutex(nullptr, FALSE, nullptr);
 	}
@@ -206,7 +224,8 @@ private:
 	CString m_currentPath;
   CString m_currentDevice;
   void ShowADBExecError(CString err, bool bSilent);
-
+  static void DrawProgress(CString& sProgress, int size, double pc);
+  static void DrawProgress(CString& sProgress, int size, LPCTSTR current, LPCTSTR total);
   static SOCKET	CreateADBSocket();
 	SOCKET	PrepareADBSocket();
   static bool		SendADBPacket(SOCKET sockADB, void * packet, int size);
@@ -221,8 +240,10 @@ private:
   static bool		ADBReadMode(SOCKET sockADB, LPCTSTR path, int &mode);
 	BOOL		ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
 	bool		ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString &sRes);
-	BOOL		ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
+  void ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
+  BOOL		ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
 	bool		ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
+  void ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
   static void		CloseADBSocket(SOCKET sockADB);
 
 	bool DeviceTest();
@@ -246,9 +267,9 @@ private:
 	bool		CopyFileTo(const CString& src, const CString& dst, bool &noPromt, bool &ansYes, bool bSilent);
 	bool		DeleteFileFrom(const CString& src, bool &noPromt, bool &ansYes, bool bSilent);
 
-	bool GetItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool &noPromt, bool &ansYes, bool bSilent);
-	bool PutItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool &noPromt, bool &ansYes, bool bSilent);
-	bool DelItems(PluginPanelItem *PanelItem, int ItemsNumber, bool &noPromt, bool &ansYes, bool bSilent);
+	int GetItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
+	int PutItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool &noPromt, bool &ansYes, bool bSilent);
+	int DelItems(PluginPanelItem *PanelItem, int ItemsNumber, bool &noPromt, bool &ansYes, bool bSilent);
 
 	void ParseMemoryInfo(CString s);
 	void GetMemoryInfo();
@@ -263,6 +284,7 @@ private:
 	bool GetFrameBuffer(LPCTSTR sDest);
 public:
 	bool m_bForceBreak;
+  TaskBarIcon taskbarIcon;
 
 	CString fileUnderCursor;
 	CString panelTitle;
@@ -273,32 +295,33 @@ public:
 	HANDLE	OpenFromMainMenu();
 	HANDLE	OpenFromCommandLine(const CString &cmd);
 
-	int			ChangeDir(LPCTSTR sDir, int OpMode = 0);
+	int			ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode = OPM_NONE);
 
   static bool		DeleteFilesDialog();
   static bool		CreateDirDialog(CString &dest);
-  static bool		CopyFilesDialog(CString &dest, int move);
+  static bool		CopyFilesDialog(CString &dest, const wchar_t* title);
   static CString GetDeviceName(CString & device);
   bool    DeviceMenu(CString &text);
   static void SetItemText(FarMenuItem* item, const CString& text);
   static bool		DeleteFile(const CString& name, bool bSilent);
   static void		DeleteRecords(CFileRecords & recs);
-	void		PreparePanel(struct OpenPanelInfo *Info);
+  static void DeleteRecords(CCopyRecords& recs);
+  void		PreparePanel(struct OpenPanelInfo *Info);
 	void		ChangePermissionsDialog();
 
-	int GetFindData(struct PluginPanelItem **pPanelItem,size_t *pItemsNumber,int OpMode);
+	int GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode);
   static void FreeFindData(struct PluginPanelItem *PanelItem,int ItemsNumber);
-	int GetFiles(PluginPanelItem *PanelItem, int ItemsNumber, CString &DestPath,	BOOL Move, int OpMode);
-	int PutFiles(PluginPanelItem *PanelItem, int ItemsNumber, CString SrcPath,	BOOL Move, int OpMode);
-	int DeleteFiles(PluginPanelItem *PanelItem, int ItemsNumber, int OpMode);
-	int CreateDir( CString &DestPath, int OpMode );
+	int GetFiles(PluginPanelItem *PanelItem, int ItemsNumber, CString &DestPath, BOOL Move, OPERATION_MODES OpMode);
+	int PutFiles(PluginPanelItem *PanelItem, int ItemsNumber, CString SrcPath, BOOL Move, OPERATION_MODES OpMode);
+	int DeleteFiles(PluginPanelItem *PanelItem, int ItemsNumber, OPERATION_MODES OpMode);
+	int CreateDir(CString &DestPath, OPERATION_MODES OpMode);
   int Rename(CString& DestPath);
   void Reread();
 
-	bool ShowProgressMessage() const;
+	void ShowProgressMessage();
   static CString FormatSpeed(int cb);
   static CString FormatTime(int time);
-  bool BreakProcessDialog(LPCTSTR sTitle);
+  bool BreakProcessDialog();
 	int CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
   static void ShowError(CString& error);
   int FileExistsDialog(LPCTSTR sName);

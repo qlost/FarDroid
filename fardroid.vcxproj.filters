@@ -39,6 +39,9 @@
     <ClCompile Include="stuffs.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="taskbarIcon.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Config.h">
@@ -69,6 +72,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="stuffs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="taskbarIcon.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
