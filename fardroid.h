@@ -263,13 +263,13 @@ private:
 	BOOL		ReadFileList(CString & sFileList, CFileRecords & files) const;
 	BOOL		OpenPanel(LPCTSTR sPath);
 
-	bool		CopyFileFrom(const CString& src, const CString& dst, bool &noPromt, bool &ansYes, bool bSilent);
-	bool		CopyFileTo(const CString& src, const CString& dst, bool &noPromt, bool &ansYes, bool bSilent);
-	bool		DeleteFileFrom(const CString& src, bool &noPromt, bool &ansYes, bool bSilent);
+	bool		CopyFileFrom(const CString& src, const CString& dst, bool bSilent);
+	bool		CopyFileTo(const CString& src, const CString& dst, bool bSilent);
+	bool		DeleteFileFrom(const CString& src, bool bSilent);
 
 	int GetItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
-	int PutItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool &noPromt, bool &ansYes, bool bSilent);
-	int DelItems(PluginPanelItem *PanelItem, int ItemsNumber, bool &noPromt, bool &ansYes, bool bSilent);
+	int PutItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
+	int DelItems(PluginPanelItem *PanelItem, int ItemsNumber, bool noPromt, bool ansYes, bool bSilent);
 
 	void ParseMemoryInfo(CString s);
 	void GetMemoryInfo();

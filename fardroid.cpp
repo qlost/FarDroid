@@ -332,7 +332,7 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       }
     }
 
-    if (!CopyFileFrom(files[i]->src, files[i]->dst, noPromt, ansYes, bSilent))
+    if (!CopyFileFrom(files[i]->src, files[i]->dst, bSilent))
     {
       result = FALSE;
       break;
@@ -347,7 +347,7 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
   return result;
 }
 
-int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool& noPromt, bool& ansYes, bool bSilent)
+int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent)
 {
   CString sdir = srcdir;
   CString ddir = dstdir;
@@ -409,7 +409,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       m_procStruct.Unlock();
     }
 
-    if (!CopyFileTo(files[i]->src, files[i]->dst, noPromt, ansYes, bSilent))
+    if (!CopyFileTo(files[i]->src, files[i]->dst, bSilent))
     {
       result = FALSE;
       break;
@@ -449,7 +449,7 @@ deltry:
   return true;
 }
 
-bool fardroid::CopyFileFrom(const CString& src, const CString& dst, bool& noPromt, bool& ansYes, bool bSilent)
+bool fardroid::CopyFileFrom(const CString& src, const CString& dst, bool bSilent)
 {
 repeatcopy:
   // "adb.exe pull" в принципе не может читать файл с устройства с правами Superuser.
@@ -460,7 +460,6 @@ repeatcopy:
   // для простых пользователей. А затем вернем оригинальные права доступа к файлу.
   // Этот работает только в Native Mode с включенным Superuser, при включенном ExtendedAccess
 
-  CString sRes;
   CString old_permissions;
   bool UseChmod = (conf.WorkMode == WORKMODE_NATIVE && conf.UseSU && conf.UseExtendedAccess);
   if (UseChmod)
@@ -479,6 +478,7 @@ repeatcopy:
   }
 
   // Читаем файл
+  CString sRes;
   BOOL res = ADB_pull(src, dst, sRes, bSilent);
 
   // Восстановим оригинальные права на файл
@@ -519,9 +519,8 @@ repeatcopy:
   return true;
 }
 
-bool fardroid::CopyFileTo(const CString& src, const CString& dst, bool& noPromt, bool& ansYes, bool bSilent)
+bool fardroid::CopyFileTo(const CString& src, const CString& dst, bool bSilent)
 {
-  CString sRes;
 repeatcopy:
   // "adb.exe push" в принципе не может перезаписывать файл в устройстве с правами Superuser.
   // Если у файла не установлены прав доступа на запись для простых пользователей,
@@ -549,6 +548,7 @@ repeatcopy:
   }
 
   // Запись файла
+  CString sRes;
   BOOL res = ADB_push(src, dst, sRes, bSilent);
 
   // Восстановим оригинальные права на файл
@@ -589,7 +589,7 @@ repeatcopy:
   return true;
 }
 
-bool fardroid::DeleteFileFrom(const CString& src, bool& noPromt, bool& ansYes, bool bSilent)
+bool fardroid::DeleteFileFrom(const CString& src, bool bSilent)
 {
   CString sRes;
   BOOL res = ADB_rm(src, sRes, bSilent);
@@ -2035,7 +2035,7 @@ CString fardroid::FormatTime(int time)
   return res;
 }
 
-int fardroid::DelItems(PluginPanelItem* PanelItem, int ItemsNumber, bool& noPromt, bool& ansYes, bool bSilent)
+int fardroid::DelItems(PluginPanelItem* PanelItem, int ItemsNumber, bool noPromt, bool ansYes, bool bSilent)
 {
   CString sdir = m_currentPath;
   AddBeginSlash(sdir);
@@ -2056,7 +2056,7 @@ int fardroid::DelItems(PluginPanelItem* PanelItem, int ItemsNumber, bool& noProm
       m_procStruct.Unlock();
     }
 
-    if (!DeleteFileFrom(sname, noPromt, ansYes, bSilent))
+    if (!DeleteFileFrom(sname, bSilent))
     {
       result = FALSE;
       break;
