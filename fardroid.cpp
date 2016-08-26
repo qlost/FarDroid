@@ -772,11 +772,11 @@ int fardroid::UpdateInfoLines()
 
 void fardroid::PreparePanel(OpenPanelInfo* Info)
 {
-  panelTitle.Format(_T("%s/%s "), m_currentDevice, m_currentPath);
+  panelTitle.Format(_T("%s/%s"), m_currentDevice, m_currentPath);
 
   Info->HostFile = _C(fileUnderCursor);
   Info->PanelTitle = _C(panelTitle);
-  Info->CurDir = _C(m_currentPath);
+  Info->CurDir = _C(panelTitle);
 
   if (InfoPanelLineArray)
   {
