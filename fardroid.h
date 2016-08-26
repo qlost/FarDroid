@@ -269,7 +269,7 @@ private:
 	BOOL		OpenPanel(LPCTSTR sPath);
 
 	bool		CopyFileFrom(const CString& src, const CString& dst, bool bSilent);
-	bool		CopyFileTo(const CString& src, const CString& dst, bool bSilent);
+	bool		CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent);
 	bool		DeleteFileFrom(const CString& src, bool bSilent);
 
 	int GetItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);

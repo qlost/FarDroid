@@ -53,7 +53,7 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2, 2, 0, 0
+ FILEVERSION 2, 2, 1, 0
  PRODUCTVERSION 2, 0, 0, 0
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
@@ -70,11 +70,11 @@ BEGIN
         BLOCK "041904b0"
         BEGIN
             VALUE "FileDescription", "FARDroid FAR Plugin"
-            VALUE "FileVersion", "2, 2, 0, 0\0"
+            VALUE "FileVersion", "2, 2, 1, 0\0"
             VALUE "InternalName", "fardroid"
             VALUE "LegalCopyright", "dimfish 2016, Vladimir Kubyshev 2010"
             VALUE "OriginalFilename", "fardroid.dll"
-            VALUE "ProductName", " fardroid FAR Plugin"
+            VALUE "ProductName", " FARDroid FAR Plugin"
             VALUE "ProductVersion", "2, 0, 0, 0"
         END
     END

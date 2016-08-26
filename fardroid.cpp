@@ -404,7 +404,34 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       m_procStruct.Unlock();
     }
 
-    if (!CopyFileTo(files[i]->src, files[i]->dst, bSilent))
+    CString permissions = GetPermissionsFile(files[i]->dst);
+    if (!permissions.IsEmpty())
+    {
+      if (!noPromt)
+      {
+        auto exResult = FileExistsDialog(files[i]->dst);
+        if (exResult < 0 || exResult > 3)
+        {
+          m_bForceBreak = true;
+          break;
+        }
+
+        ansYes = exResult == 0 || exResult == 2;
+        noPromt = exResult == 2 || exResult == 3;
+      }
+
+      if (!ansYes)
+      {
+        if (m_procStruct.Lock())
+        {
+          m_procStruct.nTotalFileSize -= m_procStruct.nFileSize;
+          m_procStruct.Unlock();
+        }
+        continue;
+      }
+    }
+
+    if (!CopyFileTo(files[i]->src, files[i]->dst, permissions, bSilent))
     {
       result = FALSE;
       break;
@@ -514,7 +541,7 @@ repeatcopy:
   return true;
 }
 
-bool fardroid::CopyFileTo(const CString& src, const CString& dst, bool bSilent)
+bool fardroid::CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent)
 {
 repeatcopy:
   // "adb.exe push" в принципе не может перезаписывать файл в устройстве с правами Superuser.
@@ -525,12 +552,10 @@ repeatcopy:
   // для простых пользователей. А затем вернем оригинальные права доступа к файлу.
   // Этот работает только в Native Mode с включенным Superuser, при включенном ExtendedAccess
 
-  CString old_permissions;
   bool UseChmod = (conf.WorkMode == WORKMODE_NATIVE && conf.UseSU && conf.UseExtendedAccess);
   if (UseChmod)
   {
     UseChmod = false;
-    old_permissions = GetPermissionsFile(dst);
     // Проверяем, имеет ли уже файл разрешение w для группы Others
     if (!old_permissions.IsEmpty() && old_permissions.GetAt(old_permissions.GetLength() - 2) != _T('w'))
     {

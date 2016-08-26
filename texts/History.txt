@@ -3,6 +3,9 @@
  "*" - changed
  "!" - warning
 
+ 26.08.16 v2.2.1
+  + Overwrite dialog for Copy/Move to Device
+
  26.08.16 v2.2.0
   + ALT+F10 Screenshot to Clipboard 
 
