@@ -3,6 +3,9 @@
  "*" - changed
  "!" - warning
 
+ 26.08.16 v2.2.0
+  + ALT+F10 Screenshot to Clipboard 
+
  24.08.16 v2.1.0
   + New Copy/Move Progress 
   + Taskbar Progress

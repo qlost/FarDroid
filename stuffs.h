@@ -50,7 +50,6 @@ CString SystemTimeToString(LPSYSTEMTIME pst);
 DWORD StringToAttr( CString sAttr );
 DWORD ModeToAttr( int mode );
 
-bool WriteBMP(LPCTSTR sPath, byte * buffer, int buffersize, int w, int h, int bpp);
 BOOL DeletePanelItems(CString &sPath, struct PluginPanelItem *PanelItem,int ItemsNumber);
 
 #ifdef USELOGGING

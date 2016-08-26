@@ -17,6 +17,7 @@
 #define SWAP_WORD(x)  x = (x>>8) | (x<<8)
 #define SWAP_DWORD(x)  x = (x>>24) | ((x<<8) & 0x00FF0000) | ((x>>8) & 0x0000FF00) | (x<<24)
 #include "taskbarIcon.h"
+#include "framebuffer.h"
 
 typedef union {
 	unsigned id;
@@ -129,13 +130,16 @@ struct CCopyRecord
 
 typedef CSimpleArrayEx<CCopyRecord*, CCopyRecord*> CCopyRecords;
 
+enum ProcessType { PS_COPY, PS_MOVE, PS_DELETE, PS_FB };
+
 struct ProcessStruct
 {
   HANDLE mutex;
 
+  ProcessType pType;
+
   bool bSilent;
   bool bPrevState;
-  bool bIsDelete;
 
   CString from;
 	CString to;
@@ -152,7 +156,7 @@ struct ProcessStruct
   DWORD nStartTime;
   DWORD nTotalStartTime;
 
-	ProcessStruct(): bSilent(false), bPrevState(false), bIsDelete(false), nPosition(0), nTotalFiles(0), nFileSize(0), nTotalFileSize(0), nTransmitted(0), nTotalTransmitted(0), nStartTime(0), nTotalStartTime(0)
+	ProcessStruct(): pType(), bSilent(false), bPrevState(false), nPosition(0), nTotalFiles(0), nFileSize(0), nTotalFileSize(0), nTransmitted(0), nTotalTransmitted(0), nStartTime(0), nTotalStartTime(0)
 	{
 	  mutex = CreateMutex(nullptr, FALSE, nullptr);
 	}
@@ -234,6 +238,7 @@ private:
   static bool		CheckADBResponse(SOCKET sockADB);
   static bool		ReadADBSocket(SOCKET sockADB, char * buf, int bufSize);
 	BOOL		ADBShellExecute(LPCTSTR sCMD, CString & sRes, bool bSilent);
+  int ADBReadFramebuffer(struct fb* fb);
   static void		ADBSyncQuit(SOCKET sockADB);
 	bool		ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t & mtime);
 	bool		ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, int mode);
@@ -279,9 +284,6 @@ private:
 	CString GetPermissionsFile(const CString& FullFileName);
   static CString PermissionsFileToMask(CString Permission);
 	bool SetPermissionsFile(const CString& FullFileName, const CString& PermissionsFile);
-
-
-	bool GetFrameBuffer(LPCTSTR sDest);
 public:
 	bool m_bForceBreak;
   TaskBarIcon taskbarIcon;
@@ -316,6 +318,7 @@ public:
 	int DeleteFiles(PluginPanelItem *PanelItem, int ItemsNumber, OPERATION_MODES OpMode);
 	int CreateDir(CString &DestPath, OPERATION_MODES OpMode);
   int Rename(CString& DestPath);
+  int GetFramebuffer();
   void Reread();
 
 	void ShowProgressMessage();

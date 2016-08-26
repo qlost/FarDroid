@@ -2,6 +2,7 @@
 #include "fardroid.h"
 #include <vector>
 #include <ctime>
+#include "framebuffer.h"
 
 DWORD WINAPI ProcessThreadProc(LPVOID lpParam)
 {
@@ -217,12 +218,6 @@ HANDLE fardroid::OpenFromCommandLine(const CString& cmd)
     par.MakeLower();
 
     ADB_mount(fs, par == _T("rw"), sRes, false);
-    return INVALID_HANDLE_VALUE;
-  }
-
-  if (havefile && ExistsParam(params, _T("fb")))
-  {
-    GetFrameBuffer(dir);
     return INVALID_HANDLE_VALUE;
   }
 
@@ -702,7 +697,7 @@ int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& Des
   if (m_procStruct.Lock())
   {
     m_procStruct.title = Move ? LOC(MMoveFile) : LOC(MGetFile);
-    m_procStruct.bIsDelete = false;
+    m_procStruct.pType = Move ? PS_MOVE : PS_COPY;
     m_procStruct.bSilent = false;
     m_procStruct.nTransmitted = 0;
     m_procStruct.nTotalTransmitted = 0;
@@ -1923,15 +1918,7 @@ void fardroid::ShowProgressMessage()
     }
 
     time = GetTickCount();
-
-    if (m_procStruct.bIsDelete)
-    {
-      CString sProc;
-      sProc.Format(_T("%s %d / %d"), LOC(MFiles), m_procStruct.nPosition, m_procStruct.nTotalFiles);
-      const farStr* MsgItems[] = { m_procStruct.title, LOC(MFrom), m_procStruct.from, _T("\x1"), sProc };
-      ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
-    } 
-    else
+    if (m_procStruct.pType == PS_COPY || m_procStruct.pType == PS_MOVE)
     {
       CString mFrom = m_procStruct.nTotalFileSize == 0 ? LOC(MScanDirectory) : LOC(MFrom);
       CString mTo = m_procStruct.nTotalFileSize == 0 ? _T("") : LOC(MTo);
@@ -1973,16 +1960,44 @@ void fardroid::ShowProgressMessage()
       static CString sProgress;
       DrawProgress(sProgress, size, pc);
 
-      if (m_procStruct.nTotalFiles > 1) {
+      if (m_procStruct.nTotalFiles > 1)
+      {
         static CString sTotalProgress;
         DrawProgress(sTotalProgress, size, tpc);
         const farStr* MsgItems[] = { m_procStruct.title, mFrom, sFrom, mTo, sTo, sProgress, mTotal, sFiles, sBytes, sTotalProgress, _T("\x1"), sInfo };
         ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
-      } else{
+      }
+      else
+      {
         const farStr* MsgItems[] = { m_procStruct.title, mFrom, sFrom, mTo, sTo, sProgress, mTotal, sFiles, sBytes, _T("\x1"), sInfo };
         ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
       }
       taskbarIcon.SetState(taskbarIcon.S_PROGRESS, tpc);
+    }
+    else if (m_procStruct.pType == PS_DELETE)
+    {
+      int size = 50;
+
+      double pc = static_cast<double>(m_procStruct.nPosition) / static_cast<double>(m_procStruct.nTotalFiles);
+      static CString sProgress;
+      DrawProgress(sProgress, size, pc);
+
+      const farStr* MsgItems[] = { m_procStruct.title, m_procStruct.from, sProgress };
+      ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
+      taskbarIcon.SetState(taskbarIcon.S_PROGRESS, pc);
+    }
+    else if (m_procStruct.pType == PS_FB)
+    {
+      CString mFrom = LOC(MScreenshotComplete);
+      int size =  mFrom.GetLength() - 5;
+
+      double pc = m_procStruct.nFileSize > 0 ? static_cast<double>(m_procStruct.nTransmitted) / static_cast<double>(m_procStruct.nFileSize) : 0;
+      static CString sProgress;
+      DrawProgress(sProgress, size, pc);
+
+      const farStr* MsgItems[] = { m_procStruct.title, sProgress };
+      ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
+      taskbarIcon.SetState(taskbarIcon.S_PROGRESS, pc);
     }
 
     m_procStruct.Unlock();
@@ -2086,7 +2101,7 @@ int fardroid::DeleteFiles(PluginPanelItem* PanelItem, int ItemsNumber, OPERATION
   if (m_procStruct.Lock())
   {
     m_procStruct.title = LOC(MDelFile);
-    m_procStruct.bIsDelete = true;
+    m_procStruct.pType = PS_DELETE;
     m_procStruct.bSilent = false;
     m_procStruct.nTotalFiles = ItemsNumber;
     m_procStruct.Unlock();
@@ -2120,7 +2135,7 @@ int fardroid::PutFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString SrcP
   if (m_procStruct.Lock())
   {
     m_procStruct.title = Move ? LOC(MMoveFile) : LOC(MGetFile);
-    m_procStruct.bIsDelete = false;
+    m_procStruct.pType = Move ? PS_MOVE : PS_COPY;
     m_procStruct.bSilent = false;
     m_procStruct.nTransmitted = 0;
     m_procStruct.nTotalTransmitted = 0;
@@ -2197,6 +2212,46 @@ int fardroid::Rename(CString& DestPath)
   }
   return TRUE;
 }
+
+int fardroid::GetFramebuffer()
+{
+  m_bForceBreak = false;
+  if (m_procStruct.Lock())
+  {
+    m_procStruct.title = LOC(MScreenshot);
+    m_procStruct.pType = PS_FB;
+    m_procStruct.bSilent = false;
+    m_procStruct.nTransmitted = 0;
+    m_procStruct.nTotalFiles = 1;
+    m_procStruct.Unlock();
+  }
+
+  DWORD threadID = 0;
+  HANDLE hThread = CreateThread(nullptr, 0, ProcessThreadProc, this, 0, &threadID);
+
+  fb fb;
+  auto result = ADBReadFramebuffer(&fb);
+  if (result == TRUE)
+  {
+    result = SaveToClipboard(&fb);
+  }
+
+  m_bForceBreak = true;
+  CloseHandle(hThread);
+  taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
+
+  if (result == TRUE)
+  {
+    CString msg;
+    msg.Format(L"%s\n%s\n%s", LOC(MScreenshot), LOC(MScreenshotComplete), LOC(MOk));
+    ShowMessage(msg, 1, nullptr);
+  }
+
+  if (fb.data) my_free(fb.data);
+  return result;
+}
+
+
 
 CFileRecord* fardroid::GetFileRecord(LPCTSTR sFileName)
 {
@@ -2453,9 +2508,7 @@ tryagain:
         {
           auto len = ReadADBPacket(sock, buf, 4096);
           if (len <= 0)
-          {
             break;
-          }
 
           buf[len] = 0;
           devices += buf;
@@ -2465,29 +2518,24 @@ tryagain:
         sock = 0;
 
         if (DeviceMenu(devices))
-        {
           goto tryagain;
-        }
-        lastError = ERROR_CONTROL_C_EXIT;
+
+        lastError = ERROR_DEV_NOT_EXIST;
       }
       else
       {
-        lastError = ERROR_DEV_NOT_EXIST;
-        ShowADBExecError(LOC(MDeviceNotFound), false);
-
         CloseADBSocket(sock);
         sock = 0;
+        lastError = ERROR_DEV_NOT_EXIST;
       }
     }
     else
     {
       if (!SendADBCommand(sock, _T("host:transport:") + m_currentDevice))
       {
-        lastError = ERROR_DEV_NOT_EXIST;
-        ShowADBExecError(LOC(MDeviceNotFound), false);
-
         CloseADBSocket(sock);
         sock = 0;
+        lastError = ERROR_DEV_NOT_EXIST;
       }
     }
   }
@@ -2497,7 +2545,8 @@ tryagain:
     {
       tryCnt++;
       CString adb = conf.ADBPath;
-      AddEndSlash(adb);
+      if (adb.GetLength() > 0)
+        AddEndSlash(adb);
       adb += _T("adb.exe");
       HINSTANCE hInstance = ShellExecute(nullptr, nullptr, adb, _T("start-server"), nullptr, SW_HIDE);
       if (hInstance > reinterpret_cast<HINSTANCE>(32))
@@ -2506,9 +2555,12 @@ tryagain:
     else
     {
       lastError = ERROR_DEV_NOT_EXIST;
-      ShowADBExecError(LOC(MDeviceNotFound), false);
     }
   }
+
+  if (lastError == ERROR_DEV_NOT_EXIST)
+    ShowADBExecError(LOC(MDeviceNotFound), false);
+
   return sock;
 }
 
@@ -2584,42 +2636,61 @@ BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent)
   return bOK;
 }
 
-bool fardroid::GetFrameBuffer(LPCTSTR sDest)
+int fardroid::ADBReadFramebuffer(struct fb* fb)
 {
-  SOCKET sockADB = PrepareADBSocket();
+  auto result = TRUE;
 
+  SOCKET sockADB = PrepareADBSocket();
   if (SendADBCommand(sockADB, _T("framebuffer:")))
   {
-    int fbinfo[13];
-    if (ReadADBPacket(sockADB, fbinfo, sizeof(fbinfo)) <= 0)
+    auto buffer = new char[sizeof(struct fbinfo)];
+    if (ReadADBPacket(sockADB, buffer, sizeof(struct fbinfo)) <= 0)
     {
       CloseADBSocket(sockADB);
       return false;
     }
 
-    // int version = fbinfo[0];
-    int bpp = fbinfo[1];
-    int size = fbinfo[2];
-    int width = fbinfo[3];
-    int height = fbinfo[4];
+    const struct fbinfo* fbinfo = reinterpret_cast<struct fbinfo*>(buffer);
+    memcpy(fb, &fbinfo->bpp, sizeof(struct fbinfo) - 4);
 
-    // Send nudge.
-    char nudge[1] = {0};
-    SendADBPacket(sockADB, nudge, 1);
-    byte* buffer = new byte[size];
-    if (ReadADBPacket(sockADB, buffer, size) <= 0)
+    if (m_procStruct.Lock())
     {
-      delete [] buffer;
-      CloseADBSocket(sockADB);
-      return false;
+      m_procStruct.nFileSize = fb->size;
+      m_procStruct.Unlock();
     }
 
-    WriteBMP(sDest, buffer, size, width, height, bpp);
-    delete [] buffer;
+    fb->data = my_malloc(fb->size);
+    int size = fb->size;
+    auto position = static_cast<char*>(fb->data);
+    int readed;
+    while (size > 0)
+    {
+      readed = ReadADBPacket(sockADB, position, min(size, SYNC_DATA_MAX));
+      if (readed == 0) break;
+
+      position += readed;
+      size -= readed;
+
+      if (m_procStruct.Lock())
+      {
+        m_procStruct.nTransmitted += readed;
+        m_procStruct.Unlock();
+      }
+
+      if (m_bForceBreak)
+      {
+        result = ABORT;
+        break;
+      }
+    }
+  }
+  else
+  {
+    result = FALSE;
   }
 
   CloseADBSocket(sockADB);
-  return false;
+  return result;
 }
 
 BOOL fardroid::ADB_findmount(LPCTSTR sFS, strvec& fs_params, CString& sRes, bool bSilent)

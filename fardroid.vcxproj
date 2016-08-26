@@ -241,6 +241,7 @@
     <ClCompile Include="FARstuffs.cpp" />
     <ClCompile Include="myrtl.cpp" />
     <ClCompile Include="MyStr.cpp" />
+    <ClCompile Include="framebuffer.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -255,6 +256,7 @@
     <ClInclude Include="fardroid.h" />
     <ClInclude Include="fardroidPlugin.h" />
     <ClInclude Include="FARstuffs.h" />
+    <ClInclude Include="framebuffer.h" />
     <ClInclude Include="Lang.hpp" />
     <ClInclude Include="myrtl.h" />
     <ClInclude Include="MyStr.h" />

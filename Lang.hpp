@@ -48,7 +48,9 @@ enum
   MMoveFile,
   MRenameFile,
   MScanDirectory,
-  
+  MScreenshot,
+  MScreenshotComplete,
+
 	MBreakWarn,
 
 	MDirName,

@@ -329,6 +329,18 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
     }
   }
 
+  if (!dwCTRL && !dwSHIFT && dwALT)
+  {
+    switch (Info->Rec.Event.KeyEvent.wVirtualKeyCode)
+    {
+    case VK_F10:
+    {
+      android->GetFramebuffer();
+      return TRUE;
+    }
+    }
+  }
+
   return FALSE;
 }
 

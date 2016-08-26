@@ -9,7 +9,5 @@ FarStandardFunctions FSF;
 HMODULE hInst;
 CConfig conf;
 
-wchar_t * Permissions = L"Permissions";
-struct KeyBarLabel Label[2] = {{{VK_F9, SHIFT_PRESSED | LEFT_CTRL_PRESSED}, Permissions, Permissions},
-{{VK_F9, SHIFT_PRESSED | RIGHT_CTRL_PRESSED}, Permissions, Permissions}};
-struct KeyBarTitles KeyBar = {2, Label};
+struct KeyBarLabel Label[1] = { {{VK_F10, LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED }, L"ScrShot", L"Screenshot" } };
+struct KeyBarTitles KeyBar = {1, Label};
