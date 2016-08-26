@@ -2156,6 +2156,9 @@ int fardroid::PutFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString SrcP
   if (IS_FLAG(OpMode, OPM_VIEW) || IS_FLAG(OpMode, OPM_QUICKVIEW) || IS_FLAG(OpMode, OPM_EDIT))
     bSilent = false;
 
+  if (IS_FLAG(OpMode, OPM_EDIT))
+    noPromt = true;
+
   m_bForceBreak = false;
   if (m_procStruct.Lock())
   {
