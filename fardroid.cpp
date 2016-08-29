@@ -819,11 +819,15 @@ void fardroid::ChangePermissionsDialog()
     return;
   }
 
-  CString CurrentDir = GetPanelPath(false);
-  CString CurrentFileName = GetCurrentFileName(false);
-  CString CurrentFullFileName = CString(_T("/")) + CurrentDir + _T("/") + CurrentFileName;
+  CString sdir = m_currentPath;
+  AddBeginSlash(sdir);
+  AddEndSlash(sdir, true);
 
-  CString permissions = GetPermissionsFile(CurrentFullFileName);
+  CString fileName = ExtractName(GetCurrentFileName(false));
+  CString sname;
+  sname.Format(_T("%s%s"), sdir, fileName);
+
+  CString permissions = GetPermissionsFile(sname);
   if (permissions.IsEmpty())
     return;
 
@@ -855,7 +859,7 @@ void fardroid::ChangePermissionsDialog()
   FarDialogItem DialogItems[size];
   InitDialogItems(InitItems, DialogItems, size);
 
-  CString LabelTxt1 = LOC(MPermFileName) + CurrentFileName;
+  CString LabelTxt1 = LOC(MPermFileName) + fileName;
   DialogItems[1].Data = LabelTxt1;
   CString LabelTxt2 = LOC(MPermFileAttr) + permissions;
   DialogItems[2].Data = LabelTxt2;
@@ -889,9 +893,9 @@ void fardroid::ChangePermissionsDialog()
     permissions.SetAt(8, GetItemSelected(hdlg, 12) ? _T('w') : _T('-'));
     permissions.SetAt(9, GetItemSelected(hdlg, 15) ? _T('x') : _T('-'));
 
-    SetPermissionsFile(CurrentFullFileName, permissions);
+    SetPermissionsFile(sname, permissions);
 
-    CString permissions_chk = GetPermissionsFile(CurrentFullFileName);
+    CString permissions_chk = GetPermissionsFile(sname);
 
     if (permissions_chk != permissions)
     {

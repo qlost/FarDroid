@@ -3,6 +3,9 @@
  "*" - changed
  "!" - warning
 
+ 29.08.16 v2.2.2.1
+  - Fixed Permission Dialog (Ctrl+A)
+
  29.08.16 v2.2.2
   + Copy/Move operations via temporary file with extension ".fardroid"
   + Don't show Overwrite dialog for Edit

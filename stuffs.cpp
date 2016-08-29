@@ -106,15 +106,6 @@ int rnd(int maxRnd)
   return (rnds[rand() % 10]);
 }
 
-bool CheckAndConvertParh(bool another, CString& res, bool selected, int i)
-{
-  res = GetPanelPath(another);
-  AddEndSlash(res);
-  res += GetFileName(another, selected, i);
-
-  return true;
-}
-
 bool IsDirectory(DWORD attr)
 {
   return (attr & FILE_ATTRIBUTE_DIRECTORY) ? true : false;
