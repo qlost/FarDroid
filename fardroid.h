@@ -16,6 +16,9 @@
 
 #define SWAP_WORD(x)  x = (x>>8) | (x<<8)
 #define SWAP_DWORD(x)  x = (x>>24) | ((x<<8) & 0x00FF0000) | ((x>>8) & 0x0000FF00) | (x<<24)
+
+#define TMP_SUFFIX ".fardroid";
+
 #include "taskbarIcon.h"
 #include "framebuffer.h"
 
@@ -266,7 +269,7 @@ private:
 	bool		ParseFileLine(CString & sLine, CFileRecords & files) const;
 	//bool		ParseFileLineSafe( CString & sLine );
 	BOOL		ReadFileList(CString & sFileList, CFileRecords & files) const;
-	BOOL		OpenPanel(LPCTSTR sPath);
+	BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo);
 
 	bool		CopyFileFrom(const CString& src, const CString& dst, bool bSilent);
 	bool		CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent);
@@ -297,7 +300,7 @@ public:
 	HANDLE	OpenFromMainMenu();
 	HANDLE	OpenFromCommandLine(const CString &cmd);
 
-	int			ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode = OPM_NONE);
+	int			ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode = OPM_NONE, bool updateInfo = false);
 
   static bool		DeleteFilesDialog();
   static bool		CreateDirDialog(CString &dest);
@@ -318,6 +321,7 @@ public:
 	int DeleteFiles(PluginPanelItem *PanelItem, int ItemsNumber, OPERATION_MODES OpMode);
 	int CreateDir(CString &DestPath, OPERATION_MODES OpMode);
   int Rename(CString& DestPath);
+  bool RenameFile(const CString& src, const CString& dst, bool bSilent);
   int GetFramebuffer();
   void Reread();
 

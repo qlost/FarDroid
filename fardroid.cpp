@@ -295,7 +295,8 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       m_procStruct.Unlock();
     }
 
-    if (FileExists(files[i]->dst))
+    auto exist = FileExists(files[i]->dst);
+    if (exist)
     {
       if (!noPromt)
       {
@@ -319,15 +320,27 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
         }
         continue;
       }
+    }
 
+    CString tname = files[i]->dst + TMP_SUFFIX;
+    if (!CopyFileFrom(files[i]->src, tname, bSilent))
+    {
+      result = FALSE;
+      break;
+    }
+
+    if (m_bForceBreak)
+      break;
+
+    if (exist)
+    {
       if (!DeleteFile(files[i]->dst, false))
       {
         result = FALSE;
         break;
       }
     }
-
-    if (!CopyFileFrom(files[i]->src, files[i]->dst, bSilent))
+    if (!MoveFile(tname, files[i]->dst))
     {
       result = FALSE;
       break;
@@ -404,8 +417,9 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       m_procStruct.Unlock();
     }
 
-    CString permissions = GetPermissionsFile(files[i]->dst);
-    if (!permissions.IsEmpty())
+    auto permissions = GetPermissionsFile(files[i]->dst);
+    auto exist = !permissions.IsEmpty();
+    if (exist)
     {
       if (!noPromt)
       {
@@ -431,7 +445,25 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       }
     }
 
-    if (!CopyFileTo(files[i]->src, files[i]->dst, permissions, bSilent))
+    CString tname = files[i]->dst + TMP_SUFFIX;
+    if (!CopyFileTo(files[i]->src, tname, permissions, bSilent))
+    {
+      result = FALSE;
+      break;
+    }
+
+    if (m_bForceBreak)
+      break;
+
+    if (exist)
+    {
+      if (!DeleteFileFrom(files[i]->dst, false))
+      {
+        result = FALSE;
+        break;
+      }
+    }
+    if (!RenameFile(tname, files[i]->dst, false))
     {
       result = FALSE;
       break;
@@ -544,35 +576,12 @@ repeatcopy:
 bool fardroid::CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent)
 {
 repeatcopy:
-  // "adb.exe push" в принципе не может перезаписывать файл в устройстве с правами Superuser.
-  // Если у файла не установлены прав доступа на запись для простых пользователей,
-  // то файл не будет перезаписан. (т.е. например? после редактирования файл нельзя будет сохранить)
-
-  // Чтобы такие файлы все же перезаписать, добавим к правам доступа файла, право на запись
-  // для простых пользователей. А затем вернем оригинальные права доступа к файлу.
-  // Этот работает только в Native Mode с включенным Superuser, при включенном ExtendedAccess
-
-  bool UseChmod = (conf.WorkMode == WORKMODE_NATIVE && conf.UseSU && conf.UseExtendedAccess);
-  if (UseChmod)
-  {
-    UseChmod = false;
-    // Проверяем, имеет ли уже файл разрешение w для группы Others
-    if (!old_permissions.IsEmpty() && old_permissions.GetAt(old_permissions.GetLength() - 2) != _T('w'))
-    {
-      CString new_permissions = old_permissions;
-      // Добавляем к правам доступа файла право на запись для всех пользователей.	
-      new_permissions.SetAt(new_permissions.GetLength() - 2, _T('w'));
-      SetPermissionsFile(dst, new_permissions);
-      UseChmod = true;
-    }
-  }
-
   // Запись файла
   CString sRes;
   BOOL res = ADB_push(src, dst, sRes, bSilent);
 
   // Восстановим оригинальные права на файл
-  if (UseChmod)
+  if (conf.WorkMode == WORKMODE_NATIVE && conf.UseSU && conf.UseExtendedAccess)
     SetPermissionsFile(dst, old_permissions);
 
   if (!res)
@@ -951,10 +960,10 @@ void fardroid::Reread()
 {
   CString p = m_currentPath;
   AddBeginSlash(p);
-  ChangeDir(p);
+  ChangeDir(p, OPM_NONE, true);
 }
 
-int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode)
+int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
 {
   CString s = sDir;
   CFileRecord* item = GetFileRecord(sDir);
@@ -981,7 +990,7 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode)
 
   AddBeginSlash(tempPath);
 
-  if (OpenPanel(tempPath))
+  if (OpenPanel(tempPath, updateInfo))
   {
     m_currentPath = tempPath;
     conf.SetSub(0, _T("devices"), m_currentDevice, m_currentPath);
@@ -996,7 +1005,7 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode)
   tempPath = m_currentPath;
   AddBeginSlash(tempPath);
 
-  if (OpenPanel(tempPath))
+  if (OpenPanel(tempPath, updateInfo))
   {
     m_currentPath = tempPath;
     conf.SetSub(0, _T("devices"), m_currentDevice, m_currentPath);
@@ -1092,7 +1101,6 @@ bool fardroid::ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t& mtime)
 
   delete sbuf;
   CloseHandle(hFile);
-
   return result;
 }
 
@@ -1257,6 +1265,9 @@ BOOL fardroid::ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
 
   if (!ADBSendFile(sockADB, sSrc, dest, sRes, mode))
     return FALSE;
+  if (m_bForceBreak)
+    DeleteFileFrom(sDst, true);
+
   if (conf.WorkMode == WORKMODE_NATIVE && conf.UseSU && conf.UseExtendedAccess)
     SetPermissionsFile(sDst, "-rw-rw-rw-");
   return TRUE;
@@ -1865,7 +1876,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
   return false;
 }
 
-BOOL fardroid::OpenPanel(LPCTSTR sPath)
+BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo)
 {
   BOOL bOK = FALSE;
 
@@ -1874,7 +1885,8 @@ BOOL fardroid::OpenPanel(LPCTSTR sPath)
   {
     CloseADBSocket(sockADB);
 
-    UpdateInfoLines();
+    if (updateInfo || lines.GetSize() == 0)
+      UpdateInfoLines();
 
     CString sRes;
     return ADB_ls(WtoUTF8(sPath), records, sRes, false);
@@ -2240,6 +2252,23 @@ int fardroid::Rename(CString& DestPath)
   }
   return TRUE;
 }
+
+
+bool fardroid::RenameFile(const CString& src, const CString& dst, bool bSilent)
+{
+  CString sRes;
+  if (ADB_rename(src, dst, sRes))
+    return true;
+
+  if (!bSilent && m_procStruct.Hide())
+  {
+    ShowError(sRes);
+    m_procStruct.Restore();
+  }
+
+  return false;
+}
+
 
 int fardroid::GetFramebuffer()
 {

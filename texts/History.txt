@@ -3,6 +3,11 @@
  "*" - changed
  "!" - warning
 
+ 29.08.16 v2.2.2
+  + Copy/Move operations via temporary file with extension ".fardroid"
+  + Don't show Overwrite dialog for Edit
+  + Refresh Memory and Partition info only on Copy/Move/Reread(Crtl+R) operations
+
  26.08.16 v2.2.1
   + Overwrite dialog for Copy/Move to Device
 
