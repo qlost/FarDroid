@@ -1623,7 +1623,6 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
 
             if (ReadADBPacket(sockADB, buf, len) <= 0)
             {
-              delete[] buf;
               break;
             }
 
@@ -1971,9 +1970,9 @@ void fardroid::ShowProgressMessage()
       auto speed = 0;
       auto remain = 0;
       if (elapsed > 0)
-        speed = m_procStruct.nTotalTransmitted / elapsed;
+        speed = static_cast<int>(m_procStruct.nTotalTransmitted / elapsed);
       if (speed > 0)
-        remain = (m_procStruct.nTotalFileSize - m_procStruct.nTotalTransmitted) / speed;
+        remain = static_cast<int>((m_procStruct.nTotalFileSize - m_procStruct.nTotalTransmitted) / speed);
       sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSpeed(speed));
 
       int size = sInfo.GetLength() - 5;
@@ -1993,7 +1992,7 @@ void fardroid::ShowProgressMessage()
       CString sFiles = LOC(MFiles);
       CString sBytes = LOC(MBytes);
       DrawProgress(sFiles, size, FormatNumber(m_procStruct.nPosition), FormatNumber(m_procStruct.nTotalFiles));
-      DrawProgress(sBytes, size, FormatNumber(m_procStruct.nTotalTransmitted), FormatNumber(m_procStruct.nTotalFileSize));
+      DrawProgress(sBytes, size, FormatNumber(static_cast<int>(m_procStruct.nTotalTransmitted)), FormatNumber(static_cast<int>(m_procStruct.nTotalFileSize)));
 
       double pc = m_procStruct.nFileSize > 0 ? static_cast<double>(m_procStruct.nTransmitted) / static_cast<double>(m_procStruct.nFileSize) : 0;
       double tpc = m_procStruct.nTotalFileSize > 0 ? static_cast<double>(m_procStruct.nTotalTransmitted) / static_cast<double>(m_procStruct.nTotalFileSize) : 0;

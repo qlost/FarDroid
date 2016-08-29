@@ -96,9 +96,9 @@ bool SaveToClipboard(const struct fb *fb)
   dst += m_bmi_size;
 
   auto color = ::new bgr888;
-  for (int y = fb->height - 1; y >= 0; y--)
+  for (int y = static_cast<int>(fb->height) - 1; y >= 0; y--)
   {
-    for (auto x = 0; x < fb->width; x++)
+    for (auto x = 0; x < static_cast<int>(fb->width); x++)
     {
       convert_colors(format, static_cast<char*>(fb->data) + (y * fb->width + x) * fb->bpp / 8, color);
       memcpy(dst, color, 3);

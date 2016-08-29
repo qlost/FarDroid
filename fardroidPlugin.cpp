@@ -355,7 +355,7 @@ intptr_t WINAPI ProcessPanelEventW(const struct ProcessPanelEventInfo* Info)
     PanelInfo PInfo;
     fInfo.PanelControl(Info->hPanel, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
     conf.SortMode = PInfo.SortMode;
-    conf.PanelMode = PInfo.ViewMode;
+    conf.PanelMode = static_cast<int>(PInfo.ViewMode);
     conf.SortOrder = IS_FLAG(PInfo.Flags, PFLAGS_REVERSESORTORDER);
     conf.Save();
     break;
