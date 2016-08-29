@@ -1,3 +1,4 @@
 #define MAJORVERSION 2
 #define MINORVERSION 2
+#define REVISION 2
 #define BUILDNUMBER 2

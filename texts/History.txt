@@ -3,8 +3,11 @@
  "*" - changed
  "!" - warning
 
+ 29.08.16 v2.2.2.2
+  - Fix Versioning
+
  29.08.16 v2.2.2.1
-  - Fixed Permission Dialog (Ctrl+A)
+  - Fix Permission Dialog (Ctrl+A)
 
  29.08.16 v2.2.2
   + Copy/Move operations via temporary file with extension ".fardroid"

@@ -38,7 +38,7 @@ DWORD GetFileSizeS(const CString& path)
 CString GetVersionString()
 {
   CString ver;
-  ver.Format(_T("FARDroid %u.%u.%u"), MAJORVERSION, MINORVERSION, BUILDNUMBER);
+  ver.Format(_T("FARDroid %u.%u.%u.%u"), MAJORVERSION, MINORVERSION, REVISION, BUILDNUMBER);
   return ver;
 }
 
