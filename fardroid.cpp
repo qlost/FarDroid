@@ -181,6 +181,24 @@ int fardroid::CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr)
   return 2;
 }
 
+int fardroid::CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sName)
+{
+  if (m_procStruct.Hide())
+  {
+    CString msg;
+    CString errmsg;
+    msg.Format(_T("%s\n%s\n%s\n%s\n%s"), sTitle, LOC(MCopyDeleteError), LOC(MYes), LOC(MNo), LOC(MCancel));
+    errmsg.Format(msg, sName);
+
+    int ret = ShowMessage(errmsg, 3, _F("copyerror"), true);
+
+    m_procStruct.Restore();
+    return ret;
+  }
+  return 2;
+}
+
+
 void fardroid::ShowError(CString& error)
 {
   CString msg;
@@ -334,8 +352,9 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
 
     if (exist)
     {
-      if (!DeleteFile(files[i]->dst, false))
+      if (!DeleteFileTo(files[i]->dst, false))
       {
+        DeleteFileTo(tname, true);
         result = FALSE;
         break;
       }
@@ -459,6 +478,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
     {
       if (!DeleteFileFrom(files[i]->dst, false))
       {
+        DeleteFileFrom(tname, true);
         result = FALSE;
         break;
       }
@@ -479,25 +499,27 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
   return result;
 }
 
-bool fardroid::DeleteFile(const CString& name, bool bSilent)
+bool fardroid::DeleteFileTo(const CString& name, bool bSilent)
 {
   if (name.IsEmpty())
     return false;
 
-  CString msg;
-  CString msgfail;
-  msg.Format(L"%s\n%s", LOC(MDeleteTitle), LOC(MCopyDeleteError));
-  msgfail.Format(msg, name, LOC(MRetry), LOC(MCancel));
 deltry:
-  if (!::DeleteFile(name))
+  if (!DeleteFile(name))
   {
     if (bSilent)
       return false;
 
-    if (ShowMessage(msgfail, 2, L"delerror", true) == 0)
+    int ret = CopyDeleteErrorDialog(LOC(MDelFile), name);
+    switch (ret)
+    {
+    case 0:
       goto deltry;
-
-    return false;
+    case 1:
+      return true;
+    default:
+      return false;
+    }
   }
 
   return true;
@@ -565,7 +587,7 @@ repeatcopy:
       goto repeatcopy;
     case 1:
       return true;
-    case 2:
+    default:
       return false;
     }
   }
@@ -606,11 +628,11 @@ repeatcopy:
     switch (ret)
     {
     case 0:
-      sRes = _T("");
+      sRes.Empty();
       goto repeatcopy;
     case 1:
       return true;
-    case 2:
+    default:
       return false;
     }
   }
@@ -618,16 +640,35 @@ repeatcopy:
   return true;
 }
 
+/// <summary>
+/// Deletes the file from.
+/// </summary>
+/// <param name="src">The source.</param>
+/// <param name="bSilent">if set to <c>true</c> [b silent].</param>
+/// <returns></returns>
 bool fardroid::DeleteFileFrom(const CString& src, bool bSilent)
 {
   CString sRes;
+
+deltry:
   BOOL res = ADB_rm(src, sRes, bSilent);
   if (!res)
   {
-    if (bSilent)//если отключен вывод на экран, то просто возвращаем что все ОК
-      return true;
+    if (bSilent)
+      return false;
 
-    return true;
+    sRes.TrimRight();
+    int ret = CopyDeleteErrorDialog(LOC(MDelFile), sRes);
+    switch (ret)
+    {
+    case 0:
+      sRes.Empty();
+      goto deltry;
+    case 1:
+      return true;
+    default:
+      return false;
+    }
   }
 
   return true;
@@ -1427,8 +1468,10 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   if ((id != ID_DATA) && (id != ID_DONE))
     goto remoteerror;
 
-  DeleteFile(sDst, true);
+  if (FileExists(sDst))
+    DeleteFileTo(sDst, false);
   MakeDirs(ExtractPath(sDst, false));
+
   hFile = CreateFile(sDst, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (hFile == INVALID_HANDLE_VALUE)
     return FALSE;
@@ -1448,7 +1491,6 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
       }
       id = msg.data.id;
     }
-
 
     len = msg.data.size;
     if (id == ID_DONE) break;
@@ -1491,7 +1533,7 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
     {
       delete [] buffer;
       CloseHandle(hFile);
-      DeleteFile(sDst, true);
+      DeleteFileTo(sDst, false);
       return TRUE;
     }
     bFirst = false;
@@ -1654,7 +1696,8 @@ BOOL fardroid::ADB_rm(LPCTSTR sDir, CString& sRes, bool bSilent)
 {
   CString s;
   s.Format(_T("rm -r \"%s\""), WtoUTF8(sDir));
-  return ADBShellExecute(s, sRes, bSilent);
+  ADBShellExecute(s, sRes, bSilent);
+  return sRes.GetLength() == 0;
 }
 
 BOOL fardroid::ADB_mkdir(LPCTSTR sDir, CString& sRes, bool bSilent)

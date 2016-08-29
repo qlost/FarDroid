@@ -40,9 +40,9 @@
 "Bytes:"
 
 "Copy"
-"Copy to device"
-"Deleting files from device"
-"Creating directory on device"
+"Copy"
+"Delete"
+"Create Directory"
 "Move"
 "Rename"
 "Scanning directory"
@@ -59,7 +59,7 @@
 "Operation error. Try repeat?"
 "Deleting"
 "Are you sure?"
-"Error deleting file\n%s!\n%S\n%S!"
+"Error deleting file. \n%s\n Try repeat?"
 
 "Memory Info"
 "Filesystems Info"

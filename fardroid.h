@@ -308,7 +308,7 @@ public:
   static CString GetDeviceName(CString & device);
   bool    DeviceMenu(CString &text);
   static void SetItemText(FarMenuItem* item, const CString& text);
-  static bool		DeleteFile(const CString& name, bool bSilent);
+  bool		DeleteFileTo(const CString& name, bool bSilent);
   static void		DeleteRecords(CFileRecords & recs);
   static void DeleteRecords(CCopyRecords& recs);
   void		PreparePanel(struct OpenPanelInfo *Info);
@@ -330,6 +330,7 @@ public:
   static CString FormatTime(int time);
   bool BreakProcessDialog();
 	int CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
+  int CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
   static void ShowError(CString& error);
   int FileExistsDialog(LPCTSTR sName);
 };
