@@ -14,7 +14,7 @@ $_ = <F>;
 close F;
 
 $v = join ", ", map int, @version[0..3];
-print "Changed ".s/(fileversion[^\d]+)[\d,\t\ ]+/$1$v/ig." strings";
+print "Version $v => ".s/(fileversion[^\d]+)[\d,\t\ ]+/$1$v/ig." changes\n";
 
 open F, ">../fardroid.rc";
 print F $_;
