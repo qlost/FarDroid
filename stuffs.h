@@ -1,5 +1,6 @@
 #pragma once
 
+#pragma warning (disable : 4005)
 #define 	S_IFMT		61440
 #define 	S_IFLNK   40960
 #define 	S_IFREG   32768

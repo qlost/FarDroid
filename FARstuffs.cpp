@@ -9,8 +9,7 @@ const farStr* LOC(int MsgId)
 
 int ShowMessage(const farStr* msg, int buttons, const farStr* help, bool Warning /*= false*/)
 {
-  int res = fInfo.Message(&MainGuid, &MsgGuid, (Warning ? FMSG_WARNING : 0) | FMSG_ALLINONE, help, reinterpret_cast<const farStr * const *>(msg), 0, buttons);
-  return res;
+  return static_cast<int>(fInfo.Message(&MainGuid, &MsgGuid, (Warning ? FMSG_WARNING : 0) | FMSG_ALLINONE, help, reinterpret_cast<const farStr * const *>(msg), 0, buttons));
 }
 
 void ShowMessageWait(const farStr* const* msg, int msgsize)
@@ -20,15 +19,14 @@ void ShowMessageWait(const farStr* const* msg, int msgsize)
 
 int ShowDialog(int width, int height, const farStr* help, FarDialogItem* items, int count, HANDLE& hDlg)
 {
-  hDlg = fInfo.DialogInit(&MainGuid, &DialogGuid, -1, -1, width, height, help, items, count, 0, 0, nullptr, nullptr);
-  int res = fInfo.DialogRun(hDlg);
+  hDlg = static_cast<int*>(fInfo.DialogInit(&MainGuid, &DialogGuid, -1, -1, width, height, help, items, count, 0, 0, nullptr, nullptr));
+  auto res = static_cast<int>(fInfo.DialogRun(hDlg));
   return res;
 }
 
 int ShowMenu(const farStr* title, const farStr* bottom, const farStr* help, const FarMenuItem* items, int count)
 {
-  int res = fInfo.Menu(&MainGuid, &MenuGuid, -1, -1, 0, FMENU_WRAPMODE, title, bottom, help, nullptr, nullptr, items, count);
-  return res;
+  return static_cast<int>(fInfo.Menu(&MainGuid, &MenuGuid, -1, -1, 0, FMENU_WRAPMODE, title, bottom, help, nullptr, nullptr, items, count));
 }
 
 CString GetPanelPath(bool another /*= false*/)
@@ -64,7 +62,7 @@ BOOL GetItemSelected(const HANDLE& hDlg, DWORD item)
   FarDialogItem* DialogItem = GetFarDialogItem(hDlg, item);
   if (DialogItem)
   {
-    BOOL s = DialogItem->Selected;
+    auto s = static_cast<BOOL>(DialogItem->Selected);
     my_free(DialogItem);
     return s;
   }
@@ -132,7 +130,7 @@ void InitDialogItems(struct InitDialogItem* Init, struct FarDialogItem* Item, in
 
 CString GetFileName(bool another, bool selected, int i)
 {
-  int size = fInfo.PanelControl(another ? PANEL_PASSIVE : PANEL_ACTIVE, selected ? FCTL_GETSELECTEDPANELITEM : FCTL_GETPANELITEM, i, nullptr);
+  int size = static_cast<int>(fInfo.PanelControl(another ? PANEL_PASSIVE : PANEL_ACTIVE, selected ? FCTL_GETSELECTEDPANELITEM : FCTL_GETPANELITEM, i, nullptr));
   if (size > 0)
   {
     struct FarGetPluginPanelItem item;
@@ -157,7 +155,7 @@ DWORD GetFileAttributes(bool another, bool selected, int i)
     item.Size = size;
     item.Item = static_cast<PluginPanelItem *>(my_malloc(size));
     fInfo.PanelControl(another ? PANEL_PASSIVE : PANEL_ACTIVE, selected ? FCTL_GETSELECTEDPANELITEM : FCTL_GETPANELITEM, i, nullptr);
-    DWORD ret = item.Item->FileAttributes;
+    auto ret = static_cast<DWORD>(item.Item->FileAttributes);
     my_free(item.Item);
     return ret;
   }

@@ -1,8 +1,8 @@
 #include "StdAfx.h"
 #include "fardroid.h"
+#include "framebuffer.h"
 #include <vector>
 #include <ctime>
-#include "framebuffer.h"
 
 DWORD WINAPI ProcessThreadProc(LPVOID lpParam)
 {
@@ -707,23 +707,23 @@ int fardroid::GetFindData(struct PluginPanelItem** pPanelItem, size_t* pItemsNum
 
   CFileRecord* item;
 
-  for (int Z = 0; Z < items; Z++)
+  for (int i = 0; i < items; i++)
   {
-    my_memset(&NewPanelItem[Z], 0, sizeof(PluginPanelItem));
+    my_memset(&NewPanelItem[i], 0, sizeof(PluginPanelItem));
 
-    item = records[Z];
-    NewPanelItem[Z].FileAttributes = item->attr;
-    NewPanelItem[Z].UserData.Data = reinterpret_cast<void *>(Z);
-    NewPanelItem[Z].FileSize = item->size;
-    NewPanelItem[Z].LastWriteTime = UnixTimeToFileTime(item->time);
+    item = records[i];
+    NewPanelItem[i].FileAttributes = item->attr;
+    NewPanelItem[i].UserData.Data = &i;
+    NewPanelItem[i].FileSize = item->size;
+    NewPanelItem[i].LastWriteTime = UnixTimeToFileTime(item->time);
 
-    NewPanelItem[Z].FileName = my_strdupW(item->filename);
-    NewPanelItem[Z].Owner = my_strdupW(item->owner);
-    NewPanelItem[Z].Description = my_strdupW(item->desc);
+    NewPanelItem[i].FileName = my_strdupW(item->filename);
+    NewPanelItem[i].Owner = my_strdupW(item->owner);
+    NewPanelItem[i].Description = my_strdupW(item->desc);
 
     //3 custom columns
     //NewPanelItem[Z].CustomColumnData=(farStr**)my_malloc(sizeof(farStr*)*2);
-    NewPanelItem[Z].CustomColumnNumber = 0;
+    NewPanelItem[i].CustomColumnNumber = 0;
   }
   *pItemsNumber = items;
 
@@ -982,7 +982,7 @@ bool fardroid::DeviceMenu(CString& text)
     items.push_back(item);
   }
 
-  int res = ShowMenu(LOC(MSelectDevice), _F(""), _F(""), items.data(), items.size());
+  int res = ShowMenu(LOC(MSelectDevice), _F(""), _F(""), items.data(), static_cast<int>(items.size()));
   if (res >= 0)
   {
     m_currentDevice = GetDeviceName(devices[res]);

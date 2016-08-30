@@ -133,8 +133,8 @@ intptr_t WINAPI ConfigDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void* 
       break;
     case 5:
     case 9:
-      int Enable = fInfo.SendDlgMessage(hDlg, DM_GETCHECK, 5, nullptr) && fInfo.SendDlgMessage(hDlg, DM_GETCHECK, 9, nullptr);
-      fInfo.SendDlgMessage(hDlg, DM_ENABLE, 10, reinterpret_cast<void *>(Enable));
+      BOOL enable = fInfo.SendDlgMessage(hDlg, DM_GETCHECK, 5, nullptr) && fInfo.SendDlgMessage(hDlg, DM_GETCHECK, 9, nullptr);
+      fInfo.SendDlgMessage(hDlg, DM_ENABLE, 10, &enable);
       break;
     }
   return fInfo.DefDlgProc(hDlg, Msg, Param1, Param2);
@@ -200,7 +200,7 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
     fInfo.SendDlgMessage(hdlg, DM_ENABLE, 7, reinterpret_cast<void *>(FALSE));
   if (!(conf.UseSU && conf.WorkMode == WORKMODE_NATIVE))
     fInfo.SendDlgMessage(hdlg, DM_ENABLE, 10, reinterpret_cast<void *>(FALSE));
-  int res = fInfo.DialogRun(hdlg);
+  int res = static_cast<int>(fInfo.DialogRun(hdlg));
   if (res == 16)
   {
     conf.AddToDiskMenu = GetItemSelected(hdlg, 1);
@@ -275,7 +275,7 @@ void WINAPI FreeFindDataW(const struct FreeFindDataInfo* Info)
     return;
 
   fardroid* android = static_cast<fardroid *>(Info->hPanel);
-  android->FreeFindData(Info->PanelItem, Info->ItemsNumber);
+  android->FreeFindData(Info->PanelItem, static_cast<int>(Info->ItemsNumber));
 }
 
 intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
@@ -372,14 +372,14 @@ intptr_t WINAPI GetFilesW(struct GetFilesInfo* Info)
   fardroid* android = static_cast<fardroid *>(Info->hPanel);
   static CString dest;
   dest = Info->DestPath;
-  auto result = android->GetFiles(Info->PanelItem, Info->ItemsNumber, dest, Info->Move, Info->OpMode);
+  auto result = android->GetFiles(Info->PanelItem, static_cast<int>(Info->ItemsNumber), dest, Info->Move, Info->OpMode);
   if (result == FALSE)
     return FALSE;
 
   if (result == TRUE && Info->Move)
   {
     Info->OpMode |= OPM_SILENT;
-    if (android->DeleteFiles(Info->PanelItem, Info->ItemsNumber, Info->OpMode) == False)
+    if (android->DeleteFiles(Info->PanelItem, static_cast<int>(Info->ItemsNumber), Info->OpMode) == False)
       return FALSE;
 
     Info->DestPath = _C(dest);
@@ -403,14 +403,14 @@ intptr_t WINAPI PutFilesW(const struct PutFilesInfo* Info)
     return FALSE;
 
   fardroid* android = static_cast<fardroid *>(Info->hPanel);
-  auto result = android->PutFiles(Info->PanelItem, Info->ItemsNumber, Info->SrcPath, Info->Move, Info->OpMode);
+  auto result = android->PutFiles(Info->PanelItem, static_cast<int>(Info->ItemsNumber), Info->SrcPath, Info->Move, Info->OpMode);
   if (result == FALSE)
     return FALSE;
 
   if (result == TRUE && Info->Move)
   {
     CString sPath = GetPanelPath();
-    return DeletePanelItems(sPath, Info->PanelItem, Info->ItemsNumber);
+    return DeletePanelItems(sPath, Info->PanelItem, static_cast<int>(Info->ItemsNumber));
   }
 
   return TRUE;
@@ -422,7 +422,7 @@ intptr_t WINAPI DeleteFilesW(const struct DeleteFilesInfo* Info)
     return FALSE;
 
   fardroid* android = static_cast<fardroid *>(Info->hPanel);
-  auto result = android->DeleteFiles(Info->PanelItem, Info->ItemsNumber, Info->OpMode);
+  auto result = android->DeleteFiles(Info->PanelItem, static_cast<int>(Info->ItemsNumber), Info->OpMode);
   if (result == FALSE)
     return FALSE;
 

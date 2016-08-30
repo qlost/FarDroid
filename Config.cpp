@@ -66,13 +66,13 @@ void CConfig::Get(size_t Root, const wchar_t* Name, CString& Value, const wchar_
 int CConfig::CreateSubKey(size_t Root, const wchar_t *Name) const
 {
   FarSettingsValue value = { sizeof(FarSettingsValue),Root,Name };
-  return fInfo.SettingsControl(hHandle, SCTL_CREATESUBKEY, 0, &value);
+  return static_cast<int>(fInfo.SettingsControl(hHandle, SCTL_CREATESUBKEY, 0, &value));
 }
 
 int CConfig::OpenSubKey(size_t Root, const wchar_t *Name) const
 {
   FarSettingsValue value = { sizeof(FarSettingsValue),Root,Name };
-  return fInfo.SettingsControl(hHandle, SCTL_OPENSUBKEY, 0, &value);
+  return static_cast<int>(fInfo.SettingsControl(hHandle, SCTL_OPENSUBKEY, 0, &value));
 }
 
 bool CConfig::DeleteSubKey(size_t Root) const

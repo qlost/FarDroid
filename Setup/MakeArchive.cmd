@@ -8,7 +8,10 @@ set msbuild="%programfiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
 set project=..\fardroid.sln
 
 for /F "tokens=3*" %%i  in (..\version.info) do set version=!version!.%%i
-set version=!version:~1!
+set version=!version:~1!#
+set version=!version:.0#=!#!!
+set version=!version:.0#=!#!!
+set version=!version:#=!!!
 
 rd /q /s ..\Release
 del /q *.7z

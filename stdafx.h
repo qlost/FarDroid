@@ -28,6 +28,7 @@
 // Windows Header Files:
 
 #include <windows.h>
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #include <shellapi.h>
 #include <atlbase.h>
 #include <atlapp.h>

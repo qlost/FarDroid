@@ -133,7 +133,7 @@ void RegExTokenize(CString str, CString regex, strvec& tokens)
   {
     if (fInfo.RegExpControl(hRegex, RECTL_COMPILE, 0, static_cast<void *>(_C(regex))))
     {
-      int brackets = fInfo.RegExpControl(hRegex, RECTL_BRACKETSCOUNT, 0, nullptr);
+      int brackets = static_cast<int>(fInfo.RegExpControl(hRegex, RECTL_BRACKETSCOUNT, 0, nullptr));
 
       RegExpMatch* match = new RegExpMatch[brackets];
       RegExpSearch search = {
@@ -148,7 +148,7 @@ void RegExTokenize(CString str, CString regex, strvec& tokens)
       if (fInfo.RegExpControl(hRegex, RECTL_SEARCHEX, 0, static_cast<void *>(&search)))
       {
         for (int i = 1; i < brackets; i++)
-          tokens.Add(str.Mid(match[i].start, match[i].end - match[i].start));
+          tokens.Add(str.Mid(static_cast<int>(match[i].start), static_cast<int>(match[i].end - match[i].start)));
       }
       delete[] match;
     }
