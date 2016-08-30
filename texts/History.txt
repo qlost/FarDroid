@@ -3,6 +3,9 @@
  "*" - changed
  "!" - warning
 
+ 30.08.16 v2.2.3
+  + Delete Dialog with Retry option 
+
  29.08.16 v2.2.2.2
   - Fix Versioning
 

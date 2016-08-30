@@ -17,6 +17,7 @@
 #define 	S_IREAD   S_IRUSR
 
 #define   ABORT     -1
+#define   SKIP     2
 
 enum
 {

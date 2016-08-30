@@ -271,9 +271,9 @@ private:
 	BOOL		ReadFileList(CString & sFileList, CFileRecords & files) const;
 	BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo);
 
-	bool		CopyFileFrom(const CString& src, const CString& dst, bool bSilent);
-	bool		CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent);
-	bool		DeleteFileFrom(const CString& src, bool bSilent);
+	int		CopyFileFrom(const CString& src, const CString& dst, bool bSilent);
+	int		CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent);
+	int		DeleteFileFrom(const CString& src, bool bSilent);
 
 	int GetItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
 	int PutItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
@@ -308,7 +308,7 @@ public:
   static CString GetDeviceName(CString & device);
   bool    DeviceMenu(CString &text);
   static void SetItemText(FarMenuItem* item, const CString& text);
-  bool		DeleteFileTo(const CString& name, bool bSilent);
+  int		DeleteFileTo(const CString& name, bool bSilent);
   static void		DeleteRecords(CFileRecords & recs);
   static void DeleteRecords(CCopyRecords& recs);
   void		PreparePanel(struct OpenPanelInfo *Info);
@@ -321,7 +321,7 @@ public:
 	int DeleteFiles(PluginPanelItem *PanelItem, int ItemsNumber, OPERATION_MODES OpMode);
 	int CreateDir(CString &DestPath, OPERATION_MODES OpMode);
   int Rename(CString& DestPath);
-  bool RenameFile(const CString& src, const CString& dst, bool bSilent);
+  int RenameFile(const CString& src, const CString& dst, bool bSilent);
   int GetFramebuffer();
   void Reread();
 

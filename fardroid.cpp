@@ -341,29 +341,34 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
     }
 
     CString tname = files[i]->dst + TMP_SUFFIX;
-    if (!CopyFileFrom(files[i]->src, tname, bSilent))
-    {
-      result = FALSE;
+    result = CopyFileFrom(files[i]->src, tname, bSilent);
+    if (result == FALSE || m_bForceBreak)
       break;
-    }
 
-    if (m_bForceBreak)
-      break;
+    if (result == SKIP)
+    {
+      result = TRUE;
+      if (m_procStruct.Lock())
+      {
+        m_procStruct.nTotalFileSize -= m_procStruct.nFileSize;
+        m_procStruct.Unlock();
+      }
+      continue;
+    }
 
     if (exist)
     {
-      if (!DeleteFileTo(files[i]->dst, false))
+      result = DeleteFileTo(files[i]->dst, false);
+      if (result == FALSE)
       {
         DeleteFileTo(tname, true);
-        result = FALSE;
         break;
       }
     }
-    if (!MoveFile(tname, files[i]->dst))
-    {
-      result = FALSE;
+
+    result = MoveFile(tname, files[i]->dst) ? TRUE : FALSE;
+    if (result == FALSE)
       break;
-    }
   }
 
   DeleteRecords(files);
@@ -465,29 +470,35 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
     }
 
     CString tname = files[i]->dst + TMP_SUFFIX;
-    if (!CopyFileTo(files[i]->src, tname, permissions, bSilent))
-    {
-      result = FALSE;
-      break;
-    }
 
-    if (m_bForceBreak)
+    result = CopyFileTo(files[i]->src, tname, permissions, bSilent);
+    if (result == FALSE || m_bForceBreak)
       break;
+
+    if (result == SKIP)
+    {
+      result = TRUE;
+      if (m_procStruct.Lock())
+      {
+        m_procStruct.nTotalFileSize -= m_procStruct.nFileSize;
+        m_procStruct.Unlock();
+      }
+      continue;
+    }
 
     if (exist)
     {
-      if (!DeleteFileFrom(files[i]->dst, false))
+      result = DeleteFileFrom(files[i]->dst, false);
+      if (result == FALSE)
       {
         DeleteFileFrom(tname, true);
-        result = FALSE;
         break;
       }
     }
-    if (!RenameFile(tname, files[i]->dst, false))
-    {
-      result = FALSE;
+
+    result = RenameFile(tname, files[i]->dst, false);
+    if (result == FALSE)
       break;
-    }
   }
 
   DeleteRecords(files);
@@ -499,16 +510,16 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
   return result;
 }
 
-bool fardroid::DeleteFileTo(const CString& name, bool bSilent)
+int fardroid::DeleteFileTo(const CString& name, bool bSilent)
 {
   if (name.IsEmpty())
-    return false;
+    return FALSE;
 
 deltry:
   if (!DeleteFile(name))
   {
     if (bSilent)
-      return false;
+      return FALSE;
 
     int ret = CopyDeleteErrorDialog(LOC(MDelFile), name);
     switch (ret)
@@ -516,16 +527,16 @@ deltry:
     case 0:
       goto deltry;
     case 1:
-      return true;
+      return SKIP;
     default:
-      return false;
+      return FALSE;
     }
   }
 
-  return true;
+  return TRUE;
 }
 
-bool fardroid::CopyFileFrom(const CString& src, const CString& dst, bool bSilent)
+int fardroid::CopyFileFrom(const CString& src, const CString& dst, bool bSilent)
 {
 repeatcopy:
   // "adb.exe pull" в принципе не может читать файл с устройства с правами Superuser.
@@ -586,16 +597,16 @@ repeatcopy:
       sRes.Empty();
       goto repeatcopy;
     case 1:
-      return true;
+      return SKIP;
     default:
-      return false;
+      return FALSE;
     }
   }
 
-  return true;
+  return TRUE;
 }
 
-bool fardroid::CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent)
+int fardroid::CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent)
 {
 repeatcopy:
   // Запись файла
@@ -631,13 +642,13 @@ repeatcopy:
       sRes.Empty();
       goto repeatcopy;
     case 1:
-      return true;
+      return SKIP;
     default:
-      return false;
+      return FALSE;
     }
   }
 
-  return true;
+  return TRUE;
 }
 
 /// <summary>
@@ -646,7 +657,7 @@ repeatcopy:
 /// <param name="src">The source.</param>
 /// <param name="bSilent">if set to <c>true</c> [b silent].</param>
 /// <returns></returns>
-bool fardroid::DeleteFileFrom(const CString& src, bool bSilent)
+int fardroid::DeleteFileFrom(const CString& src, bool bSilent)
 {
   CString sRes;
 
@@ -665,13 +676,13 @@ deltry:
       sRes.Empty();
       goto deltry;
     case 1:
-      return true;
+      return SKIP;
     default:
-      return false;
+      return FALSE;
     }
   }
 
-  return true;
+  return TRUE;
 }
 
 void fardroid::DeleteRecords(CFileRecords& recs)
@@ -1533,7 +1544,7 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
     {
       delete [] buffer;
       CloseHandle(hFile);
-      DeleteFileTo(sDst, false);
+      DeleteFileTo(sDst, true);
       return TRUE;
     }
     bFirst = false;
@@ -2154,11 +2165,9 @@ int fardroid::DelItems(PluginPanelItem* PanelItem, int ItemsNumber, bool noPromt
       m_procStruct.Unlock();
     }
 
-    if (!DeleteFileFrom(sname, bSilent))
-    {
-      result = FALSE;
+    result = DeleteFileFrom(sname, bSilent);
+    if (result == FALSE)
       break;
-    }
   }
 
   Reread();
@@ -2300,11 +2309,11 @@ int fardroid::Rename(CString& DestPath)
 }
 
 
-bool fardroid::RenameFile(const CString& src, const CString& dst, bool bSilent)
+int fardroid::RenameFile(const CString& src, const CString& dst, bool bSilent)
 {
   CString sRes;
   if (ADB_rename(src, dst, sRes))
-    return true;
+    return TRUE;
 
   if (!bSilent && m_procStruct.Hide())
   {
@@ -2312,7 +2321,7 @@ bool fardroid::RenameFile(const CString& src, const CString& dst, bool bSilent)
     m_procStruct.Restore();
   }
 
-  return false;
+  return FALSE;
 }
 
 
