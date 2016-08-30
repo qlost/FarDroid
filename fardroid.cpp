@@ -966,7 +966,7 @@ CString fardroid::GetDeviceName(CString& device)
   return name[0];
 }
 
-bool fardroid::DeviceMenu(CString& text)
+int fardroid::DeviceMenu(CString& text)
 {
   strvec devices;
   std::vector<FarMenuItem> items;
@@ -977,12 +977,12 @@ bool fardroid::DeviceMenu(CString& text)
 
   if (size == 0)
   {
-    return false;
+    return FALSE;
   }
   if (size == 1)
   {
     m_currentDevice = GetDeviceName(devices[0]);
-    return true;
+    return TRUE;
   }
 
   for (auto i = 0; i < devices.GetSize(); i++)
@@ -994,13 +994,11 @@ bool fardroid::DeviceMenu(CString& text)
   }
 
   int res = ShowMenu(LOC(MSelectDevice), _F(""), _F(""), items.data(), static_cast<int>(items.size()));
-  if (res >= 0)
-  {
-    m_currentDevice = GetDeviceName(devices[res]);
-    return true;
-  }
+  if (res < 0)
+    return ABORT;
 
-  return false;
+  m_currentDevice = GetDeviceName(devices[res]);
+  return TRUE;
 }
 
 void fardroid::SetItemText(FarMenuItem* item, const CString& text)
@@ -2629,10 +2627,18 @@ tryagain:
         CloseADBSocket(sock);
         sock = 0;
 
-        if (DeviceMenu(devices))
+        switch (DeviceMenu(devices))
+        {
+        case TRUE:
           goto tryagain;
-
-        lastError = ERROR_DEV_NOT_EXIST;
+          break;
+        case ABORT:
+          lastError = S_OK;
+          break;
+        default:
+          lastError = ERROR_DEV_NOT_EXIST;
+          break;
+        }
       }
       else
       {

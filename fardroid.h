@@ -306,7 +306,7 @@ public:
   static bool		CreateDirDialog(CString &dest);
   static bool		CopyFilesDialog(CString &dest, const wchar_t* title);
   static CString GetDeviceName(CString & device);
-  bool    DeviceMenu(CString &text);
+  int    DeviceMenu(CString &text);
   static void SetItemText(FarMenuItem* item, const CString& text);
   int		DeleteFileTo(const CString& name, bool bSilent);
   static void		DeleteRecords(CFileRecords & recs);
