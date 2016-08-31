@@ -35,8 +35,7 @@ int ShowMessage(const farStr* msg, int buttons, const farStr* help, bool Warning
 void ShowMessageWait(const farStr *const*msg, int msgsize);
 bool ShowInputBox(const farStr* title, const farStr* prompt, const farStr* history, const farStr* help, const farStr* src, CString &dst);
 void Editor(const CString& filename, const farStr* title);
-int ShowMenu(const farStr* title, const farStr* bottom, const farStr* help, const FarMenuItem *Item, int ItemsNumber);
-int ShowMenu2(const farStr* title, const farStr* bottom, const farStr* help, const int * keys, int & code, const FarMenuItem *Item, int ItemsNumber);
+int ShowMenu(const farStr* title, const farStr* bottom, const farStr* help, const FarKey *breakKeys, intptr_t *breakCode, const FarMenuItem *Item, int ItemsNumber);
 
 DWORD GetFileAttributes( bool another, bool selected, int i ) ;
 CString GetFileName( bool another, bool selected, int i );

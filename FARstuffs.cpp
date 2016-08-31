@@ -24,9 +24,9 @@ int ShowDialog(int width, int height, const farStr* help, FarDialogItem* items, 
   return res;
 }
 
-int ShowMenu(const farStr* title, const farStr* bottom, const farStr* help, const FarMenuItem* items, int count)
+int ShowMenu(const farStr* title, const farStr* bottom, const farStr* help, const FarKey *breakKeys, intptr_t * breakCode, const FarMenuItem* items, int count)
 {
-  return static_cast<int>(fInfo.Menu(&MainGuid, &MenuGuid, -1, -1, 0, FMENU_WRAPMODE, title, bottom, help, nullptr, nullptr, items, count));
+  return static_cast<int>(fInfo.Menu(&MainGuid, &MenuGuid, -1, -1, 0, FMENU_WRAPMODE | FMENU_AUTOHIGHLIGHT | FMENU_CHANGECONSOLETITLE, title, bottom, help, breakKeys, breakCode, items, count));
 }
 
 CString GetPanelPath(bool another /*= false*/)

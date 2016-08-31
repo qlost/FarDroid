@@ -105,6 +105,48 @@ bool fardroid::CreateDirDialog(CString& dest)
   return res;
 }
 
+bool fardroid::DeviceNameDialog()
+{
+  return DeviceNameDialog(m_currentDevice, m_currentDeviceName);
+}
+
+bool fardroid::DeviceNameDialog(const CString &name, CString &alias)
+{
+  const auto width = 55;
+  struct InitDialogItem InitItems[] = {
+    /*00*/FDI_DOUBLEBOX(width - 4, 6, (farStr *)static_cast<const wchar_t*>(name)),
+    /*01*/FDI_LABEL(5, 2, (farStr *)MRenameDeviceName),
+    /*02*/FDI_EDIT(5, 3,width - 6, _F("")),
+    /*03*/FDI_DEFCBUTTON(5,(farStr *)MOk),
+    /*04*/FDI_CBUTTON(5,(farStr *)MCancel),
+    /*--*/FDI_SEPARATOR(4,_F("")),
+  };
+  const int size = sizeof InitItems / sizeof InitItems[0];
+
+  FarDialogItem DialogItems[size];
+  InitDialogItems(InitItems, DialogItems, size);
+
+  CString last;
+  conf.GetSub(0, _T("names"), name, last, name);
+
+  wchar_t* editbuf = static_cast<wchar_t *>(my_malloc(1024));
+  lstrcpyW(editbuf, _C(last));
+  DialogItems[2].Data = editbuf;
+  HANDLE hdlg;
+
+  bool res = ShowDialog(width, 8, _F(""), DialogItems, size, hdlg) == 3;
+  if (res)
+  {
+    alias = GetItemData(hdlg, 2);
+    conf.SetSub(0, _T("names"), name, alias);
+  }
+
+  fInfo.DialogFree(hdlg);
+  my_free(editbuf);
+
+  return res;
+}
+
 HANDLE fardroid::OpenFromMainMenu()
 {
   fileUnderCursor = ExtractName(GetCurrentFileName());
@@ -833,7 +875,7 @@ int fardroid::UpdateInfoLines()
 
 void fardroid::PreparePanel(OpenPanelInfo* Info)
 {
-  panelTitle.Format(_T("%s/%s"), m_currentDevice, m_currentPath);
+  panelTitle.Format(_T("%s/%s"), m_currentDeviceName, m_currentPath);
 
   Info->HostFile = _C(fileUnderCursor);
   Info->PanelTitle = _C(panelTitle);
@@ -959,11 +1001,30 @@ void fardroid::ChangePermissionsDialog()
   fInfo.DialogFree(hdlg);
 }
 
-CString fardroid::GetDeviceName(CString& device)
+CString fardroid::GetDeviceName(const CString& device)
 {
   strvec name;
   Tokenize(device, name, _T("\t"));
   return name[0];
+}
+
+CString fardroid::GetDeviceAliasName(const CString& device)
+{
+  CString name;
+  conf.GetSub(0, _T("names"), device, name, device);
+  return name;
+}
+
+CString fardroid::GetDeviceCaption(const CString& device)
+{
+  CString caption;
+  CString name = GetDeviceName(device);
+  CString alias = GetDeviceAliasName(name);
+  if (alias.Compare(name))
+    caption.Format(L"%s (%s)", alias, name);
+  else
+    caption = alias;
+  return  caption;
 }
 
 int fardroid::DeviceMenu(CString& text)
@@ -982,6 +1043,7 @@ int fardroid::DeviceMenu(CString& text)
   if (size == 1)
   {
     m_currentDevice = GetDeviceName(devices[0]);
+    m_currentDeviceName = GetDeviceAliasName(m_currentDevice);
     return TRUE;
   }
 
@@ -989,15 +1051,42 @@ int fardroid::DeviceMenu(CString& text)
   {
     FarMenuItem item;
     ::ZeroMemory(&item, sizeof(item));
-    SetItemText(&item, GetDeviceName(devices[i]));
+    SetItemText(&item, GetDeviceCaption(devices[i]));
     items.push_back(item);
   }
 
-  int res = ShowMenu(LOC(MSelectDevice), _F(""), _F(""), items.data(), static_cast<int>(items.size()));
-  if (res < 0)
-    return ABORT;
+  int res;
+  FarKey pBreakKeys[] = {{ VK_F4,0 }, { VK_DELETE,0 } };
+  intptr_t nBreakCode;
+  while (1)
+  {
+    res = ShowMenu(LOC(MSelectDevice), _F("F4,Del"), _F(""), pBreakKeys, &nBreakCode, items.data(), static_cast<int>(items.size()));
+    if (nBreakCode == -1)
+    {
+      if (res < 0)
+        return ABORT;
+      break;
+    }
+
+    CString name = GetDeviceName(devices[res]);
+    CString caption = GetDeviceCaption(name);
+
+    switch (pBreakKeys[nBreakCode].VirtualKeyCode)
+    {
+    case VK_F4:
+      DeviceNameDialog(name, caption);
+      SetItemText(&items[res], GetDeviceCaption(name));
+      break;
+    case VK_DELETE:
+      conf.SetSub(0, _T("names"), name, name);
+      SetItemText(&items[res], GetDeviceCaption(name));
+      break;
+    }
+    SetItemSelected(items, res);
+  }
 
   m_currentDevice = GetDeviceName(devices[res]);
+  m_currentDeviceName = GetDeviceAliasName(m_currentDevice);
   return TRUE;
 }
 
@@ -1008,6 +1097,17 @@ void fardroid::SetItemText(FarMenuItem* item, const CString& text)
   wcscpy(buf, text);
   delete[] item->Text;
   item->Text = buf;
+}
+
+void fardroid::SetItemSelected(std::vector<FarMenuItem> &items, int sel)
+{
+  for (auto i = 0; i < static_cast<int>(items.size()); i++)
+  {
+    if (i == sel)
+      items[i].Flags |= MIF_SELECTED;
+    else
+      items[i].Flags &= ~MIF_SELECTED;
+  }
 }
 
 void fardroid::Reread()

@@ -31,6 +31,7 @@ enum
 	MError,
 	MDeviceNotFound,
   MSelectDevice,
+  MRenameDeviceName,
 
 	MADBExecError,
 

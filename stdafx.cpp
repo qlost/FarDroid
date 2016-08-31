@@ -9,5 +9,8 @@ FarStandardFunctions FSF;
 HMODULE hInst;
 CConfig conf;
 
-struct KeyBarLabel Label[1] = { {{VK_F10, LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED }, L"ScrShot", L"Screenshot" } };
-struct KeyBarTitles KeyBar = {1, Label};
+struct KeyBarLabel Label[2] = { 
+  {{VK_F10, LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED }, L"ScrShot", L"Screenshot" },
+  {{ VK_F7, SHIFT_PRESSED }, L"DevName", L"Device Name" } 
+};
+struct KeyBarTitles KeyBar = {2, Label};

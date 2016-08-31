@@ -21,6 +21,8 @@
 
 #include "taskbarIcon.h"
 #include "framebuffer.h"
+#include <memory>
+#include <vector>
 
 typedef union {
 	unsigned id;
@@ -230,6 +232,7 @@ private:
 //	bool ParseSectionBuf (BYTE * buf, int &bufPos, int bufSize, CFileRecords * record);
 	CString m_currentPath;
   CString m_currentDevice;
+  CString m_currentDeviceName;
   void ShowADBExecError(CString err, bool bSilent);
   static void DrawProgress(CString& sProgress, int size, double pc);
   static void DrawProgress(CString& sProgress, int size, LPCTSTR current, LPCTSTR total);
@@ -304,10 +307,15 @@ public:
 
   static bool		DeleteFilesDialog();
   static bool		CreateDirDialog(CString &dest);
+  bool DeviceNameDialog();
+  static bool DeviceNameDialog(const CString& name, CString& alias);
   static bool		CopyFilesDialog(CString &dest, const wchar_t* title);
-  static CString GetDeviceName(CString & device);
+  static CString GetDeviceName(const CString & device);
+  static CString GetDeviceAliasName(const CString& device);
+  static CString GetDeviceCaption(const CString& device);
   int    DeviceMenu(CString &text);
   static void SetItemText(FarMenuItem* item, const CString& text);
+  static void SetItemSelected(std::vector<FarMenuItem>& items, int sel);
   int		DeleteFileTo(const CString& name, bool bSilent);
   static void		DeleteRecords(CFileRecords & recs);
   static void DeleteRecords(CCopyRecords& recs);

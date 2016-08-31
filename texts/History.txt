@@ -3,6 +3,10 @@
  "*" - changed
  "!" - warning
 
+ 31.08.16 v2.3.0
+  + Custom device name Dialog (Shift+F7)
+  + Device List custom names with autohighlight (F4/Del)
+
  30.08.16 v2.2.3
   + Delete Dialog with Retry option 
 

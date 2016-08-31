@@ -28,7 +28,8 @@
 
 "Error"
 "Device not found!"
-"Select Device:"
+"Select Device"
+"Enter custom name for device"
 
 "ADB Execute Error"
 

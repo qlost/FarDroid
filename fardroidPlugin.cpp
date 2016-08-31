@@ -326,6 +326,11 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
       }
       return TRUE;
     }
+    case VK_F7:
+    {
+      android->DeviceNameDialog();
+      return TRUE;
+    }
     }
   }
 
