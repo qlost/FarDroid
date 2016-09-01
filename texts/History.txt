@@ -3,6 +3,10 @@
  "*" - changed
  "!" - warning
 
+ 02.09.16 v2.3.0
+  + Show Free Size on Panel depending on path (FAR 3.0.4774+ required)
+  * Command line path without Device name to correct Copy path operations (Ctrl+Alt+Ins)
+
  31.08.16 v2.3.0
   + Custom device name Dialog (Shift+F7)
   + Device List custom names with autohighlight (F4/Del)

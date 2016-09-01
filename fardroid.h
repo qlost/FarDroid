@@ -216,7 +216,16 @@ struct CPanelLine
 	BOOL separator;
 };
 
+struct CInfoSize
+{
+  CString path;
+  unsigned long long total;
+  unsigned long long used;
+  unsigned long long free;
+};
+
 typedef CSimpleArrayEx<CPanelLine, CPanelLine> InfoPanelLines;
+typedef CSimpleArrayEx<CInfoSize, CInfoSize> InfoSize;
 
 class fardroid
 {
@@ -226,9 +235,11 @@ private:
 	ProcessStruct m_procStruct;
 	InfoPanelLine * InfoPanelLineArray;
 	InfoPanelLines lines;
+  InfoSize infoSize;
 
 	CFileRecord * GetFileRecord(LPCTSTR sFileName);
-//	DWORD ParseSection (HANDLE hFile, BYTE sectionID);
+  static unsigned long long ParseSizeInfo(CString s);
+  //	DWORD ParseSection (HANDLE hFile, BYTE sectionID);
 //	bool ParseSectionBuf (BYTE * buf, int &bufPos, int bufSize, CFileRecords * record);
 	CString m_currentPath;
   CString m_currentDevice;

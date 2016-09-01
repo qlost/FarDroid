@@ -28,7 +28,7 @@ DWORD WINAPI ProcessThreadProc(LPVOID lpParam)
 
 fardroid::fardroid(void)
 {
-  m_currentPath = _T("");
+  m_currentPath = _T("/");
   m_currentDevice = _T("");
   InfoPanelLineArray = nullptr;
   lastError = S_OK;
@@ -804,7 +804,6 @@ void fardroid::FreeFindData(struct PluginPanelItem* PanelItem, int ItemsNumber)
 int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& DestPath, BOOL Move, OPERATION_MODES OpMode)
 {
   CString srcdir = m_currentPath;
-  AddBeginSlash(srcdir);
   AddEndSlash(srcdir, true);
 
   CString path = DestPath;
@@ -850,6 +849,8 @@ int fardroid::UpdateInfoLines()
 {
   //version first
   lines.RemoveAll();
+  infoSize.RemoveAll();
+
   CPanelLine pl;
   pl.text = GetVersionString();
   pl.separator = TRUE;
@@ -875,11 +876,11 @@ int fardroid::UpdateInfoLines()
 
 void fardroid::PreparePanel(OpenPanelInfo* Info)
 {
-  panelTitle.Format(_T("%s/%s"), m_currentDeviceName, m_currentPath);
+  panelTitle.Format(_T("%s%s"), m_currentDeviceName, m_currentPath);
 
   Info->HostFile = _C(fileUnderCursor);
   Info->PanelTitle = _C(panelTitle);
-  Info->CurDir = _C(panelTitle);
+  Info->CurDir = _C(m_currentPath);
 
   if (InfoPanelLineArray)
   {
@@ -899,6 +900,18 @@ void fardroid::PreparePanel(OpenPanelInfo* Info)
     }
   }
 
+  auto size = 0ULL;
+  auto infoLen = infoSize.GetSize();
+  if (infoLen > 0)
+  {
+    for (auto i = 0; i < infoLen; i++)
+    {
+      if (m_currentPath.Find(infoSize[i].path) == 0)
+        size = infoSize[i].free;
+    }
+  }
+
+  Info->FreeSize = size;
   Info->InfoLines = InfoPanelLineArray;
   Info->InfoLinesNumber = len;
 }
@@ -914,7 +927,6 @@ void fardroid::ChangePermissionsDialog()
   }
 
   CString sdir = m_currentPath;
-  AddBeginSlash(sdir);
   AddEndSlash(sdir, true);
 
   CString fileName = ExtractName(GetCurrentFileName(false));
@@ -1020,10 +1032,10 @@ CString fardroid::GetDeviceCaption(const CString& device)
   CString caption;
   CString name = GetDeviceName(device);
   CString alias = GetDeviceAliasName(name);
-  if (alias.Compare(name))
-    caption.Format(L"%s (%s)", alias, name);
-  else
+  if (alias.Compare(name) == 0)
     caption = alias;
+  else
+    caption.Format(L"%s (%s)", alias, name);
   return  caption;
 }
 
@@ -1113,7 +1125,6 @@ void fardroid::SetItemSelected(std::vector<FarMenuItem> &items, int sel)
 void fardroid::Reread()
 {
   CString p = m_currentPath;
-  AddBeginSlash(p);
   ChangeDir(p, OPM_NONE, true);
 }
 
@@ -1130,16 +1141,27 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
   if (i != -1 || j != -1)//перемещение с помощью команды cd
   {
     if (s[0] == _T('/') || s[0] == _T('\\')) //абсолютный путь
+    {
       tempPath = s;
+    }
     else //относительный путь в глубь иерархии (пока отбрасываем всякие ..\path. TODO!!!)
-      tempPath.Format(_T("/%s%s%s"), m_currentPath, m_currentPath.IsEmpty() ? _T("") : _T("/"), s);
+    {
+      tempPath = m_currentPath;
+      AddEndSlash(tempPath, true);
+      tempPath += s;
+    }
   }
   if (i == -1 && j == -1)//простое относительное перемещение
   {
-    if (s == _T(".."))
+    if (s == _T("..")) 
+    {
       tempPath = ExtractPath(m_currentPath);
-    else
-      tempPath.Format(_T("/%s%s%s"), m_currentPath, m_currentPath.IsEmpty() ? _T("") : _T("/"), s);
+    }
+    else {
+      tempPath = m_currentPath;
+      AddEndSlash(tempPath, true);
+      tempPath += s;
+    }
   }
 
   AddBeginSlash(tempPath);
@@ -1148,27 +1170,13 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
   {
     m_currentPath = tempPath;
     conf.SetSub(0, _T("devices"), m_currentDevice, m_currentPath);
-    if (!m_currentPath.IsEmpty())
-      m_currentPath.Delete(0);
     return TRUE;
   }
 
   if (OpMode != 0 || lastError != S_OK)
     return FALSE;
 
-  tempPath = m_currentPath;
-  AddBeginSlash(tempPath);
-
-  if (OpenPanel(tempPath, updateInfo))
-  {
-    m_currentPath = tempPath;
-    conf.SetSub(0, _T("devices"), m_currentDevice, m_currentPath);
-    if (!m_currentPath.IsEmpty())
-      m_currentPath.Delete(0);
-    return TRUE;
-  }
-
-  return FALSE;
+  return OpenPanel(m_currentPath, updateInfo);
 }
 
 void fardroid::ADBSyncQuit(SOCKET sockADB)
@@ -2245,7 +2253,6 @@ CString fardroid::FormatTime(int time)
 int fardroid::DelItems(PluginPanelItem* PanelItem, int ItemsNumber, bool noPromt, bool ansYes, bool bSilent)
 {
   CString sdir = m_currentPath;
-  AddBeginSlash(sdir);
   AddEndSlash(sdir, true);
 
   CString sname;
@@ -2313,7 +2320,6 @@ int fardroid::PutFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString SrcP
 {
   CString srcdir = SrcPath;
   CString path = m_currentPath;
-  AddBeginSlash(path);
 
   bool bSilent = IS_FLAG(OpMode, OPM_SILENT) || IS_FLAG(OpMode, OPM_FIND);
   bool noPromt = bSilent;
@@ -2353,7 +2359,6 @@ int fardroid::CreateDir(CString& DestPath, OPERATION_MODES OpMode)
 {
   CString path;
   CString srcdir = m_currentPath;
-  AddBeginSlash(srcdir);
   AddEndSlash(srcdir, true);
 
   bool bSilent = IS_FLAG(OpMode, OPM_SILENT) || IS_FLAG(OpMode, OPM_FIND);
@@ -2386,7 +2391,6 @@ int fardroid::CreateDir(CString& DestPath, OPERATION_MODES OpMode)
 int fardroid::Rename(CString& DestPath)
 {
   CString srcdir = m_currentPath;
-  AddBeginSlash(srcdir);
   AddEndSlash(srcdir, true);
 
   CString src = srcdir + DestPath;
@@ -2473,11 +2477,48 @@ CFileRecord* fardroid::GetFileRecord(LPCTSTR sFileName)
   return nullptr;
 }
 
+unsigned long long fardroid::ParseSizeInfo(CString s)
+{
+  strvec tokens;
+  static const auto pb = 1125899906842624ULL;
+  static const auto tb = 1099511627776ULL;
+  static const auto gb = 1073741824ULL;
+  static const auto mb = 1048576ULL;
+  static const auto kb = 1024ULL;
+
+  CString regex = _T("/([\\d.]+)(.*)/");
+  RegExTokenize(s, regex, tokens);
+
+  auto res = 0ULL;
+  if (tokens.GetSize() > 0)
+  {
+    char* buf = getAnsiString(tokens[0]);
+    auto size = atof(buf);
+    my_free(buf);
+
+    if (tokens.GetSize() > 1) {
+      if (tokens[1].Find('P') != -1)
+        res = static_cast<unsigned long long>(size * pb);
+      else if (tokens[1].Find('T') != -1)
+        res = static_cast<unsigned long long>(size * tb);
+      else if (tokens[1].Find('G') != -1)
+        res = static_cast<unsigned long long>(size * gb);
+      else if (tokens[1].Find('M') != -1)
+        res = static_cast<unsigned long long>(size * mb);
+      else if (tokens[1].Find('K') != -1)
+        res = static_cast<unsigned long long>(size * kb);
+    }
+  }
+
+  return res;
+}
+
 void fardroid::ParseMemoryInfo(CString s)
 {
   strvec tokens;
 
   CPanelLine pl;
+  CInfoSize fs;
   pl.separator = FALSE;
 
   CString regex = _T("/([\\w]+(?=:)):\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s|$))/");
@@ -2487,14 +2528,6 @@ void fardroid::ParseMemoryInfo(CString s)
     pl.text = tokens[0];
     pl.data.Format(_T("%s/%s"), tokens[1], tokens[3]);
     lines.Add(pl);
-
-    /*pl.text.Format(_T("%s %s:"), tokens[0], LOC(MMemUsed));
-    pl.data = tokens[2];
-    lines.Add(pl);
-
-    pl.text.Format(_T("%s %s:"), tokens[0], LOC(MMemFree));
-    pl.data = tokens[3];
-    lines.Add(pl);*/
   }
 }
 
@@ -2523,6 +2556,7 @@ void fardroid::ParsePartitionInfo(CString s)
   strvec tokens;
 
   CPanelLine pl;
+  CInfoSize fs;
   pl.separator = FALSE;
 
   CString regex = _T("/(.*(?=:)):\\W+(\\w+(?=\\stotal)).+,\\s(\\w+(?=\\savailable))/");
@@ -2537,6 +2571,20 @@ void fardroid::ParsePartitionInfo(CString s)
     pl.text = tokens[0];
     pl.data.Format(_T("%s/%s"), tokens[1], tokens[2]);
     lines.Add(pl);
+
+    fs.path = tokens[0];
+    fs.total = ParseSizeInfo(tokens[1]);
+    fs.free = ParseSizeInfo(tokens[2]);
+    fs.used = fs.total - fs.free;
+    infoSize.Add(fs);
+
+    if (fs.path.Find(L"emulated") > 0) 
+    {
+      fs.path = L"/sdcard";
+      infoSize.Add(fs);
+      fs.path = L"/mnt/sdcard";
+      infoSize.Add(fs);
+    }
   }
 }
 
@@ -2544,14 +2592,7 @@ void fardroid::GetPartitionsInfo()
 {
   CString sRes;
 
-  if (conf.ShowAllPartitions)
-    ADBShellExecute(_T("df"), sRes, false);
-  else
-  {
-    ADBShellExecute(_T("df /data"), sRes, false);
-    sRes += _T("\n");
-    ADBShellExecute(_T("df /sdcard"), sRes, false);
-  }
+  ADBShellExecute(_T("df"), sRes, false);
 
   strvec str;
   Tokenize(sRes, str, _T("\n"));
