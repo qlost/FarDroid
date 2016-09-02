@@ -54,6 +54,8 @@ DWORD ModeToAttr( int mode );
 
 BOOL DeletePanelItems(CString &sPath, struct PluginPanelItem *PanelItem,int ItemsNumber);
 
+BOOL ExecuteCommandLine(const CString & command, const CString & parameters);
+
 #ifdef USELOGGING
 
 class CPerfCounter

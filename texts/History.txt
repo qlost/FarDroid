@@ -3,6 +3,9 @@
  "*" - changed
  "!" - warning
 
+ 02.09.16 v2.4.1
+  + Start ADB.EXE and wait for initialization.
+
  02.09.16 v2.4.0
   + Show Free Size on Panel depending on path (FAR 3.0.4774+ required)
   + Multiple Symbolic links processing for Change Directory in Native and BusyBox modes

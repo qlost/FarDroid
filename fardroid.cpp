@@ -2818,8 +2818,8 @@ tryagain:
       if (adb.GetLength() > 0)
         AddEndSlash(adb);
       adb += _T("adb.exe");
-      HINSTANCE hInstance = ShellExecute(nullptr, nullptr, adb, _T("start-server"), nullptr, SW_HIDE);
-      if (hInstance > reinterpret_cast<HINSTANCE>(32))
+
+      if (ExecuteCommandLine(adb, _T("start-server")))
         goto tryagain;
     }
     else
