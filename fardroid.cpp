@@ -1132,7 +1132,7 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
 {
   CString s = sDir;
   CFileRecord* item = GetFileRecord(sDir);
-  if (s != _T("..") && item && IsLink(item->attr) && (!conf.LinksAsDir() && OpMode == 0))
+  if (s != _T("..") && item && conf.WorkMode != WORKMODE_SAFE  && OpMode == 0 && IsLink(item->attr))
     s = item->linkto;
 
   CString tempPath;
@@ -1167,11 +1167,7 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
   AddBeginSlash(tempPath);
 
   if (OpenPanel(tempPath, updateInfo))
-  {
-    m_currentPath = tempPath;
-    conf.SetSub(0, _T("devices"), m_currentDevice, m_currentPath);
     return TRUE;
-  }
 
   if (OpMode != 0 || lastError != S_OK)
     return FALSE;
@@ -1744,6 +1740,7 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
       s.Format(_T("busybox ls -lAe%s --color=never \"%s\""), conf.LinksAsDir() ? _T("") : _T("L"), sDir);
       break;
     }
+
     if (ADBShellExecute(s, sRes, bSilent))
       return ReadFileList(sRes, files);
   }
@@ -1988,7 +1985,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
       rec->grp = tokens[3];
       rec->size = _ttoi(tokens[4]);
       rec->time = StringTimeToUnixTime(tokens[7], tokens[6], tokens[9], tokens[8]);
-      rec->filename = UTF8toW(tokens[10]);
+      rec->filename = ExtractName(UTF8toW(tokens[10]));
       rec->linkto = UTF8toW(tokens[11]);
       rec->desc.Format(_T("-> %s"), UTF8toW(tokens[11]));
     }
@@ -2042,6 +2039,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
 BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo)
 {
   BOOL bOK = FALSE;
+  CString sDir = sPath;
 
   SOCKET sockADB = PrepareADBSocket();
   if (sockADB)
@@ -2052,7 +2050,20 @@ BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo)
       UpdateInfoLines();
 
     CString sRes;
-    return ADB_ls(WtoUTF8(sPath), records, sRes, false);
+    bOK = ADB_ls(WtoUTF8(sPath), records, sRes, false);
+    if (bOK && conf.WorkMode != WORKMODE_SAFE && records.GetSize() == 1)
+    {
+      auto file = records[0];
+      CString name = ExtractName(sDir);
+      if (IsLink(file->attr) && name.Compare(file->filename) == 0 && file->linkto[0] == _T('/'))
+        return OpenPanel(file->linkto, updateInfo);
+    }
+  }
+
+  if (bOK)
+  {
+    m_currentPath = sDir;
+    conf.SetSub(0, _T("devices"), m_currentDevice, m_currentPath);
   }
 
   return bOK;
