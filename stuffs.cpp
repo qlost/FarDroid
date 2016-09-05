@@ -385,16 +385,16 @@ BOOL DeletePanelItems(CString& sPath, struct PluginPanelItem* PanelItem, int Ite
   return result;
 }
 
-BOOL ExecuteCommandLine(const CString &command, const CString &parameters)
+BOOL ExecuteCommandLine(const CString &command, const CString& path, const CString & parameters)
 {
   SHELLEXECUTEINFO ShExecInfo = { 0 };
   ShExecInfo.cbSize = sizeof(SHELLEXECUTEINFO);
-  ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS;
+  ShExecInfo.fMask = SEE_MASK_NOCLOSEPROCESS | SEE_MASK_DOENVSUBST;
   ShExecInfo.hwnd = nullptr;
   ShExecInfo.lpVerb = nullptr;
   ShExecInfo.lpFile = command;
   ShExecInfo.lpParameters = parameters;
-  ShExecInfo.lpDirectory = nullptr;
+  ShExecInfo.lpDirectory = path;
   ShExecInfo.nShow = SW_HIDE;
   ShExecInfo.hInstApp = nullptr;
   if (ShellExecuteEx(&ShExecInfo))
@@ -403,6 +403,6 @@ BOOL ExecuteCommandLine(const CString &command, const CString &parameters)
     CloseHandle(ShExecInfo.hProcess);
     return TRUE;
   }
-  
+
   return FALSE;
 }

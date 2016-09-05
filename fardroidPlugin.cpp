@@ -22,11 +22,11 @@ void WINAPI GetGlobalInfoW(struct GlobalInfo* Info)
 {
   Info->StructSize = sizeof(struct GlobalInfo);
   Info->MinFarVersion = MAKEFARVERSION(3, 0, 0, 3000, VS_RELEASE);
-  Info->Version = MAKEFARVERSION(MAJORVERSION, MINORVERSION, REVISION, BUILDNUMBER, VS_RC);
+  Info->Version = MAKEFARVERSION(MAJORVERSION, MINORVERSION, REVISION, BUILDNUMBER, VS_RELEASE);
   Info->Guid = MainGuid;
-  Info->Title = L"FARdroid";
-  Info->Description = L"fardroid FAR Plugin";
-  Info->Author = L"Vladimir Kubyshev";
+  Info->Title = L"FARDroid";
+  Info->Description = L"FARDroid FAR Plugin";
+  Info->Author = L"Vladimir Kubyshev, dimfish";
 }
 
 void WINAPI SetStartupInfoW(const struct PluginStartupInfo* Info)
@@ -47,7 +47,7 @@ void WINAPI GetPluginInfoW(struct PluginInfo* Info)
 
   static const wchar_t *PluginConfigMenuStrings[1], *PluginMenuStrings[1];
 
-  PluginConfigMenuStrings[0] = LOC(MConfTitle);
+  PluginConfigMenuStrings[0] = LOC(MTitle);
   Info->PluginConfig.Strings = PluginConfigMenuStrings;
   Info->PluginConfig.Count = 1;
   Info->PluginConfig.Guids = &MenuGuid;

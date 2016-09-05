@@ -2814,12 +2814,7 @@ tryagain:
     if (tryCnt == 0)
     {
       tryCnt++;
-      CString adb = conf.ADBPath;
-      if (adb.GetLength() > 0)
-        AddEndSlash(adb);
-      adb += _T("adb.exe");
-
-      if (ExecuteCommandLine(adb, _T("start-server")))
+      if (ExecuteCommandLine(_T("adb.exe"), conf.ADBPath, _T("start-server")))
         goto tryagain;
     }
     else
