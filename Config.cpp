@@ -1,14 +1,9 @@
 #include "StdAfx.h"
 #include "Config.h"
 
-CConfig::CConfig(void)
+CConfig::CConfig(void): PanelMode(0), SortMode(0), SortOrder(0), WorkMode(0), TimeOut(0), AddToDiskMenu(0), ShowLinksAsDir(0), ShowAllPartitions(0), SU(0), UseSU(0), UseExtendedAccess(0), RemountSystem(0)
 {
   hHandle = nullptr;
-}
-
-CConfig::~CConfig(void)
-{
-  Save();
 }
 
 bool CConfig::InitHandle()
@@ -118,7 +113,7 @@ bool CConfig::Load()
   Get(0, _T("WorkMode"), WorkMode, WORKMODE_SAFE);
   Get(0, _T("ShowLinksAsDir"), ShowLinksAsDir,FALSE);
   Get(0, _T("ShowAllPartitions"), ShowAllPartitions,FALSE);
-  Get(0, _T("UseSU"), UseSU,FALSE);
+  Get(0, _T("UseSU"), UseSU, FALSE);
   Get(0, _T("UseExtendedAccess"), UseExtendedAccess,FALSE);
   Get(0, _T("AddToDiskMenu"), AddToDiskMenu,FALSE);
   Get(0, _T("TimeOut"), TimeOut, 1000);
@@ -135,9 +130,6 @@ void CConfig::Save()
   if (!InitHandle())
     return;
 
-  Set(0, _T("PanelMode"), PanelMode);
-  Set(0, _T("SortMode"), SortMode);
-  Set(0, _T("SortOrder"), SortOrder);
   Set(0, _T("Prefix"), Prefix);
   Set(0, _T("ADBPath"), ADBPath);
   Set(0, _T("WorkMode"), WorkMode);
@@ -148,6 +140,18 @@ void CConfig::Save()
   Set(0, _T("UseExtendedAccess"), UseExtendedAccess);
   Set(0, _T("TimeOut"), TimeOut);
   Set(0, _T("RemountSystem"), RemountSystem);
+
+  FreeHandle();
+}
+
+void CConfig::SavePanel()
+{
+  if (!InitHandle())
+    return;
+
+  Set(0, _T("PanelMode"), PanelMode);
+  Set(0, _T("SortMode"), SortMode);
+  Set(0, _T("SortOrder"), SortOrder);
 
   FreeHandle();
 }

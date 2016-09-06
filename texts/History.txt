@@ -3,6 +3,10 @@
  "*" - changed
  "!" - warning
 
+ 06.09.16 v2.5.0
+  + Auto Check Superuser and work normally with non-rooted devices with Superuser config enabled.
+  + Process all links and any path with any number of '..'
+
  02.09.16 v2.4.1
   + Start ADB.EXE and wait for initialization.
 

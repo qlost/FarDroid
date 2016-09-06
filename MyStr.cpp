@@ -94,6 +94,41 @@ CString ExtractExt(CString Path)
   return Path;
 }
 
+void NormilizePath(CString &path)
+{
+  strvec dir;
+  Tokenize(path, dir, _T("/"));
+  int size = dir.GetSize();
+  if (size == 0)
+    return;
+
+  CString tmp;
+  CString tmpFull;
+  int skip = 0;
+  for (int i = size - 1; i >= 0; i--)
+  {
+    if (dir[i].IsEmpty())
+      continue;
+
+    if (dir[i] == "..")
+    {
+      skip++;
+      continue;
+    }
+
+    if (skip > 0)
+    {
+      skip--;
+      continue;
+    }
+
+    tmp.Format(_T("/%s%s"), dir[i], tmpFull);
+    tmpFull = tmp;
+  }
+
+  path = skip == 0 && !tmpFull.IsEmpty() ? tmpFull : "/";
+}
+
 bool TestExt(CString ext, CString extList)
 {
   ext.MakeLower();

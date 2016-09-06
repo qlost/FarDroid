@@ -68,7 +68,6 @@ typedef CSortedArray<int, int&> simpvec;
 #define P_Copy1 _F("operac4 FAR plugin, (c) 2003-2008 Vladimir Kubyshev")
 
 #define INFOLINES 1
-//#define USELOGGING
 
 #include "myrtl.h"
 #include "mystr.h"

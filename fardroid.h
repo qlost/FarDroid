@@ -237,13 +237,12 @@ private:
 	InfoPanelLines lines;
   InfoSize infoSize;
 
-	CFileRecord * GetFileRecord(LPCTSTR sFileName);
-  static unsigned long long ParseSizeInfo(CString s);
-  //	DWORD ParseSection (HANDLE hFile, BYTE sectionID);
-//	bool ParseSectionBuf (BYTE * buf, int &bufPos, int bufSize, CFileRecords * record);
-	CString m_currentPath;
+  CString m_currentPath;
   CString m_currentDevice;
   CString m_currentDeviceName;
+
+	CFileRecord * GetFileRecord(LPCTSTR sFileName);
+  static unsigned long long ParseSizeInfo(CString s);
   void ShowADBExecError(CString err, bool bSilent);
   static void DrawProgress(CString& sProgress, int size, double pc);
   static void DrawProgress(CString& sProgress, int size, LPCTSTR current, LPCTSTR total);
@@ -294,7 +293,7 @@ private:
 	int DelItems(PluginPanelItem *PanelItem, int ItemsNumber, bool noPromt, bool ansYes, bool bSilent);
 
 	void ParseMemoryInfo(CString s);
-	void GetMemoryInfo();
+	bool GetMemoryInfo();
 	void ParsePartitionInfo(CString s);
 	void GetPartitionsInfo();
 	int UpdateInfoLines();
@@ -308,6 +307,7 @@ public:
 	CString fileUnderCursor;
 	CString panelTitle;
 	strmap params;
+
 	fardroid(void);
 	~fardroid(void);
 

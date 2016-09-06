@@ -23,15 +23,12 @@ public:
 	BOOL		AddToDiskMenu;
 	BOOL		ShowLinksAsDir;
 	BOOL		ShowAllPartitions;
-	BOOL		UseSU;
+  BOOL    SU;
+  BOOL		UseSU;
 	BOOL		UseExtendedAccess;
 	BOOL		RemountSystem;
-	/*CString Mode1CTypes;
-	CString Mode1CSizes;
-	CString Mode2CTypes;
-	CString Mode2CSizes;*/
+
 	CConfig(void);
-	~CConfig(void);
 	bool InitHandle();
 	void FreeHandle();
 	void Set(size_t Root, const wchar_t* Name, CString & Value) const;
@@ -45,5 +42,6 @@ public:
   void SetSub(size_t Root, const wchar_t* Sub, const wchar_t* Name, CString& Value);
   bool Load();
 	void Save();
-	BOOL LinksAsDir() const;
+  void SavePanel();
+  BOOL LinksAsDir() const;
 };

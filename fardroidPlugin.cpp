@@ -133,8 +133,8 @@ intptr_t WINAPI ConfigDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void* 
       break;
     case 5:
     case 9:
-      BOOL enable = fInfo.SendDlgMessage(hDlg, DM_GETCHECK, 5, nullptr) && fInfo.SendDlgMessage(hDlg, DM_GETCHECK, 9, nullptr);
-      fInfo.SendDlgMessage(hDlg, DM_ENABLE, 10, &enable);
+      auto enable = fInfo.SendDlgMessage(hDlg, DM_GETCHECK, 5, nullptr) && fInfo.SendDlgMessage(hDlg, DM_GETCHECK, 9, nullptr);
+      fInfo.SendDlgMessage(hDlg, DM_ENABLE, 10, reinterpret_cast<void *>(enable));
       break;
     }
   return fInfo.DefDlgProc(hDlg, Msg, Param1, Param2);
@@ -361,7 +361,7 @@ intptr_t WINAPI ProcessPanelEventW(const struct ProcessPanelEventInfo* Info)
     conf.SortMode = PInfo.SortMode;
     conf.PanelMode = static_cast<int>(PInfo.ViewMode);
     conf.SortOrder = IS_FLAG(PInfo.Flags, PFLAGS_REVERSESORTORDER);
-    conf.Save();
+    conf.SavePanel();
     break;
   }
 

@@ -590,7 +590,7 @@ repeatcopy:
   // Этот работает только в Native Mode с включенным Superuser, при включенном ExtendedAccess
 
   CString old_permissions;
-  bool UseChmod = (conf.WorkMode == WORKMODE_NATIVE && conf.UseSU && conf.UseExtendedAccess);
+  bool UseChmod = (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess);
   if (UseChmod)
   {
     UseChmod = false;
@@ -624,7 +624,7 @@ repeatcopy:
     if (conf.WorkMode == WORKMODE_NATIVE)
     {
       if (!sRes.IsEmpty()) sRes += _T("\n");
-      sRes += (conf.UseSU) ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm);
+      sRes += (conf.SU) ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm);
     }
     else
     {
@@ -656,7 +656,7 @@ repeatcopy:
   BOOL res = ADB_push(src, dst, sRes, bSilent);
 
   // Восстановим оригинальные права на файл
-  if (conf.WorkMode == WORKMODE_NATIVE && conf.UseSU && conf.UseExtendedAccess)
+  if (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess)
     SetPermissionsFile(dst, old_permissions);
 
   if (!res)
@@ -669,7 +669,7 @@ repeatcopy:
     if (conf.WorkMode == WORKMODE_NATIVE)
     {
       if (!sRes.IsEmpty()) sRes += _T("\n");
-      sRes += (conf.UseSU) ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm);
+      sRes += (conf.SU) ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm);
     }
     else
     {
@@ -847,7 +847,7 @@ int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& Des
 
 int fardroid::UpdateInfoLines()
 {
-  //version first
+
   lines.RemoveAll();
   infoSize.RemoveAll();
 
@@ -857,17 +857,13 @@ int fardroid::UpdateInfoLines()
 
   lines.Add(pl);
 
-#ifdef USELOGGING
-	CPerfCounter counter;
-	counter.Start(_T("Get Memory Info"));
-#endif
-
-  GetMemoryInfo();
-
-#ifdef USELOGGING
-	counter.Stop(NULL);
-	counter.Start(_T("Get Partitions Info"));
-#endif
+  conf.SU = conf.UseSU;
+  auto res = GetMemoryInfo();
+  if (conf.SU && !res)
+  { 
+    conf.SU = FALSE;
+    GetMemoryInfo();
+  }
 
   GetPartitionsInfo();
 
@@ -1136,35 +1132,13 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
     s = item->linkto;
 
   CString tempPath;
-  int i = s.Find(_T("/"));
-  int j = s.Find(_T("\\"));
-  if (i != -1 || j != -1)//перемещение с помощью команды cd
-  {
-    if (s[0] == _T('/') || s[0] == _T('\\')) //абсолютный путь
-    {
-      tempPath = s;
-    }
-    else //относительный путь в глубь иерархии (пока отбрасываем всякие ..\path. TODO!!!)
-    {
-      tempPath = m_currentPath;
-      AddEndSlash(tempPath, true);
-      tempPath += s;
-    }
-  }
-  if (i == -1 && j == -1)//простое относительное перемещение
-  {
-    if (s == _T("..")) 
-    {
-      tempPath = ExtractPath(m_currentPath);
-    }
-    else {
-      tempPath = m_currentPath;
-      AddEndSlash(tempPath, true);
-      tempPath += s;
-    }
-  }
 
-  AddBeginSlash(tempPath);
+  if (s[0] == '/')
+    tempPath = s;
+  else
+    tempPath.Format(_T("%s/%s"), m_currentPath, s);
+
+  NormilizePath(tempPath);
 
   if (OpenPanel(tempPath, updateInfo))
     return TRUE;
@@ -1426,7 +1400,7 @@ BOOL fardroid::ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   if (m_bForceBreak)
     DeleteFileFrom(sDst, true);
 
-  if (conf.WorkMode == WORKMODE_NATIVE && conf.UseSU && conf.UseExtendedAccess)
+  if (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess)
     SetPermissionsFile(sDst, "-rw-rw-rw-");
   return TRUE;
 }
@@ -1834,17 +1808,8 @@ BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files) const
 {
   DeleteRecords(files);
   strvec lines;
-#ifdef USELOGGING
-	CPerfCounter counter;
-	counter.Start(_T("Prepare listing"));
-#endif
 
   Tokenize(sFileList, lines, _T("\r\n"));
-
-#ifdef USELOGGING
-	counter.Stop(NULL);
-	counter.Start(_T("Parse listing"));
-#endif
 
   for (int i = 0; i < lines.GetSize(); i++)
   {
@@ -2529,37 +2494,43 @@ void fardroid::ParseMemoryInfo(CString s)
   strvec tokens;
 
   CPanelLine pl;
-  CInfoSize fs;
   pl.separator = FALSE;
 
-  CString regex = _T("/([\\w]+(?=:)):\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s|$))/");
+  CString regex = _T("/(\\w+):\\s+(.+)$/");
   RegExTokenize(s, regex, tokens);
-  if (tokens.GetSize() == 4)
+  if (tokens.GetSize() > 1)
   {
     pl.text = tokens[0];
-    pl.data.Format(_T("%s/%s"), tokens[1], tokens[3]);
+    pl.data = tokens[1];
     lines.Add(pl);
   }
 }
 
-void fardroid::GetMemoryInfo()
+bool fardroid::GetMemoryInfo()
 {
+  const static auto showSize = 7;
+
   CString sRes;
-  ADBShellExecute(_T("free"), sRes, false);
+  ADBShellExecute(_T("cat /proc/meminfo"), sRes, false);
 
   strvec str;
   Tokenize(sRes, str, _T("\n"));
+
+  auto size = str.GetSize();
+  if (size < showSize)
+    return false;
 
   CPanelLine pl;
   pl.separator = TRUE;
   pl.text = LOC(MMemoryInfo);
   lines.Add(pl);
 
-  if (str.GetSize() == 4)
+  for (auto i = 0; i < 7; i++)
   {
-    for (int i = 1; i < str.GetSize(); i++)
-      ParseMemoryInfo(str[i]);
+    ParseMemoryInfo(str[i]);
   }
+
+  return true;
 }
 
 void fardroid::ParsePartitionInfo(CString s)
@@ -2877,7 +2848,7 @@ BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent)
 
   BOOL bOK = FALSE;
   CString cmd;
-  if (conf.UseSU)
+  if (conf.SU)
     cmd.Format(_T("shell:su -c \'%s\'"), sCMD);
   else
     cmd.Format(_T("shell:%s"), sCMD);

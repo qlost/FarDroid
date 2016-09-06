@@ -286,32 +286,6 @@ DWORD ModeToAttr(int mode)
     (!IS_FLAG(mode, S_IWRITE) ? FILE_ATTRIBUTE_READONLY : 0);//writable flag
 }
 
-#ifdef USELOGGING
-void CPerfCounter::Log( LPCTSTR lpMsg )
-{
-	CString s;
-	SYSTEMTIME st;
-	GetSystemTime(&st);
-	s.Format(_T("%s: %s"), SystemTimeToString(&st), (lpMsg == NULL)?lastStr:lpMsg);
-	OutputDebugString(lpMsg);
-
-	HANDLE hFile; 
-	CString path;
-	GetTempPath(1024, path.GetBuffer(1024));
-	path.ReleaseBuffer();
-	AddEndSlash(path);
-	path += _T("fardroid.log");
-	hFile = CreateFile(path, GENERIC_WRITE, FILE_SHARE_READ, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
-
-	if (hFile != INVALID_HANDLE_VALUE) 
-	{ 
-		SetFilePointer(hFile, 0, NULL, FILE_END);
-		WriteLine(hFile, s, CodePage_ANSI);
-		CloseHandle(hFile);
-	}
-}
-#endif
-
 BOOL DeleteDir(LPCTSTR sSrc)
 {
   CString sDir = sSrc;

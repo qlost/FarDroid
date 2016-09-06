@@ -6,6 +6,8 @@ bool		TestExt(CString ext, CString extList);
 CString ExtractName(CString Path, bool bRev = true);
 CString ExtractPath(CString Path, bool bRev = true);//unix like
 CString ExtractExt(CString Path);
+void NormilizePath(CString &path);
+
 void RegExTokenize(CString str, CString regex, strvec& tokens);
 void Tokenize(CString str,	strvec& tokens,	const CString& sep = " ", bool bLeaveSep = true );
 void TokensToParams(strvec& tokens,	strmap& params);
