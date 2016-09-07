@@ -3,6 +3,10 @@
  "*" - changed
  "!" - warning
 
+ 07.09.16 v2.5.1
+  + Support relative path in Symbolic Links.
+  * Remove HostFile - now Ctrl+[ and Ctrl+] should work correct.
+
  06.09.16 v2.5.0
   + Auto Check Superuser and work normally with non-rooted devices with Superuser config enabled.
   + Process all links and any path with any number of '..'

@@ -304,7 +304,6 @@ public:
 	bool m_bForceBreak;
   TaskBarIcon taskbarIcon;
 
-	CString fileUnderCursor;
 	CString panelTitle;
 	strmap params;
 

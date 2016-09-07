@@ -149,8 +149,6 @@ bool fardroid::DeviceNameDialog(const CString &name, CString &alias)
 
 HANDLE fardroid::OpenFromMainMenu()
 {
-  fileUnderCursor = ExtractName(GetCurrentFileName());
-
   if (DeviceTest())
   {
     if (conf.RemountSystem)
@@ -283,8 +281,6 @@ HANDLE fardroid::OpenFromCommandLine(const CString& cmd)
 
   if (havefile)
   {
-    fileUnderCursor = ExtractName(GetCurrentFileName());
-
     DelEndSlash(dir, true);
     if (ChangeDir(dir))
       return static_cast<HANDLE>(this);
@@ -874,7 +870,6 @@ void fardroid::PreparePanel(OpenPanelInfo* Info)
 {
   panelTitle.Format(_T("%s%s"), m_currentDeviceName, m_currentPath);
 
-  Info->HostFile = _C(fileUnderCursor);
   Info->PanelTitle = _C(panelTitle);
   Info->CurDir = _C(m_currentPath);
 
