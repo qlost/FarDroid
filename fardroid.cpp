@@ -1132,12 +1132,10 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
     s = item->linkto;
 
   CString tempPath;
-
   if (s[0] == '/')
     tempPath = s;
   else
     tempPath.Format(_T("%s/%s"), m_currentPath, s);
-
   NormilizePath(tempPath);
 
   if (OpenPanel(tempPath, updateInfo))
@@ -2019,9 +2017,16 @@ BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo)
     if (bOK && conf.WorkMode != WORKMODE_SAFE && records.GetSize() == 1)
     {
       auto file = records[0];
-      CString name = ExtractName(sDir);
-      if (IsLink(file->attr) && name.Compare(file->filename) == 0 && file->linkto[0] == _T('/'))
-        return OpenPanel(file->linkto, updateInfo);
+      if (IsLink(file->attr) && file->filename.Compare(ExtractName(sDir)) == 0)
+      {
+        CString tempPath;
+        if (file->linkto[0] == '/')
+          tempPath = file->linkto;
+        else
+          tempPath.Format(_T("%s/%s"), ExtractPath(sDir), file->linkto);
+        NormilizePath(tempPath);
+        return OpenPanel(tempPath, updateInfo);
+      }
     }
   }
 
@@ -2525,7 +2530,7 @@ bool fardroid::GetMemoryInfo()
   pl.text = LOC(MMemoryInfo);
   lines.Add(pl);
 
-  for (auto i = 0; i < 7; i++)
+  for (auto i = 0; i < showSize; i++)
   {
     ParseMemoryInfo(str[i]);
   }
