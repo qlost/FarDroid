@@ -3,6 +3,9 @@
  "*" - changed
  "!" - warning
 
+ 08.09.16 v2.7.0
+  + Support Android 7.0.
+
  08.09.16 v2.6.0
   + Option ADB kill server on Exit.
   * Fix Copy/Move progress indicator.

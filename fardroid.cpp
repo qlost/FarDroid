@@ -1802,22 +1802,28 @@ BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files) const
   DeleteRecords(files);
   strvec lines;
 
-  Tokenize(sFileList, lines, _T("\r\n"));
+  Tokenize(sFileList, lines, _T("\n"));
 
-  for (int i = 0; i < lines.GetSize(); i++)
+  auto size = lines.GetSize();
+  for (auto i = 0; i < size; i++)
   {
     switch (conf.WorkMode)
     {
     case WORKMODE_BUSYBOX:
-      if (!ParseFileLineBB(lines[i], files))
-        return FALSE;
+      ParseFileLineBB(lines[i], files);
       break;
     case WORKMODE_NATIVE:
-      if (!ParseFileLine(lines[i], files))
-        return FALSE;
+      ParseFileLine(lines[i], files);
       break;
     }
   }
+
+  if (size == 1 && files.GetSize() == 0)
+  {
+    ShowError(sFileList);
+    return FALSE;
+  }
+
   return TRUE;
 }
 
@@ -1828,11 +1834,13 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
   CFileRecord* rec = nullptr;
   if (sLine.IsEmpty())
     return true;
+  if (sLine.Left(5) == _T("total") || sLine.Left(3) == _T("ls:"))
+    return true;
 
   switch (sLine[0])
   {
   case 'd': //directory
-    regex = _T("/([\\w-]+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+([\\w-]+(?=\\s))\\s+([\\w:]+(?=\\s))\\s(.+)$/");
+    regex = _T("/([\\w-]+)\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+(?:\\d+\\s+)?([\\w-]+)\\s+([\\w:]+)\\s+(.+)$/");
     RegExTokenize(sLine, regex, tokens);
     if (tokens.GetSize() == 6)
     {
@@ -1846,7 +1854,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
     }
     break;
   case 'l': //symlink
-    regex = _T("/([\\w-]+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+([\\w-]+(?=\\s))\\s+([\\w:]+(?=\\s))\\s(.+(?=\\s->))\\s->\\s(.+)$/");
+    regex = _T("/([\\w-]+)\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+(?:\\d+\\s+)?([\\w-]+)\\s+([\\w:]+)\\s+(.+(?=\\s->))\\s->\\s(.+)$/");
     RegExTokenize(sLine, regex, tokens);
     if (tokens.GetSize() == 7)
     {
@@ -1856,7 +1864,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
       rec->grp = tokens[2];
       rec->time = StringTimeToUnixTime(tokens[3], tokens[4]);
       rec->size = 0;
-      rec->filename = UTF8toW(tokens[5]);
+      rec->filename = ExtractName(UTF8toW(tokens[5]));
       rec->linkto = UTF8toW(tokens[6]);
       rec->desc.Format(_T("-> %s"), UTF8toW(tokens[6]));
     }
@@ -1864,7 +1872,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
   case 'c': //device
   case 'b':
   case 's': //socket
-    regex = _T("/([\\w-]+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+([\\w,]+\\s+\\w+(?=\\s))\\s+([\\w-]+(?=\\s))\\s+([\\w:]+(?=\\s))\\s(.+)$/");
+    regex = _T("/([\\w-]+)\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+([\\w,]+\\s+\\w+)\\s+([\\w-]+)\\s+([\\w:]+)\\s+(.+)$/");
     RegExTokenize(sLine, regex, tokens);
     if (tokens.GetSize() == 7)
     {
@@ -1881,7 +1889,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
     {
     case '-': //file
     case 'p': //FIFO	
-      regex = _T("/([\\w-]+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+([\\w-]+(?=\\s))\\s+([\\w:]+(?=\\s))\\s(.+)$/");
+      regex = _T("/([\\w-]+)\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+([\\w-]+)\\s+([\\w:]+)\\s+(.+)$/");
       RegExTokenize(sLine, regex, tokens);
       if (tokens.GetSize() == 7)
       {
@@ -1895,7 +1903,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
       }
       else
       {
-        regex = _T("/([\\w-]+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+([\\w-]+(?=\\s))\\s+([\\w:]+(?=\\s))\\s(.+)$/");
+        regex = _T("/([\\w-]+)\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+(?:\\d+\\s+)?([\\w-]+)\\s+([\\w:]+)\\s+(.+)$/");
         RegExTokenize(sLine, regex, tokens);
         if (tokens.GetSize() == 6)
         {
@@ -1912,7 +1920,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
     break;
   }
 
-  if (rec)
+  if (rec && rec->filename != "." && rec->filename != "..")
   {
     files.Add(rec);
     return true;
@@ -1933,7 +1941,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
   switch (sLine[0])
   {
   case 'l': //symlink
-    regex = _T("/([\\w-]+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+([\\w:]+(?=\\s))\\s+(\\w+(?=\\s))\\s(.+(?=\\s->))\\s->\\s(.+)$/");
+    regex = _T("/([\\w-]+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+([\\w:]+)\\s+(\\w+)\\s(.+(?=\\s->))\\s->\\s(.+)$/");
     RegExTokenize(sLine, regex, tokens);
     if (tokens.GetSize() == 12)
     {
@@ -1951,7 +1959,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
   case 'd': //directory
   case '-': //file
   case 'p': //FIFO
-    regex = _T("/([\\w-]+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+([\\w:]+(?=\\s))\\s+(\\w+(?=\\s))\\s(.+)$/");
+    regex = _T("/([\\w-]+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+([\\w:]+)\\s+(\\w+)\\s(.+)$/");
     RegExTokenize(sLine, regex, tokens);
     if (tokens.GetSize() == 11)
     {
@@ -1969,7 +1977,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
   case 'c': //device
   case 'b':
   case 's':
-    regex = _T("/([\\w-]+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+([\\w,]+\\s+\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+(\\w+(?=\\s))\\s+([\\w:]+(?=\\s))\\s+(\\w+(?=\\s))\\s(.+)$/");
+    regex = _T("/([\\w-]+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+([\\w,]+\\s+\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+([\\w:]+)\\s+(\\w+)\\s(.+)$/");
     RegExTokenize(sLine, regex, tokens);
     if (tokens.GetSize() == 11)
     {
@@ -1985,7 +1993,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
     break;
   }
 
-  if (rec)
+  if (rec && rec->filename != "." && rec->filename != "..")
   {
     files.Add(rec);
     return true;
