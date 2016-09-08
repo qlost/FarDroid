@@ -27,6 +27,8 @@ enum
 	MConfRemountSystem,
 	MConfTimeout,
 	MConfADBPath,
+  MConfKillServer,
+  MConfKillServerWarning,
 
 	MError,
 	MDeviceNotFound,

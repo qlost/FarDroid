@@ -128,13 +128,14 @@ intptr_t WINAPI ConfigDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void* 
   if (DN_BTNCLICK == Msg)
     switch (Param1)
     {
-    case 6:
-      fInfo.SendDlgMessage(hDlg, DM_ENABLE, 7, Param2);
+    case ID_WorkModeBB:
+      fInfo.SendDlgMessage(hDlg, DM_ENABLE, ID_ShowLinksAsDir, Param2);
       break;
-    case 5:
-    case 9:
-      auto enable = fInfo.SendDlgMessage(hDlg, DM_GETCHECK, 5, nullptr) && fInfo.SendDlgMessage(hDlg, DM_GETCHECK, 9, nullptr);
-      fInfo.SendDlgMessage(hDlg, DM_ENABLE, 10, reinterpret_cast<void *>(enable));
+    case ID_WorkModeNative:
+    case ID_UseSU:
+      auto enable = fInfo.SendDlgMessage(hDlg, DM_GETCHECK, ID_WorkModeNative, nullptr) 
+                 && fInfo.SendDlgMessage(hDlg, DM_GETCHECK, ID_UseSU, nullptr);
+      fInfo.SendDlgMessage(hDlg, DM_ENABLE, ID_UseExtendedAccess, reinterpret_cast<void *>(enable));
       break;
     }
   return fInfo.DefDlgProc(hDlg, Msg, Param1, Param2);
@@ -147,24 +148,23 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
     /*00*/FDI_DOUBLEBOX(width - 4,19,(farStr *)MConfTitle),
     /*01*/FDI_CHECK(5, 2,(farStr *)MConfAddToDisk),
     /*02*/FDI_LABEL(5, 3, (farStr *)MConfPrefix),
-    /*03*/FDI_EDIT(13, 3,28, _F("fardroidPrefix")),
+    /*03*/FDI_EDIT(13, 3, 28, _F("fardroidPrefix")),
     /*04*/FDI_RADIO(5, 5, (farStr*)MConfSafeMode),
     /*05*/FDI_RADIO(5, 6, (farStr*)MConfNative),
     /*06*/FDI_RADIO(5, 7, (farStr*)MConfBusybox),
     /*07*/FDI_CHECK(9, 8, (farStr*)MConfShowLinksAsDirs),
-    /*08*/FDI_CHECK(5,10, (farStr*)MConfShowAllFilesystems),
-    /*09*/FDI_CHECK(5,11, (farStr*)MConfUseSU),
-    /*10*/FDI_CHECK(9,12, (farStr*)MConfUseExtendedAccess),
-    /*11*/FDI_CHECK(5,13, (farStr*)MConfRemountSystem),
-    /*12*/FDI_LABEL(5,14, (farStr*)MConfTimeout),
-    /*13*/FDI_EDIT(14,14,27, _F("fardroidTimeout")),
-    /*14*/FDI_LABEL(5,16, (farStr*)MConfADBPath),
-    /*15*/FDI_EDIT(18,16,43, _F("fardroidADBPath")),
-    /*16*/FDI_DEFCBUTTON(18,(farStr *)MOk),
-    /*17*/FDI_CBUTTON(18,(farStr *)MCancel),
+    /*08*/FDI_CHECK(5,10, (farStr*)MConfUseSU),
+    /*09*/FDI_CHECK(9,11, (farStr*)MConfUseExtendedAccess),
+    /*10*/FDI_CHECK(5,12, (farStr*)MConfRemountSystem),
+    /*11*/FDI_LABEL(5,14, (farStr*)MConfADBPath),
+    /*12*/FDI_EDIT(18,14, 48, _F("fardroidADBPath")),
+    /*13*/FDI_CHECK(5,15, (farStr*)MConfKillServer),
+    /*14*/FDI_LABEL(9,16,(farStr*)MConfKillServerWarning),
+    /*15*/FDI_DEFCBUTTON(18,(farStr *)MOk),
+    /*16*/FDI_CBUTTON(18,(farStr *)MCancel),
     /*--*/FDI_SEPARATOR(4,_F("")),
     /*--*/FDI_SEPARATOR(9,_F("")),
-    /*--*/FDI_SEPARATOR(15,_F("")),
+    /*--*/FDI_SEPARATOR(13,_F("")),
     /*--*/FDI_SEPARATOR(17,_F("")),
   };
   const int size = sizeof InitItems / sizeof InitItems[0];
@@ -172,65 +172,58 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
   FarDialogItem DialogItems[size];
   InitDialogItems(InitItems, DialogItems, size);
 
-  DialogItems[1].Selected = conf.AddToDiskMenu;
+  DialogItems[ID_AddToDiskMenu].Selected = conf.AddToDiskMenu;
 
-  wchar_t* editbuf2 = static_cast<wchar_t *>(my_malloc(1024));
-  lstrcpyW(editbuf2, conf.Prefix);
-  DialogItems[3].Data = editbuf2;
+  auto editbuf1 = static_cast<wchar_t *>(my_malloc(1024));
+  lstrcpyW(editbuf1, conf.Prefix);
+  DialogItems[ID_Prefix].Data = editbuf1;
 
-  DialogItems[4].Selected = conf.WorkMode == WORKMODE_SAFE;
-  DialogItems[5].Selected = conf.WorkMode == WORKMODE_NATIVE;
-  DialogItems[6].Selected = conf.WorkMode == WORKMODE_BUSYBOX;
-  DialogItems[7].Selected = conf.ShowLinksAsDir;
-  DialogItems[8].Selected = conf.ShowAllPartitions;
-  DialogItems[9].Selected = conf.UseSU;
-  DialogItems[10].Selected = conf.UseExtendedAccess;
-  DialogItems[11].Selected = conf.RemountSystem;
+  DialogItems[ID_WorkModeSafe].Selected = conf.WorkMode == WORKMODE_SAFE;
+  DialogItems[ID_WorkModeNative].Selected = conf.WorkMode == WORKMODE_NATIVE;
+  DialogItems[ID_WorkModeBB].Selected = conf.WorkMode == WORKMODE_BUSYBOX;
+  DialogItems[ID_ShowLinksAsDir].Selected = conf.ShowLinksAsDir;
+  DialogItems[ID_UseSU].Selected = conf.UseSU;
+  DialogItems[ID_UseExtendedAccess].Selected = conf.UseExtendedAccess;
+  DialogItems[ID_RemountSystem].Selected = conf.RemountSystem;
+  DialogItems[ID_KillServer].Selected = conf.KillServer;
 
-  wchar_t* editbuf3 = static_cast<wchar_t *>(my_malloc(1024));
-  FSF.sprintf(editbuf3, L"%d", conf.TimeOut);
-  DialogItems[13].Data = editbuf3;
+  if (conf.WorkMode != WORKMODE_BUSYBOX)
+    DialogItems[ID_ShowLinksAsDir].Flags |= DIF_DISABLE;
+  if (!(conf.UseSU && conf.WorkMode == WORKMODE_NATIVE))
+    DialogItems[ID_UseExtendedAccess].Flags |= DIF_DISABLE;
 
-  wchar_t* editbuf4 = static_cast<wchar_t *>(my_malloc(1024));
-  lstrcpyW(editbuf4, conf.ADBPath);
-  DialogItems[15].Data = editbuf4;
+  auto editbuf2 = static_cast<wchar_t *>(my_malloc(1024));
+  lstrcpyW(editbuf2, conf.ADBPath);
+  DialogItems[ID_ADBPath].Data = editbuf2;
 
   HANDLE hdlg = fInfo.DialogInit(&MainGuid, &DialogGuid, -1, -1, width, 21, _F("Config"), DialogItems, size, 0, 0, ConfigDlgProc, nullptr);
-  if (conf.WorkMode != WORKMODE_BUSYBOX)
-    fInfo.SendDlgMessage(hdlg, DM_ENABLE, 7, reinterpret_cast<void *>(FALSE));
-  if (!(conf.UseSU && conf.WorkMode == WORKMODE_NATIVE))
-    fInfo.SendDlgMessage(hdlg, DM_ENABLE, 10, reinterpret_cast<void *>(FALSE));
   int res = static_cast<int>(fInfo.DialogRun(hdlg));
-  if (res == 16)
+  if (res == ID_Ok)
   {
-    conf.AddToDiskMenu = GetItemSelected(hdlg, 1);
-
-    conf.Prefix = GetItemData(hdlg, 3);
-    if (GetItemSelected(hdlg, 4))
+    if (GetItemSelected(hdlg, ID_WorkModeSafe))
       conf.WorkMode = WORKMODE_SAFE;
-    else if (GetItemSelected(hdlg, 5))
+    else if (GetItemSelected(hdlg, ID_WorkModeNative))
       conf.WorkMode = WORKMODE_NATIVE;
-    if (GetItemSelected(hdlg, 6))
+    if (GetItemSelected(hdlg, ID_WorkModeBB))
       conf.WorkMode = WORKMODE_BUSYBOX;
 
-    conf.ShowLinksAsDir = GetItemSelected(hdlg, 7);
-    conf.ShowAllPartitions = GetItemSelected(hdlg, 8);
-    conf.UseSU = GetItemSelected(hdlg, 9);
-    conf.UseExtendedAccess = GetItemSelected(hdlg, 10);
-    conf.RemountSystem = GetItemSelected(hdlg, 11);
-
-    conf.TimeOut = FSF.atoi(GetItemData(hdlg, 13));
-
-    conf.ADBPath = GetItemData(hdlg, 15);
+    conf.AddToDiskMenu = GetItemSelected(hdlg, ID_AddToDiskMenu);
+    conf.Prefix = GetItemData(hdlg, ID_Prefix);
+    conf.ShowLinksAsDir = GetItemSelected(hdlg, ID_ShowLinksAsDir);
+    conf.UseSU = GetItemSelected(hdlg, ID_UseSU);
+    conf.UseExtendedAccess = GetItemSelected(hdlg, ID_UseExtendedAccess);
+    conf.RemountSystem = GetItemSelected(hdlg, ID_RemountSystem);
+    conf.ADBPath = GetItemData(hdlg, ID_ADBPath);
+    conf.KillServer = GetItemSelected(hdlg, ID_KillServer);
 
     conf.Save();
   }
-  fInfo.DialogFree(hdlg);
-  my_free(editbuf2);
-  my_free(editbuf3);
-  my_free(editbuf4);
 
-  return res == 16;
+  fInfo.DialogFree(hdlg);
+  my_free(editbuf1);
+  my_free(editbuf2);
+
+  return res == ID_Ok;
 }
 
 void WINAPI GetOpenPanelInfoW(struct OpenPanelInfo* Info)

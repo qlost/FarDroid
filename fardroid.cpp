@@ -26,19 +26,19 @@ DWORD WINAPI ProcessThreadProc(LPVOID lpParam)
 }
 
 
-fardroid::fardroid(void)
+fardroid::fardroid(void): lastError(S_OK), handleAdbServer(FALSE), InfoPanelLineArray(nullptr), m_bForceBreak(false)
 {
   m_currentPath = _T("/");
   m_currentDevice = _T("");
-  InfoPanelLineArray = nullptr;
-  lastError = S_OK;
-  m_bForceBreak = false;
 }
 
 fardroid::~fardroid(void)
 {
   if (InfoPanelLineArray)
     delete [] InfoPanelLineArray;
+
+  if (conf.KillServer && handleAdbServer == TRUE)
+    ExecuteCommandLine(_T("adb.exe"), conf.ADBPath, _T("kill-server"), false);
 
   DeleteRecords(records);
 }
@@ -2103,12 +2103,12 @@ void fardroid::ShowProgressMessage()
 
       static CString sInfo;
       int elapsed = m_procStruct.nTotalFileSize == 0 ? 0 : (time - m_procStruct.nTotalStartTime) / 1000;
-      auto speed = 0;
-      auto remain = 0;
+      UINT64 speed = 0;
+      UINT64 remain = 0;
       if (elapsed > 0)
-        speed = static_cast<int>(m_procStruct.nTotalTransmitted / elapsed);
+        speed = m_procStruct.nTotalTransmitted / elapsed;
       if (speed > 0)
-        remain = static_cast<int>((m_procStruct.nTotalFileSize - m_procStruct.nTotalTransmitted) / speed);
+        remain = (m_procStruct.nTotalFileSize - m_procStruct.nTotalTransmitted) / speed;
       sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSpeed(speed));
 
       int size = sInfo.GetLength() - 5;
@@ -2128,7 +2128,7 @@ void fardroid::ShowProgressMessage()
       CString sFiles = LOC(MFiles);
       CString sBytes = LOC(MBytes);
       DrawProgress(sFiles, size, FormatNumber(m_procStruct.nPosition), FormatNumber(m_procStruct.nTotalFiles));
-      DrawProgress(sBytes, size, FormatNumber(static_cast<int>(m_procStruct.nTotalTransmitted)), FormatNumber(static_cast<int>(m_procStruct.nTotalFileSize)));
+      DrawProgress(sBytes, size, FormatNumber(m_procStruct.nTotalTransmitted), FormatNumber(m_procStruct.nTotalFileSize));
 
       double pc = m_procStruct.nFileSize > 0 ? static_cast<double>(m_procStruct.nTransmitted) / static_cast<double>(m_procStruct.nFileSize) : 0;
       double tpc = m_procStruct.nTotalFileSize > 0 ? static_cast<double>(m_procStruct.nTotalTransmitted) / static_cast<double>(m_procStruct.nTotalFileSize) : 0;
@@ -2180,11 +2180,11 @@ void fardroid::ShowProgressMessage()
   }
 }
 
-CString fardroid::FormatSpeed(int cb)
+CString fardroid::FormatSpeed(UINT64 cb)
 {
-  int n = cb;
-  int pw = 0;
-  int div = 1;
+  auto n = cb;
+  auto pw = 0;
+  auto div = 1;
   while (n >= 1000)
   {
     div *= 1024;
@@ -2219,7 +2219,7 @@ CString fardroid::FormatSpeed(int cb)
   return res;
 }
 
-CString fardroid::FormatTime(int time)
+CString fardroid::FormatTime(UINT64 time)
 {
   CString res;
   res.Format(_T("%2.2d:%2.2d:%2.2d"), time / 3600, (time % 3600) / 60, time % 3600 % 60);
@@ -2725,8 +2725,6 @@ bool fardroid::ReadADBSocket(SOCKET sockADB, char* buf, int bufSize)
 SOCKET fardroid::PrepareADBSocket()
 {
   lastError = S_OK;
-  int tryCnt = 0;
-tryagain:
   SOCKET sock = CreateADBSocket();
   if (sock)
   {
@@ -2753,8 +2751,7 @@ tryagain:
         switch (DeviceMenu(devices))
         {
         case TRUE:
-          goto tryagain;
-          break;
+          return PrepareADBSocket();
         case ABORT:
           lastError = S_OK;
           break;
@@ -2782,11 +2779,12 @@ tryagain:
   }
   else
   {
-    if (tryCnt == 0)
+    if (handleAdbServer == FALSE)
     {
-      tryCnt++;
-      if (ExecuteCommandLine(_T("adb.exe"), conf.ADBPath, _T("start-server")))
-        goto tryagain;
+      handleAdbServer = ExecuteCommandLine(_T("adb.exe"), conf.ADBPath, _T("start-server"), true);
+      if (handleAdbServer)
+        return PrepareADBSocket();
+      handleAdbServer = ABORT;
     }
     else
     {

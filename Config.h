@@ -19,10 +19,9 @@ public:
 	int			SortMode;
 	int			SortOrder;
 	int			WorkMode;
-	int			TimeOut;
 	BOOL		AddToDiskMenu;
 	BOOL		ShowLinksAsDir;
-	BOOL		ShowAllPartitions;
+	BOOL		KillServer;
   BOOL    SU;
   BOOL		UseSU;
 	BOOL		UseExtendedAccess;

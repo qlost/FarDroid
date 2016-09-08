@@ -1,3 +1,20 @@
+const enum ConfigID
+{
+  ID_AddToDiskMenu = 1,
+  ID_Prefix = 3,
+  ID_WorkModeSafe = 4,
+  ID_WorkModeNative = 5,
+  ID_WorkModeBB = 6,
+  ID_ShowLinksAsDir = 7,
+  ID_UseSU = 8,
+  ID_UseExtendedAccess = 9,
+  ID_RemountSystem = 10,
+  ID_ADBPath = 12,
+  ID_KillServer = 13,
+  ID_Ok = 15,
+  ID_Cancel = 16,
+};
+
 BOOL	APIENTRY DllMain( HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved);
 void	WINAPI GetGlobalInfoW(struct GlobalInfo *Info);
 void	WINAPI  SetStartupInfoW(const struct PluginStartupInfo *Info);

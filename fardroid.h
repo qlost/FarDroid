@@ -231,6 +231,8 @@ class fardroid
 {
 private:
 	int lastError;
+  int handleAdbServer;
+
   CFileRecords  records;
 	ProcessStruct m_procStruct;
 	InfoPanelLine * InfoPanelLineArray;
@@ -344,8 +346,8 @@ public:
   void Reread();
 
 	void ShowProgressMessage();
-  static CString FormatSpeed(int cb);
-  static CString FormatTime(int time);
+  static CString FormatSpeed(UINT64 cb);
+  static CString FormatTime(UINT64 time);
   bool BreakProcessDialog();
 	int CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
   int CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);

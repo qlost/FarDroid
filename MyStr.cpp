@@ -432,7 +432,7 @@ CString UTF8toW(LPCTSTR str)
   return s;
 }
 
-CString FormatNumber(int str)
+CString FormatNumber(UINT64 str)
 {
   static bool first = true;
   static NUMBERFMT fmt;
@@ -453,7 +453,7 @@ CString FormatNumber(int str)
   }
 
   CString src;
-  src.Format(L"%d", str);
+  src.Format(L"%I64d", str);
   wchar_t* buf = static_cast<wchar_t*>(my_malloc(255));
   GetNumberFormat(LOCALE_USER_DEFAULT, 0, src, &fmt, buf, 255);
   CString res;

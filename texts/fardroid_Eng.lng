@@ -24,7 +24,8 @@
 "&Remount /system as RW"
 "&Timeout:"
 "Path to &ADB:"
-
+"ADB kill-server on Exit"
+"WARNING: Affect all ADB related Software!"
 
 "Error"
 "Device not found!"
