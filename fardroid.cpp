@@ -323,7 +323,7 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
 
   UINT64 totalSize = 0;
   int filesSize = files.GetSize();
-  for (auto i = 0; i < files.GetSize(); i++)
+  for (auto i = 0; i < filesSize; i++)
     totalSize += files[i]->size;
 
   if (m_procStruct.Lock())
@@ -451,7 +451,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
 
   UINT64 totalSize = 0;
   int filesSize = files.GetSize();
-  for (auto i = 0; i < files.GetSize(); i++)
+  for (auto i = 0; i < filesSize; i++)
     totalSize += files[i]->size;
 
   if (m_procStruct.Lock())
@@ -1038,7 +1038,6 @@ int fardroid::DeviceMenu(CString& text)
   Tokenize(text, devices, _T("\n"));
 
   auto size = devices.GetSize();
-
   if (size == 0)
   {
     return FALSE;
@@ -1050,7 +1049,7 @@ int fardroid::DeviceMenu(CString& text)
     return TRUE;
   }
 
-  for (auto i = 0; i < devices.GetSize(); i++)
+  for (auto i = 0; i < size; i++)
   {
     FarMenuItem item;
     ::ZeroMemory(&item, sizeof(item));
@@ -2117,7 +2116,7 @@ void fardroid::ShowProgressMessage()
         speed = m_procStruct.nTotalTransmitted / elapsed;
       if (speed > 0)
         remain = (m_procStruct.nTotalFileSize - m_procStruct.nTotalTransmitted) / speed;
-      sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSpeed(speed));
+      sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSize("%10.2f", "%s%s/s", speed));
 
       int size = sInfo.GetLength() - 5;
       CString sFrom = m_procStruct.from;
@@ -2186,52 +2185,6 @@ void fardroid::ShowProgressMessage()
 
     m_procStruct.Unlock();
   }
-}
-
-CString fardroid::FormatSpeed(UINT64 cb)
-{
-  auto n = cb;
-  auto pw = 0;
-  auto div = 1;
-  while (n >= 1000)
-  {
-    div *= 1024;
-    n /= 1024;
-    pw++;
-  }
-  CString un;
-  switch (pw)
-  {
-  case 0:
-    un = "Bt/s";
-    break;
-  case 1:
-    un = "KB/s";
-    break;
-  case 2:
-    un = "MB/s";
-    break;
-  case 3:
-    un = "GB/s";
-    break;
-  case 4:
-    un = "TB/s";
-    break;
-  case 5:
-    un = "PB/s";
-    break;
-  }
-
-  CString res;
-  res.Format(_T("%10.2f%s"), static_cast<float>(cb)/static_cast<float>(div), un);
-  return res;
-}
-
-CString fardroid::FormatTime(UINT64 time)
-{
-  CString res;
-  res.Format(_T("%2.2d:%2.2d:%2.2d"), time / 3600, (time % 3600) / 60, time % 3600 % 60);
-  return res;
 }
 
 int fardroid::DelItems(PluginPanelItem* PanelItem, int ItemsNumber, bool noPromt, bool ansYes, bool bSilent)
@@ -2464,12 +2417,6 @@ CFileRecord* fardroid::GetFileRecord(LPCTSTR sFileName)
 unsigned long long fardroid::ParseSizeInfo(CString s)
 {
   strvec tokens;
-  static const auto pb = 1125899906842624ULL;
-  static const auto tb = 1099511627776ULL;
-  static const auto gb = 1073741824ULL;
-  static const auto mb = 1048576ULL;
-  static const auto kb = 1024ULL;
-
   CString regex = _T("/([\\d.]+)(.*)/");
   RegExTokenize(s, regex, tokens);
 
@@ -2478,20 +2425,23 @@ unsigned long long fardroid::ParseSizeInfo(CString s)
   {
     char* buf = getAnsiString(tokens[0]);
     auto size = atof(buf);
-    my_free(buf);
 
     if (tokens.GetSize() > 1) {
-      if (tokens[1].Find('P') != -1)
-        res = static_cast<unsigned long long>(size * pb);
-      else if (tokens[1].Find('T') != -1)
-        res = static_cast<unsigned long long>(size * tb);
-      else if (tokens[1].Find('G') != -1)
-        res = static_cast<unsigned long long>(size * gb);
-      else if (tokens[1].Find('M') != -1)
-        res = static_cast<unsigned long long>(size * mb);
-      else if (tokens[1].Find('K') != -1)
-        res = static_cast<unsigned long long>(size * kb);
+      if (tokens[1].Find('P') != -1 || tokens[1].Find('p') != -1)
+        res = static_cast<unsigned long long>(size * SIZE_PB);
+      else if (tokens[1].Find('T') != -1 || tokens[1].Find('t') != -1)
+        res = static_cast<unsigned long long>(size * SIZE_TB);
+      else if (tokens[1].Find('G') != -1 || tokens[1].Find('g') != -1)
+        res = static_cast<unsigned long long>(size * SIZE_GB);
+      else if (tokens[1].Find('M') != -1 || tokens[1].Find('m') != -1)
+        res = static_cast<unsigned long long>(size * SIZE_MB);
+      else if (tokens[1].Find('K') != -1 || tokens[1].Find('k') != -1)
+        res = static_cast<unsigned long long>(size * SIZE_KB);
+      else
+        res = atoll(buf);
     }
+
+    my_free(buf);
   }
 
   return res;
@@ -2509,7 +2459,7 @@ void fardroid::ParseMemoryInfo(CString s)
   if (tokens.GetSize() > 1)
   {
     pl.text = tokens[0];
-    pl.data = tokens[1];
+    pl.data = FormatSize("%.2f","%s %s", ParseSizeInfo(tokens[1]));
     lines.Add(pl);
   }
 }
@@ -2547,28 +2497,57 @@ void fardroid::ParsePartitionInfo(CString s)
 
   CPanelLine pl;
   CInfoSize fs;
+  const CString formatNum = "%7.2f";
+  const CString formatText = "%s%s";
   pl.separator = FALSE;
+
+  CString path;
+  unsigned long long total = 0, free = 0, used = 0;
 
   CString regex = _T("/(.*(?=:)):\\W+(\\w+(?=\\stotal)).+,\\s(\\w+(?=\\savailable))/");
   RegExTokenize(s, regex, tokens);
-  if (tokens.GetSize() != 3)
-  {
-    regex = _T("/^(\\S+)\\s+(\\d\\S*)\\s+\\S+\\s+(\\d\\S*)/");
-    RegExTokenize(s, regex, tokens);
-  }
   if (tokens.GetSize() == 3)
   {
-    pl.text = tokens[0];
-    pl.data.Format(_T("%s/%s"), tokens[1], tokens[2]);
+    path = tokens[0];
+    total = ParseSizeInfo(tokens[1]);
+    free = ParseSizeInfo(tokens[2]);
+    used = total - free;
+  }
+  else 
+  {
+    regex = _T("/^(\\S+)\\s+([\\d.]+\\S*)\\s+([\\d.]+\\S*)\\s+([\\d.]+\\S*)\\s+(?:[\\d.]+%\\s+)?(\\S+)/");
+    RegExTokenize(s, regex, tokens);
+    if (tokens.GetSize() == 5)
+    {
+      if (tokens[4][0] == '/')
+      {
+        path = tokens[4];
+        total = ParseSizeInfo(tokens[1]) * 1024ULL;
+        used = ParseSizeInfo(tokens[2]) * 1024ULL;
+        free = ParseSizeInfo(tokens[3]) * 1024ULL;
+      }
+      else {
+        path = tokens[0];
+        total = ParseSizeInfo(tokens[1]);
+        used = ParseSizeInfo(tokens[2]);
+        free = ParseSizeInfo(tokens[3]);
+      }
+    }
+  }
+
+  if (path.GetLength() > 0) {
+
+    pl.text = path;
+    pl.data.Format(_T("%s%s%s"), FormatSize(formatNum, formatText, total), FormatSize(formatNum, formatText, used), FormatSize(formatNum, formatText, free));
     lines.Add(pl);
 
-    fs.path = tokens[0];
-    fs.total = ParseSizeInfo(tokens[1]);
-    fs.free = ParseSizeInfo(tokens[2]);
-    fs.used = fs.total - fs.free;
+    fs.path = path;
+    fs.total = total;
+    fs.used = used;
+    fs.free = free;
     infoSize.Add(fs);
 
-    if (fs.path.Find(L"emulated") > 0) 
+    if (fs.path.Find(L"emulated") > 0)
     {
       fs.path = L"/sdcard";
       infoSize.Add(fs);
@@ -2591,8 +2570,13 @@ void fardroid::GetPartitionsInfo()
   pl.separator = TRUE;
   pl.text = LOC(MPartitionsInfo);
   lines.Add(pl);
+  pl.separator = FALSE;
+  pl.text = "";
+  pl.data = "Total     Used     Free";
+  lines.Add(pl);
 
-  for (int i = 0; i < str.GetSize(); i++)
+  auto size = str.GetSize();
+  for (auto i = 0; i < size; i++)
     ParsePartitionInfo(str[i]);
 }
 

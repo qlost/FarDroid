@@ -19,6 +19,13 @@
 
 #define TMP_SUFFIX ".fardroid";
 
+#define SIZE_PB 1125899906842624ULL
+#define SIZE_TB 1099511627776ULL
+#define SIZE_GB 1073741824ULL
+#define SIZE_MB 1048576ULL
+#define SIZE_KB 1024ULL
+
+
 #include "taskbarIcon.h"
 #include "framebuffer.h"
 #include <memory>
@@ -346,8 +353,6 @@ public:
   void Reread();
 
 	void ShowProgressMessage();
-  static CString FormatSpeed(UINT64 cb);
-  static CString FormatTime(UINT64 time);
   bool BreakProcessDialog();
 	int CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
   int CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);

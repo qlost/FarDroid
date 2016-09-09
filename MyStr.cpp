@@ -349,6 +349,27 @@ void AddBeginSlash(CString& str)
   else if (str.Left(1) != _T("/")) str.Insert(0, _T("/"));
 }
 
+void CleanFloat(CString& str, bool keepSize)
+{
+  auto i = 0;
+  while (str.Right(1) == '0')
+  {
+    i++;
+    str.Delete(str.GetLength() - 1);
+  }
+  if (str.Right(1) == '.')
+  {
+    i++;
+    str.Delete(str.GetLength() - 1);
+  }
+
+  if (keepSize && i > 0)
+  {
+    for (auto j = 0; j < i; j++)
+      str.Insert(0, ' ');
+  }
+}
+
 int __cdecl my_wcstombsz(char* mbstr, const wchar_t* wcstr, size_t count, UINT CodePage)
 {
   if (count == 0 && mbstr != nullptr)
@@ -459,5 +480,54 @@ CString FormatNumber(UINT64 str)
   CString res;
   res.Format(L"%s", buf);
   my_free(buf);
+  return res;
+}
+
+CString FormatSize(CString formatNum, CString formatText, UINT64 cb)
+{
+  auto n = cb;
+  auto pw = 0;
+  auto div = 1;
+  while (n >= 1000)
+  {
+    div *= 1024;
+    n /= 1024;
+    pw++;
+  }
+  CString un;
+  switch (pw)
+  {
+  case 0:
+    un = "Bt";
+    break;
+  case 1:
+    un = "KB";
+    break;
+  case 2:
+    un = "MB";
+    break;
+  case 3:
+    un = "GB";
+    break;
+  case 4:
+    un = "TB";
+    break;
+  case 5:
+    un = "PB";
+    break;
+  }
+  CString num;
+  num.Format(formatNum, static_cast<float>(cb) / static_cast<float>(div));
+  CleanFloat(num);
+  CString res;
+  res.Format(formatText, num, un);
+  return res;
+}
+
+
+CString FormatTime(UINT64 time)
+{
+  CString res;
+  res.Format(_T("%2.2d:%2.2d:%2.2d"), time / 3600, (time % 3600) / 60, time % 3600 % 60);
   return res;
 }
