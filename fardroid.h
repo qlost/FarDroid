@@ -237,92 +237,93 @@ typedef CSimpleArrayEx<CInfoSize, CInfoSize> InfoSize;
 class fardroid
 {
 private:
-	int lastError;
+  int lastError;
   int handleAdbServer;
 
   CFileRecords  records;
-	ProcessStruct m_procStruct;
-	InfoPanelLine * InfoPanelLineArray;
-	InfoPanelLines lines;
+  ProcessStruct m_procStruct;
+  InfoPanelLine * InfoPanelLineArray;
+  InfoPanelLines lines;
   InfoSize infoSize;
 
   CString m_currentPath;
   CString m_currentDevice;
   CString m_currentDeviceName;
 
-	CFileRecord * GetFileRecord(LPCTSTR sFileName);
+  CFileRecord * GetFileRecord(LPCTSTR sFileName);
   static unsigned long long ParseSizeInfo(CString s);
+  void GetDeviceInfo();
   void ShowADBExecError(CString err, bool bSilent);
   static void DrawProgress(CString& sProgress, int size, double pc);
   static void DrawProgress(CString& sProgress, int size, LPCTSTR current, LPCTSTR total);
   static SOCKET	CreateADBSocket();
-	SOCKET	PrepareADBSocket();
+  SOCKET	PrepareADBSocket();
   static bool		SendADBPacket(SOCKET sockADB, void * packet, int size);
   static bool		SendADBCommand(SOCKET sockADB, LPCTSTR sCMD);
   static int			ReadADBPacket(SOCKET sockADB, void * packet, int size);
   static bool		CheckADBResponse(SOCKET sockADB);
   static bool		ReadADBSocket(SOCKET sockADB, char * buf, int bufSize);
-	BOOL		ADBShellExecute(LPCTSTR sCMD, CString & sRes, bool bSilent);
+  BOOL ADBShellExecute(LPCTSTR sCMD, CString & sRes, bool bSilent, bool disableSU = false);
   int ADBReadFramebuffer(struct fb* fb);
   static void		ADBSyncQuit(SOCKET sockADB);
-	bool		ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t & mtime);
-	bool		ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, int mode);
+  bool		ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t & mtime);
+  bool		ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, int mode);
   static bool		ADBReadMode(SOCKET sockADB, LPCTSTR path, int &mode);
-	BOOL		ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
-	bool		ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString &sRes);
+  BOOL		ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
+  bool		ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString &sRes);
   void ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
   BOOL		ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
-	bool		ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
+  bool		ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
   void ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
   static void		CloseADBSocket(SOCKET sockADB);
 
-	bool DeviceTest();
-	//BOOL ADB_execute(LPCTSTR sCMD, CString & sRes, bool bSilent);
-	BOOL ADB_ls(LPCTSTR sDir, CFileRecords & files, CString & sRes, bool bSilent);
-	BOOL ADB_rm(LPCTSTR sDir, CString & sRes, bool bSilent);
-	BOOL ADB_mkdir(LPCTSTR sDir, CString & sRes, bool bSilent);
+  bool DeviceTest();
+  //BOOL ADB_execute(LPCTSTR sCMD, CString & sRes, bool bSilent);
+  BOOL ADB_ls(LPCTSTR sDir, CFileRecords & files, CString & sRes, bool bSilent);
+  BOOL ADB_rm(LPCTSTR sDir, CString & sRes, bool bSilent);
+  BOOL ADB_mkdir(LPCTSTR sDir, CString & sRes, bool bSilent);
   BOOL ADB_rename(LPCTSTR sSource, LPCTSTR sDest, CString& sRes);
   BOOL ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent);
-	BOOL ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent);
-	BOOL ADB_findmount( LPCTSTR sFS, strvec &fs_params, CString & sRes, bool bSilent );
-	BOOL ADB_mount(LPCTSTR sFS, BOOL bAsRW, CString & sRes, bool bSilent);
+  BOOL ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent);
+  BOOL ADB_findmount(LPCTSTR sFS, strvec &fs_params, CString & sRes, bool bSilent);
+  BOOL ADB_mount(LPCTSTR sFS, BOOL bAsRW, CString & sRes, bool bSilent);
 
-	bool		ParseFileLineBB(CString & sLine, CFileRecords & files) const;
-	bool		ParseFileLine(CString & sLine, CFileRecords & files) const;
-	//bool		ParseFileLineSafe( CString & sLine );
-	BOOL		ReadFileList(CString & sFileList, CFileRecords & files) const;
-	BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo);
+  bool		ParseFileLineBB(CString & sLine, CFileRecords & files) const;
+  bool		ParseFileLine(CString & sLine, CFileRecords & files) const;
+  //bool		ParseFileLineSafe( CString & sLine );
+  BOOL		ReadFileList(CString & sFileList, CFileRecords & files) const;
+  BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo);
 
-	int		CopyFileFrom(const CString& src, const CString& dst, bool bSilent);
-	int		CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent);
-	int		DeleteFileFrom(const CString& src, bool bSilent);
+  int		CopyFileFrom(const CString& src, const CString& dst, bool bSilent);
+  int		CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent);
+  int		DeleteFileFrom(const CString& src, bool bSilent);
 
-	int GetItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
-	int PutItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
-	int DelItems(PluginPanelItem *PanelItem, int ItemsNumber, bool noPromt, bool ansYes, bool bSilent);
+  int GetItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
+  int PutItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
+  int DelItems(PluginPanelItem *PanelItem, int ItemsNumber, bool noPromt, bool ansYes, bool bSilent);
 
-	void ParseMemoryInfo(CString s);
-	bool GetMemoryInfo();
-	void ParsePartitionInfo(CString s);
-	void GetPartitionsInfo();
-	int UpdateInfoLines();
-	CString GetPermissionsFile(const CString& FullFileName);
+  void ParseMemoryInfo(CString s);
+  bool GetMemoryInfo();
+  void ParsePartitionInfo(CString s);
+  void GetPartitionsInfo();
+  int UpdateInfoLines();
+  CString GetPermissionsFile(const CString& FullFileName);
   static CString PermissionsFileToMask(CString Permission);
-	bool SetPermissionsFile(const CString& FullFileName, const CString& PermissionsFile);
+  bool SetPermissionsFile(const CString& FullFileName, const CString& PermissionsFile);
 public:
-	bool m_bForceBreak;
+  bool m_bForceBreak;
   TaskBarIcon taskbarIcon;
 
-	CString panelTitle;
-	strmap params;
+  CString panelTitle;
+  strmap params;
 
-	fardroid(void);
-	~fardroid(void);
+  fardroid(void);
+  ~fardroid(void);
 
-	HANDLE	OpenFromMainMenu();
-	HANDLE	OpenFromCommandLine(const CString &cmd);
+  HANDLE	OpenFromMainMenu();
+  HANDLE	OpenFromCommandLine(const CString &cmd);
 
-	int			ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode = OPM_NONE, bool updateInfo = false);
+  int			ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode = OPM_NONE, bool updateInfo = false);
 
   static bool		DeleteFilesDialog();
   static bool		CreateDirDialog(CString &dest);
@@ -339,22 +340,22 @@ public:
   static void		DeleteRecords(CFileRecords & recs);
   static void DeleteRecords(CCopyRecords& recs);
   void		PreparePanel(struct OpenPanelInfo *Info);
-	void		ChangePermissionsDialog();
+  void		ChangePermissionsDialog();
 
-	int GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode);
-  static void FreeFindData(struct PluginPanelItem *PanelItem,int ItemsNumber);
-	int GetFiles(PluginPanelItem *PanelItem, int ItemsNumber, CString &DestPath, BOOL Move, OPERATION_MODES OpMode);
-	int PutFiles(PluginPanelItem *PanelItem, int ItemsNumber, CString SrcPath, BOOL Move, OPERATION_MODES OpMode);
-	int DeleteFiles(PluginPanelItem *PanelItem, int ItemsNumber, OPERATION_MODES OpMode);
-	int CreateDir(CString &DestPath, OPERATION_MODES OpMode);
+  int GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode);
+  static void FreeFindData(struct PluginPanelItem *PanelItem, int ItemsNumber);
+  int GetFiles(PluginPanelItem *PanelItem, int ItemsNumber, CString &DestPath, BOOL Move, OPERATION_MODES OpMode);
+  int PutFiles(PluginPanelItem *PanelItem, int ItemsNumber, CString SrcPath, BOOL Move, OPERATION_MODES OpMode);
+  int DeleteFiles(PluginPanelItem *PanelItem, int ItemsNumber, OPERATION_MODES OpMode);
+  int CreateDir(CString &DestPath, OPERATION_MODES OpMode);
   int Rename(CString& DestPath);
   int RenameFile(const CString& src, const CString& dst, bool bSilent);
   int GetFramebuffer();
   void Reread();
 
-	void ShowProgressMessage();
+  void ShowProgressMessage();
   bool BreakProcessDialog();
-	int CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
+  int CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
   int CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
   static void ShowError(CString& error);
   int FileExistsDialog(LPCTSTR sName);

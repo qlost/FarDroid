@@ -850,8 +850,9 @@ int fardroid::UpdateInfoLines()
   CPanelLine pl;
   pl.text = GetVersionString();
   pl.separator = TRUE;
-
   lines.Add(pl);
+
+  GetDeviceInfo();
 
   conf.SU = conf.UseSU;
   auto res = GetMemoryInfo();
@@ -2447,6 +2448,42 @@ unsigned long long fardroid::ParseSizeInfo(CString s)
   return res;
 }
 
+void fardroid::GetDeviceInfo()
+{
+  CString sRes;
+  ADBShellExecute(_T("getprop"), sRes, true, true);
+
+  strvec str;
+  Tokenize(sRes, str, _T("\n"));
+
+  strvec tokens;
+  CString regex = _T("/^\\[([\\w.]+)\\]:\\s*\\[(.*)\\]$/");
+  CString manufacturer = "Unknown", model, version;
+
+  auto size = str.GetSize();
+  for (auto i = 0; i < size; i++)
+  {
+    ParseMemoryInfo(str[i]);
+    RegExTokenize(str[i], regex, tokens);
+    if (tokens.GetSize() == 2)
+    {
+      if (tokens[0] == "ro.product.manufacturer")
+        manufacturer = tokens[1];
+      else if (tokens[0] == "ro.product.model")
+        model = tokens[1];
+      else if (tokens[0] == "ro.build.version.release")
+        version = tokens[1];
+    }
+  }
+
+  CPanelLine pl;
+  pl.separator = FALSE;
+  pl.text.Format(L"%s %s", manufacturer, model);
+  pl.data.Format(L"%s", version);
+  lines.Add(pl);
+}
+
+
 void fardroid::ParseMemoryInfo(CString s)
 {
   strvec tokens;
@@ -2469,7 +2506,7 @@ bool fardroid::GetMemoryInfo()
   const static auto showSize = 7;
 
   CString sRes;
-  ADBShellExecute(_T("cat /proc/meminfo"), sRes, false);
+  ADBShellExecute(_T("cat /proc/meminfo"), sRes, true);
 
   strvec str;
   Tokenize(sRes, str, _T("\n"));
@@ -2561,7 +2598,7 @@ void fardroid::GetPartitionsInfo()
 {
   CString sRes;
 
-  ADBShellExecute(_T("df"), sRes, false);
+  ADBShellExecute(_T("df"), sRes, true);
 
   strvec str;
   Tokenize(sRes, str, _T("\n"));
@@ -2832,13 +2869,13 @@ int fardroid::ReadADBPacket(SOCKET sockADB, void* packet, int size)
   return received;
 }
 
-BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent)
+BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent, bool disableSU)
 {
   SOCKET sockADB = PrepareADBSocket();
 
   BOOL bOK = FALSE;
   CString cmd;
-  if (conf.SU)
+  if (!disableSU && conf.SU)
     cmd.Format(_T("shell:su -c \'%s\'"), sCMD);
   else
     cmd.Format(_T("shell:%s"), sCMD);
