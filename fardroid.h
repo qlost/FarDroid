@@ -290,9 +290,8 @@ private:
 
   bool		ParseFileLineBB(CString & sLine, CFileRecords & files) const;
   bool		ParseFileLine(CString & sLine, CFileRecords & files) const;
-  //bool		ParseFileLineSafe( CString & sLine );
-  BOOL		ReadFileList(CString & sFileList, CFileRecords & files) const;
-  BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo);
+  BOOL		ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent) const;
+  BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent);
 
   int		CopyFileFrom(const CString& src, const CString& dst, bool bSilent);
   int		CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent);

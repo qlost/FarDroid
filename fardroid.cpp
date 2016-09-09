@@ -1123,6 +1123,8 @@ void fardroid::Reread()
 
 int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
 {
+  bool bSilent = IS_FLAG(OpMode, OPM_SILENT) || IS_FLAG(OpMode, OPM_FIND);
+
   CString s = sDir;
   CFileRecord* item = GetFileRecord(sDir);
   if (s != _T("..") && item && conf.WorkMode != WORKMODE_SAFE  && OpMode == 0 && IsLink(item->attr))
@@ -1135,13 +1137,13 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
     tempPath.Format(_T("%s/%s"), m_currentPath, s);
   NormilizePath(tempPath);
 
-  if (OpenPanel(tempPath, updateInfo))
+  if (OpenPanel(tempPath, updateInfo, bSilent))
     return TRUE;
 
   if (OpMode != 0 || lastError != S_OK)
     return FALSE;
 
-  return OpenPanel(m_currentPath, updateInfo);
+  return OpenPanel(m_currentPath, updateInfo, bSilent);
 }
 
 void fardroid::ADBSyncQuit(SOCKET sockADB)
@@ -1711,7 +1713,7 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
     }
 
     if (ADBShellExecute(s, sRes, bSilent))
-      return ReadFileList(sRes, files);
+      return ReadFileList(sRes, files, bSilent);
   }
   else
   {
@@ -1799,7 +1801,7 @@ BOOL fardroid::ADB_rename(LPCTSTR sSource, LPCTSTR sDest, CString& sRes)
   return sRes.GetLength() == 0;
 }
 
-BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files) const
+BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files, bool bSilent) const
 {
   DeleteRecords(files);
   strvec lines;
@@ -1822,7 +1824,8 @@ BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files) const
 
   if (size == 1 && files.GetSize() == 0)
   {
-    ShowError(sFileList);
+    if (!bSilent)
+      ShowError(sFileList);
     return FALSE;
   }
 
@@ -2004,7 +2007,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
   return false;
 }
 
-BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo)
+BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent)
 {
   BOOL bOK = FALSE;
   CString sDir = sPath;
@@ -2018,7 +2021,7 @@ BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo)
       UpdateInfoLines();
 
     CString sRes;
-    bOK = ADB_ls(WtoUTF8(sPath), records, sRes, false);
+    bOK = ADB_ls(WtoUTF8(sPath), records, sRes, bSilent);
     if (bOK && conf.WorkMode != WORKMODE_SAFE && records.GetSize() == 1)
     {
       auto file = records[0];
@@ -2030,7 +2033,7 @@ BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo)
         else
           tempPath.Format(_T("%s/%s"), ExtractPath(sDir), file->linkto);
         NormilizePath(tempPath);
-        return OpenPanel(tempPath, updateInfo);
+        return OpenPanel(tempPath, updateInfo, bSilent);
       }
     }
   }

@@ -3,6 +3,11 @@
  "*" - changed
  "!" - warning
 
+ 09.09.16 v2.7.2
+  * Hide '..' for root folder
+  * No errors for directory scan (F3)
+  * Fix permissions on copy.
+
  09.09.16 v2.7.1
   + Add Device Info.
   + Support Android 7.0 Filesystems Info.
