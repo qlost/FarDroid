@@ -232,8 +232,8 @@ void WINAPI GetOpenPanelInfoW(struct OpenPanelInfo* Info)
     return;
 
   fardroid* android = static_cast<fardroid *>(Info->hPanel);
-  Info->StructSize = sizeof(*Info);
-  Info->Flags = OPIF_ADDDOTS | OPIF_SHOWPRESERVECASE | OPIF_USEFREESIZE;
+  Info->StructSize = sizeof *Info;
+  Info->Flags = OPIF_SHOWPRESERVECASE | OPIF_USEFREESIZE;
 
   Info->StartSortMode = static_cast<OPENPANELINFO_SORTMODES>(conf.SortMode);
   Info->StartSortOrder = conf.SortOrder;

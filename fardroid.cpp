@@ -843,7 +843,6 @@ int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& Des
 
 int fardroid::UpdateInfoLines()
 {
-
   lines.RemoveAll();
   infoSize.RemoveAll();
 
@@ -873,6 +872,9 @@ void fardroid::PreparePanel(OpenPanelInfo* Info)
 
   Info->PanelTitle = _C(panelTitle);
   Info->CurDir = _C(m_currentPath);
+
+  if (m_currentPath != "/")
+    Info->Flags |= OPIF_ADDDOTS;
 
   if (InfoPanelLineArray)
   {
@@ -2463,7 +2465,6 @@ void fardroid::GetDeviceInfo()
   auto size = str.GetSize();
   for (auto i = 0; i < size; i++)
   {
-    ParseMemoryInfo(str[i]);
     RegExTokenize(str[i], regex, tokens);
     if (tokens.GetSize() == 2)
     {

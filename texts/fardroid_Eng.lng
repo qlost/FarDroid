@@ -63,8 +63,8 @@
 "Are you sure?"
 "Error deleting file. \n%s\n Try repeat?"
 
-"Memory Info"
-"Filesystems Info"
+"Memory"
+"File Systems"
 
 "Warning"
 "This operation is available only to Native Mode"
