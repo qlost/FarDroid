@@ -652,7 +652,7 @@ repeatcopy:
   BOOL res = ADB_push(src, dst, sRes, bSilent);
 
   // Восстановим оригинальные права на файл
-  if (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess)
+  if (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess && !old_permissions.IsEmpty())
     SetPermissionsFile(dst, old_permissions);
 
   if (!res)
