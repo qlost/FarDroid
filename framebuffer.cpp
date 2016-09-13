@@ -63,7 +63,7 @@ void convert_colors(int format, const TIN src, TOUT dst)
   }
 }
 
-bool SaveToClipboard(const struct fb *fb)
+int SaveToClipboard(const struct fb* fb)
 {
   if (fb->width<=0 || fb->height<=0) return FALSE;
   auto format = fb_get_format(fb);

@@ -784,15 +784,16 @@ void fardroid::FreeFindData(struct PluginPanelItem* PanelItem, int ItemsNumber)
   for (int I = 0; I < ItemsNumber; I++)
   {
     if (PanelItem[I].FileName)
-      my_free((void*)PanelItem[I].FileName);
+      my_free(static_cast<void*>(const_cast<wchar_t*>(PanelItem[I].FileName)));
     if (PanelItem[I].Owner)
-      my_free((void*)PanelItem[I].Owner);
+      my_free(static_cast<void*>(const_cast<wchar_t*>(PanelItem[I].Owner)));
     if (PanelItem[I].Description)
-      my_free((void*)PanelItem[I].Description);
+      my_free(static_cast<void*>(const_cast<wchar_t*>(PanelItem[I].Description)));
   }
   if (PanelItem)
   {
     my_free(PanelItem);
+    // ReSharper disable once CppAssignedValueIsNeverUsed
     PanelItem = nullptr;
   }
 }
@@ -1063,7 +1064,7 @@ int fardroid::DeviceMenu(CString& text)
   int res;
   FarKey pBreakKeys[] = {{ VK_F4,0 }, { VK_DELETE,0 } };
   intptr_t nBreakCode;
-  while (1)
+  while (true)
   {
     res = ShowMenu(LOC(MSelectDevice), _F("F4,Del"), _F(""), pBreakKeys, &nBreakCode, items.data(), static_cast<int>(items.size()));
     if (nBreakCode == -1)
@@ -1526,7 +1527,6 @@ void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
 BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes)
 {
   syncmsg msg;
-  HANDLE hFile = nullptr;
   int len;
   unsigned id;
   CString file = WtoUTF8(sSrc);
@@ -1538,9 +1538,8 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   msg.req.namelen = len;
   if (SendADBPacket(sockADB, &msg.req, sizeof(msg.req)))
   {
-    bool bOK = false;
     char* buf = getAnsiString(file);
-    bOK = SendADBPacket(sockADB, buf, len);
+    bool bOK = SendADBPacket(sockADB, buf, len);
     my_free(buf);
     if (!bOK) return FALSE;
   }
@@ -1556,7 +1555,7 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
     DeleteFileTo(sDst, false);
   MakeDirs(ExtractPath(sDst, false));
 
-  hFile = CreateFile(sDst, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+  HANDLE hFile = CreateFile(sDst, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (hFile == INVALID_HANDLE_VALUE)
     return FALSE;
 
@@ -2122,7 +2121,7 @@ void fardroid::ShowProgressMessage()
         speed = m_procStruct.nTotalTransmitted / elapsed;
       if (speed > 0)
         remain = (m_procStruct.nTotalFileSize - m_procStruct.nTotalTransmitted) / speed;
-      sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSize("%10.2f", "%s%s/s", speed));
+      sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSize("%9.2f", "%s %s/s", speed));
 
       int size = sInfo.GetLength() - 5;
       CString sFrom = m_procStruct.from;

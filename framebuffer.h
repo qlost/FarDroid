@@ -88,4 +88,4 @@ typedef struct rgb565 {
   short r : 5;
 } rgb565_t;
 
-bool SaveToClipboard(const struct fb *fb);
+int SaveToClipboard(const struct fb* fb);

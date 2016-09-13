@@ -27,7 +27,7 @@ namespace crt
     void* my_memcpy(void* dest, const void* src, size_t n)
     {
       size_t i;
-      for (i = 0; i < n; i++) static_cast<unsigned char *>(dest)[i] = ((unsigned char *)src)[i];
+      for (i = 0; i < n; i++) static_cast<unsigned char *>(dest)[i] = static_cast<const unsigned char *>(src)[i];
       return dest;
     }
 

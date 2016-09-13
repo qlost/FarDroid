@@ -292,8 +292,8 @@ bool UnicodeToutf8(const wchar_t* wcs, size_t length, byte* outbuf, size_t outle
 
 int utf8ToUnicode(const char* lpMultiByteStr, WCHAR* lpWideCharStr, int cmbChars)
 {
-  const unsigned char* pmb = (unsigned char *)lpMultiByteStr;
-  unsigned short* pwc = (unsigned short *)lpWideCharStr;
+  const unsigned char* pmb = reinterpret_cast<const unsigned char *>(lpMultiByteStr);
+  unsigned short* pwc = reinterpret_cast<unsigned short *>(lpWideCharStr);
   const unsigned char* pmbe;
   int cwChars = 0;
 

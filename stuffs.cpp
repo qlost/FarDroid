@@ -79,7 +79,7 @@ bool WriteLine(HANDLE stream, const CString& line, int CodePage)
 bool CheckForKey(const int key)
 {
   bool ExitCode = false;
-  while (1)
+  while (true)
   {
     INPUT_RECORD rec;
     HANDLE hConInp = GetStdHandle(STD_INPUT_HANDLE);

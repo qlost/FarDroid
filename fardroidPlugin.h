@@ -1,3 +1,5 @@
+#pragma once
+
 const enum ConfigID
 {
   ID_AddToDiskMenu = 1,
@@ -33,5 +35,3 @@ intptr_t WINAPI SetDirectoryW(const struct SetDirectoryInfo *Info);
 intptr_t WINAPI PutFilesW(const struct PutFilesInfo *Info);
 intptr_t WINAPI DeleteFilesW(const struct DeleteFilesInfo *Info);
 intptr_t WINAPI MakeDirectoryW(struct MakeDirectoryInfo *Info);
-
-
