@@ -704,7 +704,7 @@ deltry:
   if (!res)
   {
     if (bSilent)
-      return false;
+      return FALSE;
 
     sRes.TrimRight();
     int ret = CopyDeleteErrorDialog(LOC(MDelFile), sRes);
@@ -781,17 +781,17 @@ int fardroid::GetFindData(struct PluginPanelItem** pPanelItem, size_t* pItemsNum
 
 void fardroid::FreeFindData(struct PluginPanelItem* PanelItem, int ItemsNumber)
 {
-  for (int I = 0; I < ItemsNumber; I++)
-  {
-    if (PanelItem[I].FileName)
-      my_free(static_cast<void*>(const_cast<wchar_t*>(PanelItem[I].FileName)));
-    if (PanelItem[I].Owner)
-      my_free(static_cast<void*>(const_cast<wchar_t*>(PanelItem[I].Owner)));
-    if (PanelItem[I].Description)
-      my_free(static_cast<void*>(const_cast<wchar_t*>(PanelItem[I].Description)));
-  }
   if (PanelItem)
   {
+    for (auto I = 0; I < ItemsNumber; I++)
+    {
+      if (PanelItem[I].FileName)
+        my_free(static_cast<void*>(const_cast<wchar_t*>(PanelItem[I].FileName)));
+      if (PanelItem[I].Owner)
+        my_free(static_cast<void*>(const_cast<wchar_t*>(PanelItem[I].Owner)));
+      if (PanelItem[I].Description)
+        my_free(static_cast<void*>(const_cast<wchar_t*>(PanelItem[I].Description)));
+    }
     my_free(PanelItem);
     // ReSharper disable once CppAssignedValueIsNeverUsed
     PanelItem = nullptr;
@@ -1803,20 +1803,20 @@ BOOL fardroid::ADB_rename(LPCTSTR sSource, LPCTSTR sDest, CString& sRes)
 BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files, bool bSilent) const
 {
   DeleteRecords(files);
-  strvec lines;
+  strvec list;
 
-  Tokenize(sFileList, lines, _T("\n"));
+  Tokenize(sFileList, list, _T("\n"));
 
-  auto size = lines.GetSize();
+  auto size = list.GetSize();
   for (auto i = 0; i < size; i++)
   {
     switch (conf.WorkMode)
     {
     case WORKMODE_BUSYBOX:
-      ParseFileLineBB(lines[i], files);
+      ParseFileLineBB(list[i], files);
       break;
     case WORKMODE_NATIVE:
-      ParseFileLine(lines[i], files);
+      ParseFileLine(list[i], files);
       break;
     }
   }
@@ -2115,12 +2115,12 @@ void fardroid::ShowProgressMessage()
 
       static CString sInfo;
       int elapsed = m_procStruct.nTotalFileSize == 0 ? 0 : (time - m_procStruct.nTotalStartTime) / 1000;
-      UINT64 speed = 0;
-      UINT64 remain = 0;
+      auto speed = 0;
+      auto remain = 0;
       if (elapsed > 0)
-        speed = m_procStruct.nTotalTransmitted / elapsed;
+        speed = static_cast<int>(m_procStruct.nTotalTransmitted / elapsed);
       if (speed > 0)
-        remain = (m_procStruct.nTotalFileSize - m_procStruct.nTotalTransmitted) / speed;
+        remain = static_cast<int>((m_procStruct.nTotalFileSize - m_procStruct.nTotalTransmitted) / speed);
       sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSize("%9.2f", "%s %s/s", speed));
 
       int size = sInfo.GetLength() - 5;
@@ -2177,7 +2177,7 @@ void fardroid::ShowProgressMessage()
     else if (m_procStruct.pType == PS_FB)
     {
       CString mFrom = LOC(MScreenshotComplete);
-      int size =  mFrom.GetLength() - 5;
+      int size = mFrom.GetLength() - 5;
 
       double pc = m_procStruct.nFileSize > 0 ? static_cast<double>(m_procStruct.nTransmitted) / static_cast<double>(m_procStruct.nFileSize) : 0;
       static CString sProgress;
@@ -2628,14 +2628,14 @@ CString fardroid::GetPermissionsFile(const CString& FullFileName)
   s.Format(_T("ls -l -a -d \"%s\""), WtoUTF8(FullFileName));
   if (ADBShellExecute(s, sRes, false))
   {
-    strvec lines;
-    Tokenize(sRes, lines, _T(" "));
+    strvec perm;
+    Tokenize(sRes, perm, _T(" "));
 
     if (!sRes.IsEmpty() &&
       sRes.Find(_T("No such file or directory")) == -1 &&
-      lines[0].GetLength() == 10)
+      perm[0].GetLength() == 10)
     {
-      permissions = lines[0];
+      permissions = perm[0];
     }
   }
   return permissions;
@@ -2913,7 +2913,7 @@ int fardroid::ADBReadFramebuffer(struct fb* fb)
     if (ReadADBPacket(sockADB, buffer, sizeof(struct fbinfo)) <= 0)
     {
       CloseADBSocket(sockADB);
-      return false;
+      return FALSE;
     }
 
     const struct fbinfo* fbinfo = reinterpret_cast<struct fbinfo*>(buffer);

@@ -56,7 +56,7 @@ bool WriteLine(HANDLE stream, const CString& line, int CodePage)
       {
         char* oem = getOemString(line);
         int len = lstrlenA(oem);
-        HRESULT res = WriteFile(stream, oem, len, &wr, nullptr);
+        auto res = WriteFile(stream, oem, len, &wr, nullptr);
         my_free(oem);
         return res && wr == len;
       }
@@ -64,7 +64,7 @@ bool WriteLine(HANDLE stream, const CString& line, int CodePage)
       {
         char* ansi = getAnsiString(line);
         int len = lstrlenA(ansi);
-        HRESULT res = WriteFile(stream, ansi, len, &wr, nullptr);
+        auto res = WriteFile(stream, ansi, len, &wr, nullptr);
         my_free(ansi);
         return res && wr == len;
       }

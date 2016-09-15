@@ -62,7 +62,7 @@ BOOL GetItemSelected(const HANDLE& hDlg, DWORD item)
   FarDialogItem* DialogItem = GetFarDialogItem(hDlg, item);
   if (DialogItem)
   {
-    auto s = static_cast<BOOL>(DialogItem->Selected);
+    auto s = DialogItem->Selected ? TRUE : FALSE;
     my_free(DialogItem);
     return s;
   }

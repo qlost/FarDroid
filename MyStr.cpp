@@ -525,7 +525,7 @@ CString FormatSize(CString formatNum, CString formatText, UINT64 cb)
 }
 
 
-CString FormatTime(UINT64 time)
+CString FormatTime(int time)
 {
   CString res;
   res.Format(_T("%2.2d:%2.2d:%2.2d"), time / 3600, (time % 3600) / 60, time % 3600 % 60);

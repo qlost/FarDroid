@@ -83,32 +83,24 @@ HANDLE WINAPI OpenW(const struct OpenInfo* Info)
   case OPEN_LEFTDISKMENU:
   case OPEN_RIGHTDISKMENU:
   case OPEN_PLUGINSMENU:
-    {
-      fardroid* android = new fardroid();
-      if (android)
-      {
-        HANDLE res = android->OpenFromMainMenu();
-        if (res == INVALID_HANDLE_VALUE)
-          delete android;
+  {
+    auto android = new fardroid();
+    auto res = android->OpenFromMainMenu();
+    if (res == INVALID_HANDLE_VALUE)
+      delete android;
 
-        return res;
-      }
-      break;
-    }
+    return res;
+  }
   case OPEN_COMMANDLINE:
-    {
-      fardroid* android = new fardroid();
-      if (android)
-      {
-        CString cmd = reinterpret_cast<OpenCommandLineInfo*>(Info->Data)->CommandLine;
-        HANDLE res = android->OpenFromCommandLine(cmd);
-        if (res == INVALID_HANDLE_VALUE)
-          delete android;
+  {
+    auto android = new fardroid();
+    CString cmd = reinterpret_cast<OpenCommandLineInfo*>(Info->Data)->CommandLine;
+    auto res = android->OpenFromCommandLine(cmd);
+    if (res == INVALID_HANDLE_VALUE)
+      delete android;
 
-        return res;
-      }
-      break;
-    }
+    return res;
+  }
   default:
     break;
   }

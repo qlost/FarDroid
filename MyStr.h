@@ -34,4 +34,4 @@ CString UTF8toW(LPCTSTR str);
 
 CString FormatNumber(UINT64 str);
 CString FormatSize(CString formatNum, CString formatText, UINT64 cb);
-CString FormatTime(UINT64 time);
+CString FormatTime(int time);
