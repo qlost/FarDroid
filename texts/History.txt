@@ -3,6 +3,10 @@
  "*" - changed
  "!" - warning
 
+ 16.09.16 v2.7.3
+  * Improve Copy Progress with Retry mechanism.
+  * Resharper & PVS Studio suggestions.
+
  09.09.16 v2.7.2
   * Hide '..' for root folder
   * No errors for directory scan (F3)

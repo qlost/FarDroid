@@ -322,6 +322,7 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
   }
 
   UINT64 totalSize = 0;
+  UINT64 totalTransmitted = 0;
   int filesSize = files.GetSize();
   for (auto i = 0; i < filesSize; i++)
     totalSize += files[i]->size;
@@ -342,6 +343,8 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
 
     if (m_procStruct.Lock())
     {
+      totalTransmitted = m_procStruct.nTotalTransmitted;
+
       m_procStruct.nStartTime = GetTickCount();
       m_procStruct.nPosition = i;
       m_procStruct.from = files[i]->src;
@@ -379,7 +382,18 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
     }
 
     CString tname = files[i]->dst + TMP_SUFFIX;
-    result = CopyFileFrom(files[i]->src, tname, bSilent);
+    do {
+      if (m_procStruct.Lock())
+      {
+        m_procStruct.nTransmitted = 0;
+        m_procStruct.nTotalTransmitted = totalTransmitted;
+        m_procStruct.Unlock();
+      }
+
+      result = CopyFileFrom(files[i]->src, tname, bSilent);
+    } while (result == RETRY);
+
+
     if (result == FALSE || m_bForceBreak)
       break;
 
@@ -388,6 +402,7 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       result = TRUE;
       if (m_procStruct.Lock())
       {
+        m_procStruct.nTotalTransmitted = totalTransmitted;
         m_procStruct.nTotalFileSize -= m_procStruct.nFileSize;
         m_procStruct.Unlock();
       }
@@ -450,6 +465,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
   }
 
   UINT64 totalSize = 0;
+  UINT64 totalTransmitted = 0;
   int filesSize = files.GetSize();
   for (auto i = 0; i < filesSize; i++)
     totalSize += files[i]->size;
@@ -470,6 +486,8 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
 
     if (m_procStruct.Lock())
     {
+      totalTransmitted = m_procStruct.nTotalTransmitted;
+
       m_procStruct.nStartTime = GetTickCount();
       m_procStruct.nPosition = i;
       m_procStruct.from = files[i]->src;
@@ -509,7 +527,17 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
 
     CString tname = files[i]->dst + TMP_SUFFIX;
 
-    result = CopyFileTo(files[i]->src, tname, permissions, bSilent);
+    do {
+      if (m_procStruct.Lock())
+      {
+        m_procStruct.nTransmitted = 0;
+        m_procStruct.nTotalTransmitted = totalTransmitted;
+        m_procStruct.Unlock();
+      }
+
+      result = CopyFileTo(files[i]->src, tname, permissions, bSilent);
+    } while (result == RETRY);
+
     if (result == FALSE || m_bForceBreak)
       break;
 
@@ -518,6 +546,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       result = TRUE;
       if (m_procStruct.Lock())
       {
+        m_procStruct.nTotalTransmitted = totalTransmitted;
         m_procStruct.nTotalFileSize -= m_procStruct.nFileSize;
         m_procStruct.Unlock();
       }
@@ -576,7 +605,6 @@ deltry:
 
 int fardroid::CopyFileFrom(const CString& src, const CString& dst, bool bSilent)
 {
-repeatcopy:
   // "adb.exe pull" в принципе не может читать файл с устройства с правами Superuser.
   // Если у файла не установлены права доступа на чтения для простых пользователей,
   // то файл не будет прочитан. 
@@ -632,8 +660,7 @@ repeatcopy:
     switch (ret)
     {
     case 0:
-      sRes.Empty();
-      goto repeatcopy;
+      return RETRY;
     case 1:
       return SKIP;
     default:
@@ -646,7 +673,6 @@ repeatcopy:
 
 int fardroid::CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent)
 {
-repeatcopy:
   // Запись файла
   CString sRes;
   BOOL res = ADB_push(src, dst, sRes, bSilent);
@@ -677,8 +703,7 @@ repeatcopy:
     switch (ret)
     {
     case 0:
-      sRes.Empty();
-      goto repeatcopy;
+      return RETRY;
     case 1:
       return SKIP;
     default:
@@ -2068,6 +2093,11 @@ void fardroid::ShowADBExecError(CString err, bool bSilent)
 
 void fardroid::DrawProgress(CString& sProgress, int size, double pc)
 {
+  if (pc > 1)
+    pc = 1;
+  if (pc < 0)
+    pc = 0;
+
   int fn = static_cast<int>(pc * size);
   int en = size - fn;
   wchar_t buf[512];
@@ -2121,7 +2151,7 @@ void fardroid::ShowProgressMessage()
         speed = static_cast<int>(m_procStruct.nTotalTransmitted / elapsed);
       if (speed > 0)
         remain = static_cast<int>((m_procStruct.nTotalFileSize - m_procStruct.nTotalTransmitted) / speed);
-      sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSize("%9.2f", "%s %s/s", speed));
+      sInfo.Format(LOC(MProgress), FormatTime(elapsed), FormatTime(remain), FormatSize("%9.2f", "%s %s/s", speed, false));
 
       int size = sInfo.GetLength() - 5;
       CString sFrom = m_procStruct.from;
@@ -2921,6 +2951,7 @@ int fardroid::ADBReadFramebuffer(struct fb* fb)
 
     if (m_procStruct.Lock())
     {
+      m_procStruct.nTransmitted = 0;
       m_procStruct.nFileSize = fb->size;
       m_procStruct.Unlock();
     }

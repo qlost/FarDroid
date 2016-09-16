@@ -182,7 +182,7 @@ struct ProcessStruct
 	{
 		if (mutex)
 		{
-			switch (WaitForSingleObject(mutex, 1000))
+			switch (WaitForSingleObject(mutex, 10000))
 			{
 			case WAIT_OBJECT_0:
 				return true;

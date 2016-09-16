@@ -483,7 +483,7 @@ CString FormatNumber(UINT64 str)
   return res;
 }
 
-CString FormatSize(CString formatNum, CString formatText, UINT64 cb)
+CString FormatSize(CString formatNum, CString formatText, UINT64 cb, bool clean)
 {
   auto n = cb;
   auto pw = 0;
@@ -518,7 +518,7 @@ CString FormatSize(CString formatNum, CString formatText, UINT64 cb)
   }
   CString num;
   num.Format(formatNum, static_cast<float>(cb) / static_cast<float>(div));
-  CleanFloat(num);
+  if (clean) CleanFloat(num);
   CString res;
   res.Format(formatText, num, un);
   return res;

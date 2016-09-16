@@ -18,6 +18,7 @@
 
 #define   ABORT     -1
 #define   SKIP     2
+#define   RETRY     3
 
 enum
 {
