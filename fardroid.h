@@ -138,6 +138,7 @@ struct CCopyRecord
   CString src;
   CString dst;
   UINT64	size;
+  time_t	time;
 };
 
 typedef CSimpleArrayEx<CCopyRecord*, CCopyRecord*> CCopyRecords;
@@ -267,12 +268,13 @@ private:
   int ADBReadFramebuffer(struct fb* fb);
   static void		ADBSyncQuit(SOCKET sockADB);
   bool		ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t & mtime);
+  static void ReadError(SOCKET sockADB, unsigned id, unsigned len, CString& sRes);
   bool		ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, int mode);
   static bool		ADBReadMode(SOCKET sockADB, LPCTSTR path, int &mode);
   BOOL		ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
   bool		ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString &sRes);
   void ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
-  BOOL		ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
+  BOOL		ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, const time_t &mtime);
   bool		ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
   void ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
   static void		CloseADBSocket(SOCKET sockADB);
@@ -283,7 +285,7 @@ private:
   BOOL ADB_rm(LPCTSTR sDir, CString & sRes, bool bSilent);
   BOOL ADB_mkdir(LPCTSTR sDir, CString & sRes, bool bSilent);
   BOOL ADB_rename(LPCTSTR sSource, LPCTSTR sDest, CString& sRes);
-  BOOL ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent);
+  BOOL ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent, const time_t& mtime);
   BOOL ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent);
   BOOL ADB_findmount(LPCTSTR sFS, strvec &fs_params, CString & sRes, bool bSilent);
   BOOL ADB_mount(LPCTSTR sFS, BOOL bAsRW, CString & sRes, bool bSilent);
@@ -293,7 +295,7 @@ private:
   BOOL		ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent) const;
   BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent);
 
-  int		CopyFileFrom(const CString& src, const CString& dst, bool bSilent);
+  int		CopyFileFrom(const CString& src, const CString& dst, bool bSilent, const time_t& mtime);
   int		CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent);
   int		DeleteFileFrom(const CString& src, bool bSilent);
 

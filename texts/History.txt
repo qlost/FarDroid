@@ -3,6 +3,11 @@
  "*" - changed
  "!" - warning
 
+ 19.09.16 v2.7.4
+  + Set File DateTime for both directions.
+  * Fix Permission Error Message.
+  * Improve socket error reading.
+
  16.09.16 v2.7.3
   * Improve Copy Progress with Retry mechanism.
   * Resharper & PVS Studio suggestions.

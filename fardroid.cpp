@@ -317,6 +317,7 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       rec->src = sname;
       rec->dst = dname;
       rec->size = PanelItem[i].FileSize;
+      FileTimeToUnixTime(&PanelItem[i].LastWriteTime, &rec->time);
       files.Add(rec);
     }
   }
@@ -390,7 +391,7 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
         m_procStruct.Unlock();
       }
 
-      result = CopyFileFrom(files[i]->src, tname, bSilent);
+      result = CopyFileFrom(files[i]->src, tname, bSilent, files[i]->time);
     } while (result == RETRY);
 
 
@@ -460,6 +461,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       rec->src = sname;
       rec->dst = dname;
       rec->size = PanelItem[i].FileSize;
+      FileTimeToUnixTime(&PanelItem[i].LastWriteTime, &rec->time);
       files.Add(rec);
     }
   }
@@ -603,7 +605,7 @@ deltry:
   return TRUE;
 }
 
-int fardroid::CopyFileFrom(const CString& src, const CString& dst, bool bSilent)
+int fardroid::CopyFileFrom(const CString& src, const CString& dst, bool bSilent, const time_t& mtime)
 {
   // "adb.exe pull" в принципе не может читать файл с устройства с правами Superuser.
   // Если у файла не установлены права доступа на чтения для простых пользователей,
@@ -632,7 +634,7 @@ int fardroid::CopyFileFrom(const CString& src, const CString& dst, bool bSilent)
 
   // Читаем файл
   CString sRes;
-  BOOL res = ADB_pull(src, dst, sRes, bSilent);
+  BOOL res = ADB_pull(src, dst, sRes, bSilent, mtime);
 
   // Восстановим оригинальные права на файл
   if (UseChmod)
@@ -647,12 +649,12 @@ int fardroid::CopyFileFrom(const CString& src, const CString& dst, bool bSilent)
 
     if (conf.WorkMode == WORKMODE_NATIVE)
     {
-      if (!sRes.IsEmpty()) sRes += _T("\n");
+      if (!sRes.IsEmpty()) sRes += _T("\n\n");
       sRes += (conf.SU) ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm);
     }
     else
     {
-      if (!sRes.IsEmpty()) sRes += _T("\n");
+      if (!sRes.IsEmpty()) sRes += _T("\n\n");
       sRes += LOC(MNeedNativeSuperuserPerm);
     }
 
@@ -690,12 +692,12 @@ int fardroid::CopyFileTo(const CString& src, const CString& dst, const CString& 
 
     if (conf.WorkMode == WORKMODE_NATIVE)
     {
-      if (!sRes.IsEmpty()) sRes += _T("\n");
+      if (!sRes.IsEmpty()) sRes += _T("\n\n");
       sRes += (conf.SU) ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm);
     }
     else
     {
-      if (!sRes.IsEmpty()) sRes += _T("\n");
+      if (!sRes.IsEmpty()) sRes += _T("\n\n");
       sRes += LOC(MNeedNativeSuperuserPerm);
     }
 
@@ -789,14 +791,13 @@ int fardroid::GetFindData(struct PluginPanelItem** pPanelItem, size_t* pItemsNum
     NewPanelItem[i].FileAttributes = item->attr;
     NewPanelItem[i].UserData.Data = &i;
     NewPanelItem[i].FileSize = item->size;
-    NewPanelItem[i].LastWriteTime = UnixTimeToFileTime(item->time);
+    NewPanelItem[i].CreationTime = NewPanelItem[i].ChangeTime = NewPanelItem[i].LastAccessTime = NewPanelItem[i].LastWriteTime =
+      UnixTimeToFileTime(item->time);
 
     NewPanelItem[i].FileName = my_strdupW(item->filename);
     NewPanelItem[i].Owner = my_strdupW(item->owner);
     NewPanelItem[i].Description = my_strdupW(item->desc);
 
-    //3 custom columns
-    //NewPanelItem[Z].CustomColumnData=(farStr**)my_malloc(sizeof(farStr*)*2);
     NewPanelItem[i].CustomColumnNumber = 0;
   }
   *pItemsNumber = items;
@@ -951,7 +952,14 @@ void fardroid::ChangePermissionsDialog()
 
   CString fileName = ExtractName(GetCurrentFileName(false));
   CString sname;
-  sname.Format(_T("%s%s"), sdir, fileName);
+  if (fileName == "..") {
+    fileName = ExtractName(sdir);
+    sname = sdir;
+  }
+  else
+  {
+    sname.Format(_T("%s%s"), sdir, fileName);
+  }
 
   CString permissions = GetPermissionsFile(sname);
   if (permissions.IsEmpty())
@@ -1199,8 +1207,7 @@ bool fardroid::ADBReadMode(SOCKET sockADB, LPCTSTR path, int& mode)
     my_free(buf);
   }
 
-  if ((ReadADBPacket(sockADB, &msg.stat, sizeof(msg.stat)) <= 0) ||
-    (msg.stat.id != ID_STAT))
+  if ((ReadADBPacket(sockADB, &msg.stat, sizeof(msg.stat)) <= 0) || (msg.stat.id != ID_STAT))
     bOk = false;
 
   mode = msg.stat.mode;
@@ -1215,10 +1222,10 @@ bool fardroid::ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t& mtime)
     return false;
 
   FILETIME ft;
-  SYSTEMTIME st;
+  FILETIME lt;
   GetFileTime(hFile, nullptr, nullptr, &ft);
-  FileTimeToSystemTime(&ft, &st);
-  SystemTimeToUnixTime(&st, &mtime);
+  LocalFileTimeToFileTime(&ft, &lt);
+  FileTimeToUnixTime(&lt, &mtime);
 
   syncsendbuf* sbuf = new syncsendbuf;
   sbuf->id = ID_DATA;
@@ -1259,6 +1266,23 @@ bool fardroid::ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t& mtime)
   return result;
 }
 
+void fardroid::ReadError(SOCKET sockADB, unsigned id, unsigned len, CString& sRes)
+{
+  if (id != ID_FAIL)
+  {
+    sRes = _T("unknown reason");
+    return;
+  }
+
+  auto buf = new char[len];
+  auto res = ReadADBPacket(sockADB, buf, len);
+  if (res > 0)
+  {
+    sRes = CString(buf, res);
+  }
+  delete[] buf;
+}
+
 bool fardroid::ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, int mode)
 {
   syncmsg msg;
@@ -1295,22 +1319,7 @@ bool fardroid::ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
 
   if (msg.status.id != ID_OKAY)
   {
-    if (msg.status.id == ID_FAIL)
-    {
-      len = msg.status.msglen;
-      if (len > 256) len = 256;
-      char* buf = new char[257];
-      if (ReadADBPacket(sockADB, buf, len))
-      {
-        delete[] buf;
-        return false;
-      }
-      buf[len] = 0;
-      sRes = buf;
-    }
-    else
-      sRes = _T("unknown reason");
-
+    ReadError(sockADB, msg.status.id, msg.status.msglen, sRes);
     return false;
   }
 
@@ -1396,6 +1405,7 @@ void fardroid::ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
       rec->src = sname;
       rec->dst = dname;
       rec->size = fd.nFileSizeHigh * (MAXDWORD + UINT64(1)) + fd.nFileSizeLow;
+      FileTimeToUnixTime(&fd.ftLastWriteTime, &rec->time);
       files.Add(rec);
     }
 
@@ -1493,7 +1503,7 @@ bool fardroid::ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& s
           m_procStruct.nFileSize = recs[i]->size;
           m_procStruct.Unlock();
         }
-        ADBPullFile(sockADB, sname, dname, sRes);
+        ADBPullFile(sockADB, sname, dname, sRes, recs[i]->time);
       }
       else
         ADBPullDir(sockADB, sname, dname, sRes);
@@ -1542,6 +1552,7 @@ void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
         rec->src = sname;
         rec->dst = dname;
         rec->size = recs[i]->size;
+        rec->time = recs[i]->time;
         files.Add(rec);
       }
     }
@@ -1549,12 +1560,13 @@ void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
   DeleteRecords(recs);
 }
 
-BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes)
+BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, const time_t& mtime)
 {
   syncmsg msg;
   int len;
   unsigned id;
   CString file = WtoUTF8(sSrc);
+  auto ft = UnixTimeToFileTime(mtime);
 
   len = lstrlen(file);
   if (len > 1024) return FALSE;
@@ -1574,7 +1586,10 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
 
   id = msg.data.id;
   if ((id != ID_DATA) && (id != ID_DONE))
-    goto remoteerror;
+  {
+    ReadError(sockADB, id, msg.data.size, sRes);
+    return FALSE;
+  }
 
   if (FileExists(sDst))
     DeleteFileTo(sDst, false);
@@ -1583,6 +1598,8 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   HANDLE hFile = CreateFile(sDst, GENERIC_WRITE, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
   if (hFile == INVALID_HANDLE_VALUE)
     return FALSE;
+
+  SetFileTime(hFile, &ft, &ft, &ft);
 
   char* buffer = new char[SYNC_DATA_MAX];
   DWORD written = 0;
@@ -1606,7 +1623,8 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
     {
       delete [] buffer;
       CloseHandle(hFile);
-      goto remoteerror;
+      ReadError(sockADB, id, len, sRes);
+      return FALSE;
     }
 
     if (len > SYNC_DATA_MAX)
@@ -1650,25 +1668,9 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   delete [] buffer;
   CloseHandle(hFile);
   return TRUE;
-
-remoteerror:
-  if (id == ID_FAIL)
-  {
-    char* errbuffer = new char[SYNC_DATA_MAX];
-    len = msg.data.size;
-    if (len > 256) len = 256;
-    if (ReadADBPacket(sockADB, errbuffer, len) <= 0) {
-      delete[] errbuffer;
-      return FALSE;
-    }
-
-    errbuffer[len] = 0;
-    sRes = errbuffer;
-  }
-  return FALSE;
 }
 
-BOOL fardroid::ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent)
+BOOL fardroid::ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent, const time_t& mtime)
 {
   int mode;
   CString dest = sDst;
@@ -1693,7 +1695,7 @@ BOOL fardroid::ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent)
       AddEndSlash(dest);
       dest += ExtractName(sSrc);
     }
-    if (!ADBPullFile(sock, sSrc, dest, sRes))
+    if (!ADBPullFile(sock, sSrc, dest, sRes, mtime))
     {
       CloseADBSocket(sock);
       return FALSE;
