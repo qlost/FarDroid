@@ -3,6 +3,9 @@
  "*" - changed
  "!" - warning
 
+ 21.09.16 v2.7.5
+  + Change permissions for Parent directory (Extended File Access option).
+
  19.09.16 v2.7.4
   + Set File DateTime for both directions.
   * Fix Permission Error Message.

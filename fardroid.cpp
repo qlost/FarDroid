@@ -209,16 +209,24 @@ int fardroid::FileExistsDialog(LPCTSTR sName)
 
 int fardroid::CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr)
 {
+  auto ret = 2;
   if (m_procStruct.Hide())
   {
     CString errmsg;
     errmsg.Format(_T("%s\n%s\n\n%s\n\n%s\n%s\n%s"), sTitle, LOC(MCopyError), sErr, LOC(MYes), LOC(MNo), LOC(MCancel));
-    int ret = ShowMessage(errmsg, 3, _F("copyerror"), true);
-
+    ret = ShowMessage(errmsg, 3, _F("copyerror"), true);
     m_procStruct.Restore();
-    return ret;
   }
-  return 2;
+
+  switch (ret)
+  {
+  case 0:
+    return RETRY;
+  case 1:
+    return SKIP;
+  default:
+    return FALSE;
+  }
 }
 
 int fardroid::CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sName)
@@ -607,121 +615,76 @@ deltry:
 
 int fardroid::CopyFileFrom(const CString& src, const CString& dst, bool bSilent, const time_t& mtime)
 {
-  // "adb.exe pull" в принципе не может читать файл с устройства с правами Superuser.
-  // Если у файла не установлены права доступа на чтения для простых пользователей,
-  // то файл не будет прочитан. 
-
-  // Чтобы такие файлы все же прочитать, добавим к правам доступа файла, право на чтение
-  // для простых пользователей. А затем вернем оригинальные права доступа к файлу.
-  // Этот работает только в Native Mode с включенным Superuser, при включенном ExtendedAccess
-
-  CString old_permissions;
-  bool UseChmod = (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess);
-  if (UseChmod)
+  CString oldPermissions;
+  auto useChmod = false;
+  if (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess)
   {
-    UseChmod = false;
-    old_permissions = GetPermissionsFile(src);
-    // Проверяем, имеет ли уже файл разрешение r для группы Others
-    if (!old_permissions.IsEmpty() && old_permissions.GetAt(old_permissions.GetLength() - 3) != _T('r'))
+    oldPermissions = GetPermissionsFile(src);
+    if (!oldPermissions.IsEmpty() && oldPermissions.GetAt(oldPermissions.GetLength() - 3) != _T('r'))
     {
-      CString new_permissions = old_permissions;
-      // Добавляем к правам доступа файла право на чтение для всех пользователей.
-      new_permissions.SetAt(new_permissions.GetLength() - 3, _T('r'));
-      SetPermissionsFile(src, new_permissions);
-      UseChmod = true;
+      auto newPermissions = oldPermissions;
+      newPermissions.SetAt(newPermissions.GetLength() - 3, _T('r'));
+      SetPermissionsFile(src, newPermissions);
+      useChmod = true;
     }
   }
 
-  // Читаем файл
   CString sRes;
-  BOOL res = ADB_pull(src, dst, sRes, bSilent, mtime);
+  auto res = ADB_pull(src, dst, sRes, bSilent, mtime);
 
-  // Восстановим оригинальные права на файл
-  if (UseChmod)
-    SetPermissionsFile(src, old_permissions);
+  if (useChmod) 
+    SetPermissionsFile(src, oldPermissions);
 
   if (!res)
   {
-    // Silent предполагает не задавать пользователю лишних вопросов. 
-    //        Но сообщения об ошибках нужно все же выводить.
-    //   if (bSilent)//если отключен вывод на экран, то просто возвращаем что все ОК
-    //	    return true;
-
-    if (conf.WorkMode == WORKMODE_NATIVE)
-    {
-      if (!sRes.IsEmpty()) sRes += _T("\n\n");
-      sRes += (conf.SU) ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm);
-    }
-    else
-    {
-      if (!sRes.IsEmpty()) sRes += _T("\n\n");
-      sRes += LOC(MNeedNativeSuperuserPerm);
-    }
-
-    int ret = CopyErrorDialog(LOC(MGetFile), sRes);
-    switch (ret)
-    {
-    case 0:
-      return RETRY;
-    case 1:
-      return SKIP;
-    default:
-      return FALSE;
-    }
+    if (!sRes.IsEmpty()) sRes += _T("\n\n");
+    sRes += conf.WorkMode == WORKMODE_NATIVE ? (conf.SU ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm)) : LOC(MNeedNativeSuperuserPerm);
+    return CopyErrorDialog(LOC(MGetFile), sRes);
   }
 
   return TRUE;
 }
 
-int fardroid::CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent)
+int fardroid::CopyFileTo(const CString& src, const CString& dst, const CString& oldPermissions, bool bSilent)
 {
-  // Запись файла
-  CString sRes;
-  BOOL res = ADB_push(src, dst, sRes, bSilent);
+  CString parent = ExtractPath(dst);
+  CString parentPermissions;
 
-  // Восстановим оригинальные права на файл
-  if (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess && !old_permissions.IsEmpty())
-    SetPermissionsFile(dst, old_permissions);
+  auto useChmod = false;
+  if (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess)
+  {
+    parentPermissions = GetPermissionsFile(parent);
+    if (!parentPermissions.IsEmpty() && (
+      parentPermissions.GetAt(parentPermissions.GetLength() - 2) != _T('w') ||
+      parentPermissions.GetAt(parentPermissions.GetLength() - 1) != _T('x')))
+    {
+      auto newPermissions = parentPermissions;
+      newPermissions.SetAt(newPermissions.GetLength() - 2, _T('w'));
+      newPermissions.SetAt(newPermissions.GetLength() - 1, _T('x'));
+      SetPermissionsFile(parent, newPermissions);
+      useChmod = true;
+    }
+  }
+
+  CString sRes;
+  auto res = ADB_push(src, dst, sRes, bSilent);
+
+  if (useChmod)
+    SetPermissionsFile(parent, parentPermissions);
 
   if (!res)
   {
-    // Silent предполагает не задавать пользователю лишних вопросов. 
-    //        Но сообщения об ошибках нужно все же выводить.
-    //  if (bSilent) //если отключен вывод на экран, то просто возвращаем что все ОК
-    //	   return true;
-
-    if (conf.WorkMode == WORKMODE_NATIVE)
-    {
-      if (!sRes.IsEmpty()) sRes += _T("\n\n");
-      sRes += (conf.SU) ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm);
-    }
-    else
-    {
-      if (!sRes.IsEmpty()) sRes += _T("\n\n");
-      sRes += LOC(MNeedNativeSuperuserPerm);
-    }
-
-    int ret = CopyErrorDialog(LOC(MPutFile), sRes);
-    switch (ret)
-    {
-    case 0:
-      return RETRY;
-    case 1:
-      return SKIP;
-    default:
-      return FALSE;
-    }
+    if (!sRes.IsEmpty()) sRes += _T("\n\n");
+    sRes += conf.WorkMode == WORKMODE_NATIVE ? (conf.SU ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm)) : LOC(MNeedNativeSuperuserPerm);
+    return CopyErrorDialog(LOC(MPutFile), sRes);
   }
+
+  if (!oldPermissions.IsEmpty())
+    SetPermissionsFile(dst, oldPermissions);
 
   return TRUE;
 }
 
-/// <summary>
-/// Deletes the file from.
-/// </summary>
-/// <param name="src">The source.</param>
-/// <param name="bSilent">if set to <c>true</c> [b silent].</param>
-/// <returns></returns>
 int fardroid::DeleteFileFrom(const CString& src, bool bSilent)
 {
   CString sRes;
