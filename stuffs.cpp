@@ -145,17 +145,6 @@ void PrepareInfoLine(const wchar_t* str, void* ansi, CString& line, CString form
   line.Format(format, str, ansi);
 }
 
-void PrepareInfoLineDate(const wchar_t* str, time_t* time, CString& line, bool b64)
-{
-  CString date;
-  if (b64)
-    date = _wctime(time);
-  else
-    date = _wctime32(reinterpret_cast<__time32_t*>(time));
-
-  line.Format(_T("%s%s"), str, (date && *date) ? date : _T("\n"));
-}
-
 time_t StringTimeToUnixTime(CString sData, CString sTime)
 {
   SYSTEMTIME time = {0};

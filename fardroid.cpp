@@ -29,13 +29,12 @@ DWORD WINAPI ProcessThreadProc(LPVOID lpParam)
 fardroid::fardroid(void): lastError(S_OK), handleAdbServer(FALSE), InfoPanelLineArray(nullptr), m_bForceBreak(false)
 {
   m_currentPath = _T("/");
-  m_currentDevice = _T("");
+  m_currentDevice.Empty();
 }
 
 fardroid::~fardroid(void)
 {
-  if (InfoPanelLineArray)
-    delete [] InfoPanelLineArray;
+  delete[] InfoPanelLineArray;
 
   if (conf.KillServer && handleAdbServer == TRUE)
     ExecuteCommandLine(_T("adb.exe"), conf.ADBPath, _T("kill-server"), false);
@@ -791,8 +790,6 @@ int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& Des
 {
   CString srcdir = m_currentPath;
   AddEndSlash(srcdir, true);
-
-  CString path = DestPath;
 
   bool bSilent = IS_FLAG(OpMode, OPM_SILENT) || IS_FLAG(OpMode, OPM_FIND);
   bool noPromt = bSilent;
@@ -2606,7 +2603,7 @@ void fardroid::GetPartitionsInfo()
   pl.text = LOC(MPartitionsInfo);
   lines.Add(pl);
   pl.separator = FALSE;
-  pl.text = "";
+  pl.text.Empty();
   pl.data = "Total     Used     Free";
   lines.Add(pl);
 
