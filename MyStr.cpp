@@ -97,7 +97,7 @@ CString ExtractExt(CString Path)
 void NormilizePath(CString &path)
 {
   strvec dir;
-  Tokenize(path, dir, _T("/"));
+  Tokenize(path, dir, _T("/"), true, false);
   int size = dir.GetSize();
   if (size == 0)
     return;
@@ -137,10 +137,13 @@ bool TestExt(CString ext, CString extList)
   return extList.Find(ext) != -1;
 }
 
-void Tokenize(CString str, strvec& tokens, const CString& sep /*= " "*/, bool bLeaveSep)
+void Tokenize(CString str, strvec& tokens, const CString& sep /*= " "*/, bool bLeaveSep, bool trim)
 {
-  str.TrimLeft();
-  str.TrimRight();
+  if (trim)
+  {
+    str.TrimLeft();
+    str.TrimRight();
+  }
   int i = 0;
   int j = 0;
   tokens.RemoveAll();
@@ -151,8 +154,11 @@ void Tokenize(CString str, strvec& tokens, const CString& sep /*= " "*/, bool bL
     CString mid;
     if (j != -1) mid = str.Mid(i, j - i);
     else mid = str.Mid(i);
-    mid.TrimLeft();
-    mid.TrimRight();
+    if (trim)
+    {
+      mid.TrimLeft();
+      mid.TrimRight();
+    }
     if (!mid.IsEmpty()) tokens.Add(mid);
     i = j + add;
   }

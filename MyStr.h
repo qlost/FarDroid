@@ -9,7 +9,7 @@ CString ExtractExt(CString Path);
 void NormilizePath(CString &path);
 
 void RegExTokenize(CString str, CString regex, strvec& tokens);
-void Tokenize(CString str,	strvec& tokens,	const CString& sep = " ", bool bLeaveSep = true );
+void Tokenize(CString str,	strvec& tokens,	const CString& sep = " ", bool bLeaveSep = true, bool trim = true );
 void TokensToParams(strvec& tokens,	strmap& params);
 CString &Unquote(CString &str);
 CString GetParam(strmap& params, CString opt);

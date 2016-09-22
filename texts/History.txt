@@ -3,6 +3,11 @@
  "*" - changed
  "!" - warning
 
+ 22.09.16 v2.7.6
+  + Support Ctrl+\ (cd to '/' directory)
+  + Support spaces in file names (like " my name ")
+  * PVS Studio improvements
+
  21.09.16 v2.7.5
   + Change permissions for Parent directory (Extended File Access option).
 
