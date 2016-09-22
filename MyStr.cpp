@@ -438,14 +438,16 @@ void strcpyC(char* dst, const CString& src, bool Ansi)
   my_free(data);
 }
 
-CString WtoUTF8(LPCTSTR str)
+CString WtoUTF8(LPCTSTR str, bool escape)
 {
   int len = lstrlen(str) * 2;
   byte* buf = static_cast<byte *>(my_malloc(len));
   UnicodeToutf8(str, lstrlen(str), buf, len);
-  CString sP = reinterpret_cast<char*>(buf);
+  CString res = CString(buf);
   my_free(buf);
-  return sP;
+  if (escape)
+    res.Replace(_T("\""), _T("\\\""));
+  return res;
 }
 
 CString UTF8toW(LPCTSTR str)

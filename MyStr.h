@@ -29,7 +29,7 @@ int __cdecl my_wcstombsz(char* mbstr, const wchar_t* wcstr, size_t count, UINT C
 int __cdecl my_mbstowcsz(wchar_t* wcstr, const char* mbstr, size_t count, UINT CodePage = CP_ACP);
 void strcpyC(char * dst, const CString& src, bool Ansi);
 
-CString WtoUTF8(LPCTSTR str);
+CString WtoUTF8(LPCTSTR str, bool escape = true);
 CString UTF8toW(LPCTSTR str);
 
 CString FormatNumber(UINT64 str);

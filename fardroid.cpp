@@ -349,6 +349,7 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
     if (m_bForceBreak)
       break;
 
+    files[i]->dst.Replace(_T("\""), _T(""));
     if (m_procStruct.Lock())
     {
       totalTransmitted = m_procStruct.nTotalTransmitted;
@@ -1155,7 +1156,7 @@ void fardroid::ADBSyncQuit(SOCKET sockADB)
 bool fardroid::ADBReadMode(SOCKET sockADB, LPCTSTR path, int& mode)
 {
   syncmsg msg;
-  CString file = WtoUTF8(path);
+  CString file = WtoUTF8(path, false);
   int len = lstrlen(file);
 
   msg.req.id = ID_STAT;
@@ -1378,7 +1379,7 @@ void fardroid::ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
 
 BOOL fardroid::ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes)
 {
-  CString dest = WtoUTF8(sDst);
+  CString dest = WtoUTF8(sDst, false);
   int mode = 0;
   if (!ADBReadMode(sockADB, dest, mode))
     return FALSE;
@@ -1446,13 +1447,14 @@ bool fardroid::ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& s
   CString dsaved = ddir;
 
   CFileRecords recs;
-  if (ADB_ls(WtoUTF8(sSrc), recs, sRes, true))
+  if (ADB_ls(sSrc, recs, sRes, true))
   {
     CString sname, dname;
     for (int i = 0; i < recs.GetSize(); i++)
     {
       sname.Format(_T("%s%s"), ssaved, recs[i]->filename);
       dname.Format(_T("%s%s"), dsaved, recs[i]->filename);
+      dname.Replace(_T("\""), _T(""));
 
       if (!IsDirectory(recs[i]->attr))
       {
@@ -1465,6 +1467,7 @@ bool fardroid::ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& s
           m_procStruct.nFileSize = recs[i]->size;
           m_procStruct.Unlock();
         }
+
         ADBPullFile(sockADB, sname, dname, sRes, recs[i]->time);
       }
       else
@@ -1491,7 +1494,7 @@ void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
 
   CString sRes;
   CFileRecords recs;
-  if (ADB_ls(WtoUTF8(sSrc), recs, sRes, true))
+  if (ADB_ls(sSrc, recs, sRes, true))
   {
     CString sname;
     CString dname;
@@ -1527,7 +1530,8 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   syncmsg msg;
   int len;
   unsigned id;
-  CString file = WtoUTF8(sSrc);
+
+  CString file = WtoUTF8(sSrc, false);
   auto ft = UnixTimeToFileTime(mtime);
 
   len = lstrlen(file);
@@ -1657,6 +1661,8 @@ BOOL fardroid::ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent,
       AddEndSlash(dest);
       dest += ExtractName(sSrc);
     }
+
+    dest.Replace(_T("\""), _T(""));
     if (!ADBPullFile(sock, sSrc, dest, sRes, mtime))
     {
       CloseADBSocket(sock);
@@ -1693,10 +1699,10 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
     switch (conf.WorkMode)
     {
     case WORKMODE_NATIVE:
-      s.Format(_T("ls -l -a \"%s\""), sDir);
+      s.Format(_T("ls -l -a \"%s\""), WtoUTF8(sDir));
       break;
     case WORKMODE_BUSYBOX:
-      s.Format(_T("busybox ls -lAe%s --color=never \"%s\""), conf.LinksAsDir() ? _T("") : _T("L"), sDir);
+      s.Format(_T("busybox ls -lAe%s --color=never \"%s\""), conf.LinksAsDir() ? _T("") : _T("L"), WtoUTF8(sDir));
       break;
     }
 
@@ -1713,7 +1719,8 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
       char buf[257];
       int len;
 
-      len = lstrlen(sDir);
+      CString file = WtoUTF8(sDir, false);
+      len = lstrlen(file);
       if (len > 1024) return FALSE;
 
       msg.req.id = ID_LIST;
@@ -1721,7 +1728,7 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
 
       if (SendADBPacket(sockADB, &msg.req, sizeof(msg.req)))
       {
-        char* dir = getAnsiString(sDir);
+        char* dir = getAnsiString(file);
         if (SendADBPacket(sockADB, dir, len))
         {
           for (;;)
@@ -2014,7 +2021,7 @@ BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent)
       UpdateInfoLines();
 
     CString sRes;
-    bOK = ADB_ls(WtoUTF8(sPath), records, sRes, bSilent);
+    bOK = ADB_ls(sPath, records, sRes, bSilent);
     if (bOK && conf.WorkMode != WORKMODE_SAFE && records.GetSize() == 1)
     {
       auto file = records[0];
