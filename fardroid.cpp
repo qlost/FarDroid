@@ -971,7 +971,7 @@ void fardroid::ChangePermissionsDialog(int selected)
   DialogItems[IDPRM_Group].Data = group;
   DialogItems[IDPRM_Octal].Data = octal;
 
-  if (selected < 1)
+  if (selected == 1 && fileName == GetFileName(false, true, 0))
     DialogItems[IDPRM_Selected].Flags |= DIF_DISABLE;
 
   CString newUser, newGroup, newOctal;
