@@ -282,7 +282,12 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
     {
     case 0x41:
     {
-      android->ChangePermissionsDialog();
+      PanelInfo PInfo;
+      fInfo.PanelControl(Info->hPanel, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
+      android->ChangePermissionsDialog(static_cast<int>(PInfo.SelectedItemsNumber));
+      android->Reread();
+      fInfo.PanelControl(Info->hPanel, FCTL_UPDATEPANEL, 1, nullptr);
+      fInfo.PanelControl(Info->hPanel, FCTL_REDRAWPANEL, 0, nullptr);
       return TRUE;
     }
     case 0x52:
@@ -301,7 +306,7 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
     {
     case VK_F6:
     {
-      CString file = ExtractName(GetCurrentFileName());
+      CString file = GetCurrentFileName();
       if (android->Rename(file) == TRUE)
       {
         android->Reread();

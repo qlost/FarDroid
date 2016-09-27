@@ -30,6 +30,7 @@
 #include "framebuffer.h"
 #include <memory>
 #include <vector>
+#include <map>
 
 typedef union {
 	unsigned id;
@@ -121,14 +122,14 @@ struct syncsendbuf
 
 struct CFileRecord
 {
-	CString filename;
+  CString filename;
 	CString linkto;
 	CString owner;
 	CString grp;
 	CString desc;
 	time_t	time;
 	UINT64	size;
-	DWORD		attr;
+  int	mode;
 };
 
 typedef CSimpleArrayEx<CFileRecord*, CFileRecord*> CFileRecords;
@@ -143,7 +144,46 @@ struct CCopyRecord
 
 typedef CSimpleArrayEx<CCopyRecord*, CCopyRecord*> CCopyRecords;
 
-enum ProcessType { PS_COPY, PS_MOVE, PS_DELETE, PS_FB };
+const enum ProcessType { PS_COPY, PS_MOVE, PS_DELETE, PS_FB };
+
+const enum PermissionID
+{
+  IDPRM_Owner = 4,
+  IDPRM_Group = 6,
+  IDPRM_RUSR = 12,
+  IDPRM_WUSR,
+  IDPRM_XUSR,
+  IDPRM_RGRP,
+  IDPRM_WGRP,
+  IDPRM_XGRP,
+  IDPRM_ROTH,
+  IDPRM_WOTH,
+  IDPRM_XOTH,
+  IDPRM_SUID,
+  IDPRM_SGID,
+  IDPRM_SVTX,
+  IDPRM_Octal = 25,
+  IDPRM_None,
+  IDPRM_All,
+  IDPRM_Selected,
+  IDPRM_Ok,
+  IDPRM_Cancel,
+};
+
+static std::map<int,int> PermissionMap = {
+  { IDPRM_RUSR, S_IRUSR },
+  { IDPRM_WUSR, S_IWUSR },
+  { IDPRM_XUSR, S_IXUSR },
+  { IDPRM_RGRP, S_IRGRP },
+  { IDPRM_WGRP, S_IWGRP },
+  { IDPRM_XGRP, S_IXGRP },
+  { IDPRM_ROTH, S_IROTH },
+  { IDPRM_WOTH, S_IWOTH },
+  { IDPRM_XOTH, S_IXOTH },
+  { IDPRM_SUID, S_ISUID },
+  { IDPRM_SGID, S_ISGID },
+  { IDPRM_SVTX, S_ISVTX },
+};
 
 struct ProcessStruct
 {
@@ -285,6 +325,8 @@ private:
   BOOL ADB_rm(LPCTSTR sDir, CString & sRes, bool bSilent);
   BOOL ADB_mkdir(LPCTSTR sDir, CString & sRes, bool bSilent);
   BOOL ADB_rename(LPCTSTR sSource, LPCTSTR sDest, CString& sRes);
+  BOOL ADB_chmod(LPCTSTR sSource, LPCTSTR octal, CString& sRes);
+  BOOL ADB_chown(LPCTSTR sSource, LPCTSTR user, LPCTSTR group, CString& sRes);
   BOOL ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent, const time_t& mtime);
   BOOL ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent);
   BOOL ADB_findmount(LPCTSTR sFS, strvec &fs_params, CString & sRes, bool bSilent);
@@ -295,8 +337,6 @@ private:
   BOOL		ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent) const;
   BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent);
 
-  int		CopyFileFrom(const CString& src, const CString& dst, bool bSilent, const time_t& mtime);
-  int		CopyFileTo(const CString& src, const CString& dst, const CString& old_permissions, bool bSilent);
   int		DeleteFileFrom(const CString& src, bool bSilent);
 
   int GetItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
@@ -308,9 +348,8 @@ private:
   void ParsePartitionInfo(CString s);
   void GetPartitionsInfo();
   int UpdateInfoLines();
-  CString GetPermissionsFile(const CString& FullFileName);
+  CString GetPermissionsFile(const CString& sSource);
   static CString PermissionsFileToMask(CString Permission);
-  bool SetPermissionsFile(const CString& FullFileName, const CString& PermissionsFile);
 public:
   bool m_bForceBreak;
   TaskBarIcon taskbarIcon;
@@ -341,7 +380,7 @@ public:
   static void		DeleteRecords(CFileRecords & recs);
   static void DeleteRecords(CCopyRecords& recs);
   void		PreparePanel(struct OpenPanelInfo *Info);
-  void		ChangePermissionsDialog();
+  void		ChangePermissionsDialog(int selected);
 
   int GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode);
   static void FreeFindData(struct PluginPanelItem *PanelItem, int ItemsNumber);
@@ -356,7 +395,7 @@ public:
 
   void ShowProgressMessage();
   bool BreakProcessDialog();
-  int CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
+  int CopyErrorDialog(LPCTSTR sTitle, CString sErr);
   int CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
   static void ShowError(CString& error);
   int FileExistsDialog(LPCTSTR sName);

@@ -17,9 +17,9 @@ void ShowMessageWait(const farStr* const* msg, int msgsize)
   fInfo.Message(&MainGuid, &MsgWaitGuid, FMSG_LEFTALIGN, nullptr, msg, msgsize, 0);
 }
 
-int ShowDialog(int width, int height, const farStr* help, FarDialogItem* items, int count, HANDLE& hDlg)
+int ShowDialog(int width, int height, const farStr* help, FarDialogItem* items, int count, HANDLE& hDlg, FARWINDOWPROC dlgProc)
 {
-  hDlg = static_cast<int*>(fInfo.DialogInit(&MainGuid, &DialogGuid, -1, -1, width, height, help, items, count, 0, 0, nullptr, nullptr));
+  hDlg = static_cast<int*>(fInfo.DialogInit(&MainGuid, &DialogGuid, -1, -1, width, height, help, items, count, 0, 0, dlgProc, nullptr));
   auto res = static_cast<int>(fInfo.DialogRun(hDlg));
   return res;
 }
@@ -57,58 +57,56 @@ FarDialogItem* GetFarDialogItem(const HANDLE& hDlg, DWORD item)
   return nullptr;
 }
 
-BOOL GetItemSelected(const HANDLE& hDlg, DWORD item)
+int GetItemSelected(const HANDLE& hDlg, DWORD item)
 {
-  FarDialogItem* DialogItem = GetFarDialogItem(hDlg, item);
-  if (DialogItem)
-  {
-    auto s = DialogItem->Selected ? TRUE : FALSE;
-    my_free(DialogItem);
-    return s;
-  }
-  return FALSE;
+  auto DialogItem = GetFarDialogItem(hDlg, item);
+  if (!DialogItem) return FALSE;
+
+  auto s = static_cast<int>(DialogItem->Selected);
+  my_free(DialogItem);
+  return s;
+}
+
+bool SetItemSelected(const HANDLE& hDlg, DWORD item, int selected)
+{
+  if (!hDlg) return false;
+  auto DialogItem = GetFarDialogItem(hDlg, item);
+  if (!DialogItem) return false;
+
+  DialogItem->Selected = selected;
+  fInfo.SendDlgMessage(hDlg, DM_SETDLGITEM, item, static_cast<void *>(DialogItem));
+  my_free(DialogItem);
+  return true;
 }
 
 CString GetItemData(const HANDLE& hDlg, DWORD item)
 {
-  FarDialogItem* DialogItem = GetFarDialogItem(hDlg, item);
-  if (DialogItem)
-  {
-    CString str = DialogItem->Data;
-    my_free(DialogItem);
-    return str;
-  }
-  return _F("");
+  auto DialogItem = GetFarDialogItem(hDlg, item);
+  if (!DialogItem) return _F("");
+
+  CString str = DialogItem->Data;
+  my_free(DialogItem);
+  return str;
 }
 
 bool SetItemData(const HANDLE& hDlg, DWORD item, const CString& data)
 {
-  if (!hDlg)
-    return false;
+  if (!hDlg) return false;
 
-  try
-  {
-    FarDialogItem* DialogItem = GetFarDialogItem(hDlg, item);
-    if (DialogItem)
-    {
-      DialogItem->Data = _C(data);
-      fInfo.SendDlgMessage(hDlg, DM_SETDLGITEM, item, static_cast<void *>(DialogItem));
-      my_free(DialogItem);
-      return true;
-    }
-  }
-  catch (...)
-  {
-  }
-  return false;
+  auto DialogItem = GetFarDialogItem(hDlg, item);
+  if (!DialogItem) return false;
+
+  DialogItem->Data = _C(data);
+  fInfo.SendDlgMessage(hDlg, DM_SETDLGITEM, item, static_cast<void *>(DialogItem));
+  my_free(DialogItem);
+  return true;
 }
 
 void InitDialogItems(struct InitDialogItem* Init, struct FarDialogItem* Item, int ItemsNumber)
 {
-  int I;
-  struct FarDialogItem* PItem = Item;
-  struct InitDialogItem* PInit = Init;
-  for (I = 0; I < ItemsNumber; I++ , PItem++ , PInit++)
+  auto PItem = Item;
+  auto PInit = Init;
+  for (auto i = 0; i < ItemsNumber; i++ , PItem++ , PInit++)
   {
     memset(static_cast<void *>(PItem), 0, sizeof(*PItem));
     PItem->Type = static_cast<FARDIALOGITEMTYPES>(PInit->Type);
@@ -120,7 +118,10 @@ void InitDialogItems(struct InitDialogItem* Init, struct FarDialogItem* Item, in
     if (PInit->DefaultButton)
       PItem->Flags |= DIF_DEFAULTBUTTON;
     PItem->MaxLength = 0;
-    PItem->History = reinterpret_cast<const farStr *>(PInit->Selected);
+    if (PItem->Type == DI_FIXEDIT)
+      PItem->Mask = reinterpret_cast<const farStr *>(PInit->Selected);
+    else
+      PItem->History = reinterpret_cast<const farStr *>(PInit->Selected);
     if (static_cast<unsigned int>(reinterpret_cast<DWORD_PTR>(PInit->Data)) < 2000)
       PItem->Data = LOC(static_cast<unsigned int>(reinterpret_cast<DWORD_PTR>(PInit->Data)));
     else

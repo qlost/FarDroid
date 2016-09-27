@@ -115,7 +115,7 @@ bool fardroid::DeviceNameDialog(const CString &name, CString &alias)
   struct InitDialogItem InitItems[] = {
     /*00*/FDI_DOUBLEBOX(width - 4, 6, (farStr *)static_cast<const wchar_t*>(name)),
     /*01*/FDI_LABEL(5, 2, (farStr *)MRenameDeviceName),
-    /*02*/FDI_EDIT(5, 3,width - 6, _F("")),
+    /*02*/FDI_EDIT(5, 3,width - 6, _F("fardroidDevice")),
     /*03*/FDI_DEFCBUTTON(5,(farStr *)MOk),
     /*04*/FDI_CBUTTON(5,(farStr *)MCancel),
     /*--*/FDI_SEPARATOR(4,_F("")),
@@ -206,13 +206,17 @@ int fardroid::FileExistsDialog(LPCTSTR sName)
   return 4;
 }
 
-int fardroid::CopyErrorDialog(LPCTSTR sTitle, LPCTSTR sErr)
+int fardroid::CopyErrorDialog(LPCTSTR sTitle, CString sRes)
 {
+  if (!sRes.IsEmpty()) 
+    sRes += _T("\n\n");
+  sRes += conf.WorkMode == WORKMODE_NATIVE ? (conf.SU ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm)) : LOC(MNeedNativeSuperuserPerm);
+
   auto ret = 2;
   if (m_procStruct.Hide())
   {
     CString errmsg;
-    errmsg.Format(_T("%s\n%s\n\n%s\n\n%s\n%s\n%s"), sTitle, LOC(MCopyError), sErr, LOC(MYes), LOC(MNo), LOC(MCancel));
+    errmsg.Format(_T("%s\n%s\n\n%s\n\n%s\n%s\n%s"), sTitle, LOC(MCopyError), sRes, LOC(MYes), LOC(MNo), LOC(MCancel));
     ret = ShowMessage(errmsg, 3, _F("copyerror"), true);
     m_procStruct.Restore();
   }
@@ -390,6 +394,7 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       }
     }
 
+    CString sRes;
     CString tname = files[i]->dst + TMP_SUFFIX;
     do {
       if (m_procStruct.Lock())
@@ -399,9 +404,10 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
         m_procStruct.Unlock();
       }
 
-      result = CopyFileFrom(files[i]->src, tname, bSilent, files[i]->time);
+      result = ADB_pull(files[i]->src, tname, sRes, bSilent, files[i]->time);
+      if (result == FALSE)
+        result = CopyErrorDialog(LOC(MPutFile), sRes);
     } while (result == RETRY);
-
 
     if (result == FALSE || m_bForceBreak)
       break;
@@ -534,7 +540,12 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
         continue;
       }
     }
+    else
+    {
+      permissions = "0666";
+    }
 
+    CString sRes;
     CString tname = files[i]->dst + TMP_SUFFIX;
 
     do {
@@ -545,7 +556,9 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
         m_procStruct.Unlock();
       }
 
-      result = CopyFileTo(files[i]->src, tname, permissions, bSilent);
+      result = ADB_push(files[i]->src, tname, sRes, bSilent);
+      if (result == FALSE)
+        result = CopyErrorDialog(LOC(MPutFile), sRes);
     } while (result == RETRY);
 
     if (result == FALSE || m_bForceBreak)
@@ -573,6 +586,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       }
     }
 
+    ADB_chmod(tname, permissions, sRes);
     result = RenameFile(tname, files[i]->dst, false);
     if (result == FALSE)
       break;
@@ -609,78 +623,6 @@ deltry:
       return FALSE;
     }
   }
-
-  return TRUE;
-}
-
-int fardroid::CopyFileFrom(const CString& src, const CString& dst, bool bSilent, const time_t& mtime)
-{
-  CString oldPermissions;
-  auto useChmod = false;
-  if (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess)
-  {
-    oldPermissions = GetPermissionsFile(src);
-    if (!oldPermissions.IsEmpty() && oldPermissions.GetAt(oldPermissions.GetLength() - 3) != _T('r'))
-    {
-      auto newPermissions = oldPermissions;
-      newPermissions.SetAt(newPermissions.GetLength() - 3, _T('r'));
-      SetPermissionsFile(src, newPermissions);
-      useChmod = true;
-    }
-  }
-
-  CString sRes;
-  auto res = ADB_pull(src, dst, sRes, bSilent, mtime);
-
-  if (useChmod) 
-    SetPermissionsFile(src, oldPermissions);
-
-  if (!res)
-  {
-    if (!sRes.IsEmpty()) sRes += _T("\n\n");
-    sRes += conf.WorkMode == WORKMODE_NATIVE ? (conf.SU ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm)) : LOC(MNeedNativeSuperuserPerm);
-    return CopyErrorDialog(LOC(MGetFile), sRes);
-  }
-
-  return TRUE;
-}
-
-int fardroid::CopyFileTo(const CString& src, const CString& dst, const CString& oldPermissions, bool bSilent)
-{
-  CString parent = ExtractPath(dst);
-  CString parentPermissions;
-
-  auto useChmod = false;
-  if (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess)
-  {
-    parentPermissions = GetPermissionsFile(parent);
-    if (!parentPermissions.IsEmpty() && (
-      parentPermissions.GetAt(parentPermissions.GetLength() - 2) != _T('w') ||
-      parentPermissions.GetAt(parentPermissions.GetLength() - 1) != _T('x')))
-    {
-      auto newPermissions = parentPermissions;
-      newPermissions.SetAt(newPermissions.GetLength() - 2, _T('w'));
-      newPermissions.SetAt(newPermissions.GetLength() - 1, _T('x'));
-      SetPermissionsFile(parent, newPermissions);
-      useChmod = true;
-    }
-  }
-
-  CString sRes;
-  auto res = ADB_push(src, dst, sRes, bSilent);
-
-  if (useChmod)
-    SetPermissionsFile(parent, parentPermissions);
-
-  if (!res)
-  {
-    if (!sRes.IsEmpty()) sRes += _T("\n\n");
-    sRes += conf.WorkMode == WORKMODE_NATIVE ? (conf.SU ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm)) : LOC(MNeedNativeSuperuserPerm);
-    return CopyErrorDialog(LOC(MPutFile), sRes);
-  }
-
-  if (!oldPermissions.IsEmpty())
-    SetPermissionsFile(dst, oldPermissions);
 
   return TRUE;
 }
@@ -751,7 +693,7 @@ int fardroid::GetFindData(struct PluginPanelItem** pPanelItem, size_t* pItemsNum
     my_memset(&NewPanelItem[i], 0, sizeof(PluginPanelItem));
 
     item = records[i];
-    NewPanelItem[i].FileAttributes = item->attr;
+    NewPanelItem[i].FileAttributes = ModeToAttr(item->mode);
     NewPanelItem[i].UserData.Data = &i;
     NewPanelItem[i].FileSize = item->size;
     NewPanelItem[i].CreationTime = NewPanelItem[i].ChangeTime = NewPanelItem[i].LastAccessTime = NewPanelItem[i].LastWriteTime =
@@ -898,9 +840,62 @@ void fardroid::PreparePanel(OpenPanelInfo* Info)
   Info->InfoLinesNumber = len;
 }
 
-void fardroid::ChangePermissionsDialog()
+intptr_t WINAPI PermissionDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void* Param2)
 {
-  if (conf.WorkMode != WORKMODE_NATIVE)
+  if (Msg == DN_INITDIALOG ||
+    (Msg == DN_EDITCHANGE && Param1 == IDPRM_Octal) ||
+    (Msg == DN_BTNCLICK && (Param1 == IDPRM_All || Param1 == IDPRM_None)))
+  {
+    auto old = GetItemData(hDlg, IDPRM_Octal);
+    auto perm = Param1 == IDPRM_All ? 0777 :
+      Param1 == IDPRM_None ? 0 :
+      SgringOctalToMode(old) & S_ISRWX;
+
+    CString octal;
+    octal.Format(_T("%04o"), perm);
+    if (octal != old)
+      SetItemData(hDlg, IDPRM_Octal, octal);
+
+    for (int i = IDPRM_RUSR; i <= IDPRM_SVTX; i++)
+      SetItemSelected(hDlg, i, IS_FLAG(perm, PermissionMap[i]));
+
+    if (Msg != DN_INITDIALOG)
+      return TRUE;
+  }
+  else if (Msg == DN_BTNCLICK && IDPRM_RUSR <= Param1 && Param1 <= IDPRM_SVTX)
+  {
+    auto old = SgringOctalToMode(GetItemData(hDlg, IDPRM_Octal));
+    auto perm = old;
+
+    auto id = static_cast<int>(Param1);
+    if (GetItemSelected(hDlg, static_cast<DWORD>(id)) == 1)
+      perm |= PermissionMap[id];
+    else
+      perm &= ~PermissionMap[id];
+
+    if (perm != old)
+    {
+      CString octal;
+      octal.Format(_T("%04o"), perm);
+      SetItemData(hDlg, IDPRM_Octal, octal);
+    }
+    return TRUE;
+  }
+
+  return fInfo.DefDlgProc(hDlg, Msg, Param1, Param2);
+}
+
+void fardroid::ChangePermissionsDialog(int selected)
+{
+  CString fileName = GetCurrentFileName(false);
+  CFileRecord* item = GetFileRecord(fileName);
+  if (!item) return;
+
+  CString sname;
+  sname.Format(_T("%s/%s"), m_currentPath, fileName);
+  NormilizePath(sname);
+
+  if (item->mode < 0)
   {
     CString msg;
     msg.Format(L"%s\n%s\n%s", LOC(MWarningTitle), LOC(MOnlyNative), LOC(MOk));
@@ -908,99 +903,125 @@ void fardroid::ChangePermissionsDialog()
     return;
   }
 
-  CString sdir = m_currentPath;
-  AddEndSlash(sdir, true);
+  CString separator;
+  separator.Format(_T(" %s "), LOC(MPermPermissions));
 
-  CString fileName = ExtractName(GetCurrentFileName(false));
-  CString sname;
-  if (fileName == "..") {
-    fileName = ExtractName(sdir);
-    sname = sdir;
+  const auto width = 50;
+
+  InitDialogItem FDI_FILE;
+  auto fileTypeTitle = MPermType;
+  auto fileType = ModeToType(item->mode);
+  if (conf.WorkMode != WORKMODE_SAFE && IsLinkMode(item->mode))
+  {
+    fileTypeTitle = MPermLink;
+    FDI_FILE = FDI_ROEDIT(15, 7, width - 6, (farStr *)static_cast<const wchar_t *>(item->linkto));
   }
   else
   {
-    sname.Format(_T("%s%s"), sdir, fileName);
+    FDI_FILE = FDI_LABEL(15, 7, (farStr *)static_cast<const wchar_t *>(fileType));
   }
-
-  CString permissions = GetPermissionsFile(sname);
-  if (permissions.IsEmpty())
-    return;
-
-  const auto width = 45;
   struct InitDialogItem InitItems[] = {
-    /*00*/FDI_DOUBLEBOX (width - 4, 11, (farStr *)MPermTitle),
-    /*01*/FDI_LABEL ( 5, 2, (farStr *)MPermFileName),
-    /*02*/FDI_LABEL ( 5, 3, (farStr *)MPermFileAttr),
-    /*03*/FDI_LABEL ( 14, 5, _T("R   W   X")),
-    /*04*/FDI_LABEL ( 5, 6, _T("Owner")),
-    /*05*/FDI_LABEL ( 5, 7, _T("Group")),
-    /*06*/FDI_LABEL ( 5, 8, _T("Others")),
-    /*07*/FDI_CHECK ( 13, 6, _T("") ),
-    /*08*/FDI_CHECK ( 13, 7, _T("") ),
-    /*09*/FDI_CHECK ( 13, 8, _T("") ),
-    /*10*/FDI_CHECK ( 17, 6, _T("") ),
-    /*11*/FDI_CHECK ( 17, 7, _T("") ),
-    /*12*/FDI_CHECK ( 17, 8, _T("") ),
-    /*13*/FDI_CHECK ( 21, 6, _T("") ),
-    /*14*/FDI_CHECK ( 21, 7, _T("") ),
-    /*15*/FDI_CHECK ( 21, 8, _T("") ),
-    /*16*/FDI_DEFCBUTTON (10, (farStr *)MOk),
-    /*17*/FDI_CBUTTON (10,(farStr *)MCancel),
+    /*00*/FDI_DOUBLEBOX(width - 4, 17, (farStr *)MPermTitle),
+    /*01*/FDI_CLABEL(5, 2, (farStr *)MPermChange),
+    /*02*/FDI_CLABEL(5, 3, (farStr *)static_cast<const wchar_t *>(fileName)),
+    /*03*/FDI_LABEL(5, 5, (farStr *)MPermOwner),
+    /*04*/FDI_EDIT(15, 5, width - 6, _F("fardroidPermissionOwner")),
+    /*05*/FDI_LABEL(5, 6, (farStr *)MPermGroup),
+    /*06*/FDI_EDIT(15, 6, width - 6, _F("fardroidPermissionGroup")),
+    /*07*/FDI_LABEL(5, 7, (farStr *)fileTypeTitle),
+    /*08*/FDI_FILE,
+    /*09*/FDI_LABEL(5, 9, _F("User")),
+    /*10*/FDI_LABEL(5, 10, _F("Group")),
+    /*11*/FDI_LABEL(5, 11, _F("Others")),
+    /*12*/FDI_CHECK(13, 9, _F("R")),
+    /*13*/FDI_CHECK(20, 9, _F("W")),
+    /*14*/FDI_CHECK(27, 9, _F("X")),
+    /*15*/FDI_CHECK(13, 10, _F("R")),
+    /*16*/FDI_CHECK(20, 10, _F("W")),
+    /*17*/FDI_CHECK(27, 10, _F("X")),
+    /*18*/FDI_CHECK(13, 11, _F("R")),
+    /*19*/FDI_CHECK(20, 11, _F("W")),
+    /*20*/FDI_CHECK(27, 11, _F("X")),
+    /*21*/FDI_CHECK(34, 9, _F("SUID")),
+    /*22*/FDI_CHECK(34, 10, _F("SGID")),
+    /*23*/FDI_CHECK(34, 11, _F("Sticky")),
+    /*24*/FDI_LABEL(5, 12, _F("Octal")),
+    /*25*/FDI_FIXEDIT(13, 12, 16, _F("9999")),
+    /*26*/FDI_BUTTON(22, 12, (farStr *)MPermNone),
+    /*27*/FDI_BUTTON(34, 12, (farStr *)MPermAll),
+    /*28*/FDI_CHECK(5, 14, (farStr *)MPermChangeSelected),
+    /*29*/FDI_DEFCBUTTON(16, (farStr *)MOk),
+    /*30*/FDI_CBUTTON(16,(farStr *)MCancel),
     /*--*/FDI_SEPARATOR(4,_F("")),
-    /*--*/FDI_SEPARATOR(9,_F("")),
+    /*--*/FDI_SEPARATOR(8, (farStr *)static_cast<const wchar_t *>(separator)),
+    /*--*/FDI_SEPARATOR(13,_F("")),
+    /*--*/FDI_SEPARATOR(15,_F("")),
   };
   const int size = sizeof InitItems / sizeof InitItems[0];
 
   FarDialogItem DialogItems[size];
   InitDialogItems(InitItems, DialogItems, size);
 
-  CString LabelTxt1 = LOC(MPermFileName) + fileName;
-  DialogItems[1].Data = LabelTxt1;
-  CString LabelTxt2 = LOC(MPermFileAttr) + permissions;
-  DialogItems[2].Data = LabelTxt2;
+  CString user = item->owner;
+  CString group = item->grp;
+  CString octal;
+  octal.Format(_T("%04o"), item->mode & S_ISRWX);
 
-  DialogItems[7].Selected = (permissions[1] != _T('-'));
-  DialogItems[10].Selected = (permissions[2] != _T('-'));
-  DialogItems[13].Selected = (permissions[3] != _T('-'));
+  DialogItems[IDPRM_Owner].Data = user;
+  DialogItems[IDPRM_Group].Data = group;
+  DialogItems[IDPRM_Octal].Data = octal;
 
-  DialogItems[8].Selected = (permissions[4] != _T('-'));
-  DialogItems[11].Selected = (permissions[5] != _T('-'));
-  DialogItems[14].Selected = (permissions[6] != _T('-'));
+  if (selected < 1)
+    DialogItems[IDPRM_Selected].Flags |= DIF_DISABLE;
 
-  DialogItems[9].Selected = (permissions[7] != _T('-'));
-  DialogItems[12].Selected = (permissions[8] != _T('-'));
-  DialogItems[15].Selected = (permissions[9] != _T('-'));
-
-  HANDLE hdlg;
-
-  int res = ShowDialog(width, 13, nullptr, DialogItems, size, hdlg);
-  if (res == 16)
+  CString newUser, newGroup, newOctal;
+  int checkSelected = 0;
+  HANDLE hDlg;
+  auto res = ShowDialog(width, 19, _F(""), DialogItems, size, hDlg, PermissionDlgProc);
+  if (res == IDPRM_Ok)
   {
-    permissions.SetAt(1, GetItemSelected(hdlg, 7) ? _T('r') : _T('-'));
-    permissions.SetAt(2, GetItemSelected(hdlg, 10) ? _T('w') : _T('-'));
-    permissions.SetAt(3, GetItemSelected(hdlg, 13) ? _T('x') : _T('-'));
+    newUser = GetItemData(hDlg, IDPRM_Owner);
+    newGroup = GetItemData(hDlg, IDPRM_Group);
+    newOctal = GetItemData(hDlg, IDPRM_Octal);
+    checkSelected = GetItemSelected(hDlg, IDPRM_Selected);
+  }
+  fInfo.DialogFree(hDlg);
 
-    permissions.SetAt(4, GetItemSelected(hdlg, 8) ? _T('r') : _T('-'));
-    permissions.SetAt(5, GetItemSelected(hdlg, 11) ? _T('w') : _T('-'));
-    permissions.SetAt(6, GetItemSelected(hdlg, 14) ? _T('x') : _T('-'));
+  if (res != IDPRM_Ok)
+    return;
 
-    permissions.SetAt(7, GetItemSelected(hdlg, 9) ? _T('r') : _T('-'));
-    permissions.SetAt(8, GetItemSelected(hdlg, 12) ? _T('w') : _T('-'));
-    permissions.SetAt(9, GetItemSelected(hdlg, 15) ? _T('x') : _T('-'));
+  CString sRes;
+  if ((newUser != user || newGroup != group) && !ADB_chown(sname, newUser, newGroup, sRes))
+  {
+    ShowError(sRes);
+    return;
+  }
 
-    SetPermissionsFile(sname, permissions);
+  if (newOctal != octal && !ADB_chmod(sname, newOctal, sRes))
+  {
+    ShowError(sRes);
+    return;
+  }
 
-    CString permissions_chk = GetPermissionsFile(sname);
+  if (checkSelected == 0)
+    return;
 
-    if (permissions_chk != permissions)
+  for (auto i = 0; i < selected; i++)
+  {
+    auto selectedName = GetFileName(false, true, i);
+    if (selectedName == fileName)
+      continue;
+
+    sname.Format(_T("%s/%s"), m_currentPath, selectedName);
+    NormilizePath(sname);
+    if (!ADB_chown(sname, newUser, newGroup, sRes) || !ADB_chmod(sname, newOctal, sRes))
     {
-      CString msg;
-      msg.Format(L"%s\n%s\n%s", LOC(MWarningTitle), LOC(MSetPermFail), LOC(MOk));
-      ShowMessage(msg, 1, nullptr, true);
+      ShowError(sRes);
+      break;
     }
   }
-  fInfo.DialogFree(hdlg);
 }
+
 
 CString fardroid::GetDeviceName(const CString& device)
 {
@@ -1122,7 +1143,7 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
 
   CString s = sDir;
   CFileRecord* item = GetFileRecord(sDir);
-  if (s != ".." && item && conf.WorkMode != WORKMODE_SAFE  && OpMode == 0 && IsLink(item->attr))
+  if (s != ".." && item && conf.WorkMode != WORKMODE_SAFE  && OpMode == 0 && IsLinkMode(item->mode))
     s = item->linkto;
 
   CString tempPath;
@@ -1396,8 +1417,6 @@ BOOL fardroid::ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   if (m_bForceBreak)
     DeleteFileFrom(sDst, true);
 
-  if (conf.WorkMode == WORKMODE_NATIVE && conf.SU && conf.UseExtendedAccess)
-    SetPermissionsFile(sDst, "-rw-rw-rw-");
   return TRUE;
 }
 
@@ -1411,7 +1430,7 @@ BOOL fardroid::ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent)
     return FALSE;
   }
 
-  if (IsDirectory(sSrc))
+  if (IsDirectoryLocal(sSrc))
   {
     if (!ADBPushDir(sock, sSrc, sDst, sRes))
     {
@@ -1456,7 +1475,7 @@ bool fardroid::ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& s
       dname.Format(_T("%s%s"), dsaved, recs[i]->filename);
       dname.Replace(_T("\""), _T(""));
 
-      if (!IsDirectory(recs[i]->attr))
+      if (!IsDirectoryMode(recs[i]->mode))
       {
         if (m_procStruct.Lock())
         {
@@ -1506,7 +1525,7 @@ void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
       sname.Format(_T("%s%s"), sdir, recs[i]->filename);
       dname.Format(_T("%s%s"), ddir, recs[i]->filename);
 
-      if (IsDirectory(recs[i]->attr))
+      if (IsDirectoryMode(recs[i]->mode))
       {
         sname.Format(_T("%s%s"), sdir, recs[i]->filename);
         ADBPullDirGetFiles(sname, dname, files);
@@ -1656,7 +1675,7 @@ BOOL fardroid::ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent,
   }
   if (IS_FLAG(mode, S_IFREG) || IS_FLAG(mode, S_IFCHR) || IS_FLAG(mode, S_IFBLK))
   {
-    if (IsDirectory(dest))
+    if (IsDirectoryLocal(dest))
     {
       AddEndSlash(dest);
       dest += ExtractName(sSrc);
@@ -1753,7 +1772,7 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
             if (lstrcmpA(buf, ".") != 0 && lstrcmpA(buf, "..") != 0)
             {
               CFileRecord* rec = new CFileRecord;
-              rec->attr = ModeToAttr(msg.dent.mode);
+              rec->mode = msg.dent.mode;
               rec->size = msg.dent.size;
               rec->time = msg.dent.time;
 
@@ -1792,6 +1811,22 @@ BOOL fardroid::ADB_rename(LPCTSTR sSource, LPCTSTR sDest, CString& sRes)
 {
   CString s;
   s.Format(_T("mv \"%s\" \"%s\""), WtoUTF8(sSource), WtoUTF8(sDest));
+  ADBShellExecute(s, sRes, false);
+  return sRes.GetLength() == 0;
+}
+
+BOOL fardroid::ADB_chmod(LPCTSTR sSource, LPCTSTR octal, CString& sRes)
+{
+  CString s;
+  s.Format(_T("chmod %s \"%s\""), octal, WtoUTF8(sSource));
+  ADBShellExecute(s, sRes, false);
+  return sRes.GetLength() == 0;
+}
+
+BOOL fardroid::ADB_chown(LPCTSTR sSource, LPCTSTR user, LPCTSTR group, CString& sRes)
+{
+  CString s;
+  s.Format(_T("chown %s:%s \"%s\""), user, group, WtoUTF8(sSource));
   ADBShellExecute(s, sRes, false);
   return sRes.GetLength() == 0;
 }
@@ -1847,7 +1882,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
     if (tokens.GetSize() == 6)
     {
       rec = new CFileRecord;
-      rec->attr = StringToAttr(tokens[0]);
+      rec->mode = StringToMode(tokens[0]);
       rec->owner = tokens[1];
       rec->grp = tokens[2];
       rec->time = StringTimeToUnixTime(tokens[3], tokens[4]);
@@ -1861,7 +1896,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
     if (tokens.GetSize() == 7)
     {
       rec = new CFileRecord;
-      rec->attr = StringToAttr(tokens[0]);
+      rec->mode = StringToMode(tokens[0]);
       rec->owner = tokens[1];
       rec->grp = tokens[2];
       rec->time = StringTimeToUnixTime(tokens[3], tokens[4]);
@@ -1879,7 +1914,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
     if (tokens.GetSize() == 7)
     {
       rec = new CFileRecord;
-      rec->attr = StringToAttr(tokens[0]);
+      rec->mode = StringToMode(tokens[0]);
       rec->owner = tokens[1];
       rec->grp = tokens[2];
       rec->size = 0;
@@ -1896,7 +1931,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
       if (tokens.GetSize() == 7)
       {
         rec = new CFileRecord;
-        rec->attr = StringToAttr(tokens[0]);
+        rec->mode = StringToMode(tokens[0]);
         rec->owner = tokens[1];
         rec->grp = tokens[2];
         rec->size = _ttoi(tokens[3]);
@@ -1910,7 +1945,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
         if (tokens.GetSize() == 6)
         {
           rec = new CFileRecord;
-          rec->attr = StringToAttr(tokens[0]);
+          rec->mode = StringToMode(tokens[0]);
           rec->owner = tokens[1];
           rec->grp = tokens[2];
           rec->size = 0;
@@ -1951,7 +1986,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
     if (tokens.GetSize() == 12)
     {
       rec = new CFileRecord;
-      rec->attr = StringToAttr(tokens[0]);
+      rec->mode = StringToMode(tokens[0]);
       rec->owner = tokens[2];
       rec->grp = tokens[3];
       rec->size = _ttoi(tokens[4]);
@@ -1969,7 +2004,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
     if (tokens.GetSize() == 11)
     {
       rec = new CFileRecord;
-      rec->attr = StringToAttr(tokens[0]);
+      rec->mode = StringToMode(tokens[0]);
       //tokens[1] - links count
       rec->owner = tokens[2];
       rec->grp = tokens[3];
@@ -1987,7 +2022,7 @@ bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
     if (tokens.GetSize() == 11)
     {
       rec = new CFileRecord;
-      rec->attr = StringToAttr(tokens[0]);
+      rec->mode = StringToMode(tokens[0]);
       rec->owner = tokens[2];
       rec->grp = tokens[3];
       rec->size = 0;
@@ -2025,7 +2060,7 @@ BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent)
     if (bOK && conf.WorkMode != WORKMODE_SAFE && records.GetSize() == 1)
     {
       auto file = records[0];
-      if (IsLink(file->attr) && file->filename.Compare(ExtractName(sDir)) == 0)
+      if (IsLinkMode(file->mode) && file->filename.Compare(ExtractName(sDir)) == 0)
       {
         CString tempPath;
         if (file->linkto[0] == '/')
@@ -2069,22 +2104,16 @@ void fardroid::ShowADBExecError(CString err, bool bSilent)
 
 void fardroid::DrawProgress(CString& sProgress, int size, double pc)
 {
-  if (pc > 1)
-    pc = 1;
-  if (pc < 0)
-    pc = 0;
+  if (pc > 1) pc = 1;
+  if (pc < 0) pc = 0;
 
-  int fn = static_cast<int>(pc * size);
-  int en = size - fn;
-  wchar_t buf[512];
-  wchar_t *bp = buf;
-  for (auto i = 0; i < fn; i++)
-    *bp++ = 0x2588; //'█'
-  for (auto i = 0; i < en; i++)
-    *bp++ = 0x2591; //'░'
-  // ReSharper disable once CppAssignedValueIsNeverUsed
-  *bp++ = 0x0;
+  auto fn = static_cast<int>(pc * size);
+  auto buf = new wchar_t[size + 1];
+  for (auto i = 0; i < size; i++)
+    buf[i] = i < fn ? 0x2588 : 0x2591; //'█':'░'
+  buf[size] = 0x0;
   sProgress.Format(_T("%s %3d%%"), buf, static_cast<int>(pc * 100));
+  delete[] buf;
 }
 
 void fardroid::DrawProgress(CString& sProgress, int size, LPCTSTR current, LPCTSTR total)
@@ -2417,7 +2446,8 @@ int fardroid::GetFramebuffer()
 
 CFileRecord* fardroid::GetFileRecord(LPCTSTR sFileName)
 {
-  for (int i = 0; i < records.GetSize(); i++)
+  auto size = records.GetSize();
+  for (auto i = 0; i < size; i++)
   {
     if (records[i]->filename.Compare(sFileName) == 0)
       return records[i];
@@ -2626,51 +2656,52 @@ void fardroid::GetPartitionsInfo()
     ParsePartitionInfo(str[i]);
 }
 
-CString fardroid::GetPermissionsFile(const CString& FullFileName)
+CString fardroid::GetPermissionsFile(const CString& sSource)
 {
-  CString permissions;
   CString s;
+  CString res;
   CString sRes;
-  s.Format(_T("ls -l -a -d \"%s\""), WtoUTF8(FullFileName));
+  s.Format(_T("ls -l -a -d \"%s\""), WtoUTF8(sSource));
   if (ADBShellExecute(s, sRes, false))
   {
     strvec perm;
     Tokenize(sRes, perm, _T(" "));
 
-    if (!sRes.IsEmpty() &&
-      sRes.Find(_T("No such file or directory")) == -1 &&
+    if (!sRes.IsEmpty() && sRes.Find(_T("No such file or directory")) == -1 &&
       perm[0].GetLength() == 10)
     {
-      permissions = perm[0];
+      res.Format(_T("%04o"), StringToMode(perm[0]) & S_ISRWX);
     }
   }
-  return permissions;
+  return res;
 }
 
-CString fardroid::PermissionsFileToMask(CString Permission)
+CString fardroid::PermissionsFileToMask(const CString permissions)
 {
-  CString permission_mask, tmp_str;
+  auto p = 0;
+  for (auto i = 0; i < 3; i++) {
+    for (auto j = 0; j < 3; j++) {
+      switch (permissions[i * 3 + 1 + j]) {
+      case 'r':
+      case 'w':
+      case 'x':
+        p |= 1 << ((2 - i) * 3 + 2 - j);
+        break;
+      case 's':
+      case 't':
+        p |= 1 << ((2 - i) * 3 + 2 - j);
+      case 'S':
+      case 'T':
+        p |= 1 << (5 - i);
+        break;
+      }
+    }
+  }
 
-  Permission.Replace(_T('-'),_T('0'));
-  Permission.Replace(_T('r'),_T('1'));
-  Permission.Replace(_T('w'),_T('1'));
-  Permission.Replace(_T('x'),_T('1'));
+  CString permission;
+  permission.Format(_T("%04o"), p);
 
-  permission_mask.Format(_T("%d"),_tcstoul(Permission.Mid(1, 3).GetBuffer(11), nullptr, 2));
-  tmp_str.Format(_T("%d"),_tcstoul(Permission.Mid(4, 3).GetBuffer(11), nullptr, 2));
-  permission_mask += tmp_str;
-  tmp_str.Format(_T("%d"),_tcstoul(Permission.Mid(7, 3).GetBuffer(11), nullptr, 2));
-  permission_mask += tmp_str;
-
-  return permission_mask;
-}
-
-bool fardroid::SetPermissionsFile(const CString& FullFileName, const CString& PermissionsFile)
-{
-  CString s;
-  CString sRes;
-  s.Format(_T("chmod %s \"%s\""), PermissionsFileToMask(PermissionsFile), WtoUTF8(FullFileName));
-  return ADBShellExecute(s, sRes, false) != FALSE;
+  return permission;
 }
 
 bool fardroid::DeviceTest()
@@ -2885,7 +2916,7 @@ BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent, bool d
   BOOL bOK = FALSE;
   CString cmd;
   if (!disableSU && conf.SU)
-    cmd.Format(_T("shell:su -c \'%s\'"), sCMD);
+    cmd.Format(_T("shell:su -c \"%s\""), sCMD);
   else
     cmd.Format(_T("shell:%s"), sCMD);
   if (SendADBCommand(sockADB, cmd))

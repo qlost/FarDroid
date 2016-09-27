@@ -106,6 +106,11 @@ int rnd(int maxRnd)
   return (rnds[rand() % 10]);
 }
 
+bool IsDirectoryMode(int attr)
+{
+  return IsDirectory(ModeToAttr(attr));
+}
+
 bool IsDirectory(DWORD attr)
 {
   return (attr & FILE_ATTRIBUTE_DIRECTORY) ? true : false;
@@ -114,6 +119,11 @@ bool IsDirectory(DWORD attr)
 bool IsDirectory(uintptr_t attr)
 {
   return (attr & FILE_ATTRIBUTE_DIRECTORY) ? true : false;
+}
+
+bool IsLinkMode(int attr)
+{
+  return IsLink(ModeToAttr(attr));
 }
 
 bool IsLink(DWORD attr)
@@ -126,17 +136,9 @@ bool IsDevice(DWORD attr)
   return (attr & FILE_ATTRIBUTE_DEVICE) ? true : false;
 }
 
-bool IsDirectory(bool another, bool selected, int i)
-{
-  DWORD attr = GetFileAttributes(another, selected, i);
-
-  return (attr & FILE_ATTRIBUTE_DIRECTORY) ? true : false;
-}
-
-bool IsDirectory(LPCTSTR sPath)
+bool IsDirectoryLocal(LPCTSTR sPath)
 {
   DWORD attr = GetFileAttributes(sPath);
-
   return ((attr != -1) && (attr & FILE_ATTRIBUTE_DIRECTORY)) ? true : false;
 }
 
@@ -247,7 +249,92 @@ void FileTimeToUnixTime(LPFILETIME pft, time_t* pt)
   *pt = static_cast<time_t>((ll - 116444736000000000ui64) / 10000000ui64);
 }
 
-DWORD StringToAttr(CString sAttr)
+int StringToMode(const CString& sAttr)
+{
+  if (sAttr.GetLength() != 10)
+    return -1;
+
+  auto p = 0;
+  switch (sAttr[0])
+  {
+  case 'd': //directory
+    p |= S_IFDIR;
+    break;
+  case '-': //file
+    p |= S_IFREG;
+    break;
+  case 'p': //FIFO
+    p |= S_IFIFO;
+    break;
+  case 'c': //character device
+    p |= S_IFCHR;
+    break;
+  case 'l': //symlink
+    p |= S_IFLNK;
+    break;
+  case 'b': //block
+    p |= S_IFBLK;
+    break;
+  case 's': //socket
+    p |= S_IFSOCK;
+    break;
+  default:
+    return -1;
+  }
+
+  if (sAttr[1] == 'r') p |= S_IRUSR;
+  if (sAttr[2] == 'w') p |= S_IWUSR;
+  if (sAttr[3] == 'x' || sAttr[3] == 's') p |= S_IXUSR;
+  if (sAttr[3] == 's' || sAttr[3] == 'S') p |= S_ISUID;
+
+  if (sAttr[4] == 'r') p |= S_IRGRP;
+  if (sAttr[5] == 'w') p |= S_IWGRP;
+  if (sAttr[6] == 'x' || sAttr[6] == 's') p |= S_IXGRP;
+  if (sAttr[6] == 's' || sAttr[6] == 'S') p |= S_ISGID;
+
+  if (sAttr[7] == 'r') p |= S_IROTH;
+  if (sAttr[8] == 'w') p |= S_IWOTH;
+  if (sAttr[9] == 'x' || sAttr[9] == 't') p |= S_IXOTH;
+  if (sAttr[9] == 't' || sAttr[9] == 'T') p |= S_ISVTX;
+
+  return p;
+}
+
+CString ModeToType(const int p)
+{
+  if (IS_FLAG(p, S_IFSOCK))
+    return "Socket";
+  if (IS_FLAG(p, S_IFLNK))
+    return "Symbolic Link";
+  if (IS_FLAG(p, S_IFREG))
+    return "File";
+  if (IS_FLAG(p, S_IFBLK))
+    return "Block Device";
+  if (IS_FLAG(p, S_IFDIR))
+    return "Directory";
+  if (IS_FLAG(p, S_IFCHR))
+    return "Charecter Device";
+  if (IS_FLAG(p, S_IFIFO))
+    return "FIFO";
+  return "Unknown";
+}
+
+int SgringOctalToMode(CString attr)
+{
+  auto n = _ttoi(attr);
+  int res = 0, i = 0, rem;
+  while (n != 0)
+  {
+    rem = n % 10;
+    n /= 10;
+    res += static_cast<int>(rem * pow(8, i));
+    ++i;
+  }
+  return res;
+}
+
+
+DWORD StringToAttr(const CString& sAttr)
 {
   if (sAttr.GetLength() != 10)
     return FILE_ATTRIBUTE_OFFLINE;
@@ -264,6 +351,8 @@ DWORD StringToAttr(CString sAttr)
 
 DWORD ModeToAttr(int mode)
 {
+  if (mode == -1)
+    return FILE_ATTRIBUTE_OFFLINE;
   return
     (IS_FLAG(mode, S_IFDIR) ? FILE_ATTRIBUTE_DIRECTORY : 0) | //directory flag
     (IS_FLAG(mode, S_IFLNK) ? FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT : 0) | //link
