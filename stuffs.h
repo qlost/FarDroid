@@ -33,6 +33,10 @@
 
 #define S_ISRWX  (S_IRWXU | S_IRWXG | S_IRWXO | S_ISUID | S_ISGID | S_ISVTX)
 
+#define 	S_IEXEC   S_IXUSR
+#define 	S_IWRITE   S_IWUSR
+#define 	S_IREAD   S_IRUSR
+
 #define   ABORT     -1
 #define   SKIP     2
 #define   RETRY     3

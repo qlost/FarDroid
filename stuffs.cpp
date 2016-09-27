@@ -313,7 +313,7 @@ CString ModeToType(const int p)
   if (IS_FLAG(p, S_IFDIR))
     return "Directory";
   if (IS_FLAG(p, S_IFCHR))
-    return "Charecter Device";
+    return "Character Device";
   if (IS_FLAG(p, S_IFIFO))
     return "FIFO";
   return "Unknown";
@@ -349,19 +349,27 @@ DWORD StringToAttr(const CString& sAttr)
     ((sAttr[5] != _T('w')) ? FILE_ATTRIBUTE_READONLY : 0);//writable flag
 }
 
-DWORD ModeToAttr(int mode)
+DWORD ModeToAttr(int p)
 {
-  if (mode == -1)
+  if (p == -1)
     return FILE_ATTRIBUTE_OFFLINE;
-  return
-    (IS_FLAG(mode, S_IFDIR) ? FILE_ATTRIBUTE_DIRECTORY : 0) | //directory flag
-    (IS_FLAG(mode, S_IFLNK) ? FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT : 0) | //link
-    (IS_FLAG(mode, S_IFREG) ? FILE_ATTRIBUTE_ARCHIVE : 0) | //file
-    (IS_FLAG(mode, S_IFCHR) ? FILE_ATTRIBUTE_DEVICE : 0) | //symbol device
-    (IS_FLAG(mode, S_IFBLK) ? FILE_ATTRIBUTE_DEVICE : 0) | //block device
-    (IS_FLAG(mode, S_IFIFO) ? FILE_ATTRIBUTE_READONLY : 0) | //FIFO device
-    (IS_FLAG(mode, S_IFSOCK) ? FILE_ATTRIBUTE_DEVICE : 0) | //socket device
-    (!IS_FLAG(mode, S_IWRITE) ? FILE_ATTRIBUTE_READONLY : 0);//writable flag
+  
+  auto res = IS_FLAG(p, S_IWRITE) ? 0 : FILE_ATTRIBUTE_READONLY;
+  if (IS_FLAG(p, S_IFSOCK))
+    res |= FILE_ATTRIBUTE_DEVICE;
+  else if (IS_FLAG(p, S_IFLNK))
+    res |= FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_REPARSE_POINT;
+  else if (IS_FLAG(p, S_IFREG))
+    res |= FILE_ATTRIBUTE_ARCHIVE;
+  else if (IS_FLAG(p, S_IFBLK))
+    res |= FILE_ATTRIBUTE_DEVICE;
+  else if (IS_FLAG(p, S_IFDIR))
+    res |= FILE_ATTRIBUTE_DIRECTORY;
+  else if (IS_FLAG(p, S_IFCHR))
+    res |= FILE_ATTRIBUTE_DEVICE;
+  else if (IS_FLAG(p, S_IFIFO))
+    res |= FILE_ATTRIBUTE_DEVICE;
+  return res;
 }
 
 BOOL DeleteDir(LPCTSTR sSrc)

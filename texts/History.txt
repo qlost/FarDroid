@@ -3,6 +3,10 @@
  "*" - changed
  "!" - warning
 
+ 27.09.16 v2.8.0
+  + New Change Permissions and Owner (Ctrl+A).
+  + Support double quotes in file names (like ' She said "O'Henry" ')
+
  22.09.16 v2.7.6
   + Support Ctrl+\ (cd to '/' directory)
   + Support spaces in file names (like " my name ")
