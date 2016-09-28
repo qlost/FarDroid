@@ -71,8 +71,9 @@ enum
 
 	MWarningTitle,
 	MOnlyNative,
-	MPermChangeSelected,
-	MPermTitle,
+	MPermChownSelected,
+  MPermChmodSelected,
+  MPermTitle,
   MPermChange,
   MPermPermissions,
   MPermOwner,

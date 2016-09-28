@@ -150,7 +150,8 @@ const enum PermissionID
 {
   IDPRM_Owner = 4,
   IDPRM_Group = 6,
-  IDPRM_RUSR = 12,
+  IDPRM_ChownSelected = 9,
+  IDPRM_RUSR = 13,
   IDPRM_WUSR,
   IDPRM_XUSR,
   IDPRM_RGRP,
@@ -162,10 +163,10 @@ const enum PermissionID
   IDPRM_SUID,
   IDPRM_SGID,
   IDPRM_SVTX,
-  IDPRM_Octal = 25,
+  IDPRM_Octal = 26,
   IDPRM_None,
   IDPRM_All,
-  IDPRM_Selected,
+  IDPRM_ChmodSelected,
   IDPRM_Ok,
   IDPRM_Cancel,
 };

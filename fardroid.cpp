@@ -921,7 +921,7 @@ void fardroid::ChangePermissionsDialog(int selected)
     FDI_FILE = FDI_LABEL(15, 7, (farStr *)static_cast<const wchar_t *>(fileType));
   }
   struct InitDialogItem InitItems[] = {
-    /*00*/FDI_DOUBLEBOX(width - 4, 17, (farStr *)MPermTitle),
+    /*00*/FDI_DOUBLEBOX(width - 4, 19, (farStr *)MPermTitle),
     /*01*/FDI_CLABEL(5, 2, (farStr *)MPermChange),
     /*02*/FDI_CLABEL(5, 3, (farStr *)static_cast<const wchar_t *>(fileName)),
     /*03*/FDI_LABEL(5, 5, (farStr *)MPermOwner),
@@ -930,32 +930,34 @@ void fardroid::ChangePermissionsDialog(int selected)
     /*06*/FDI_EDIT(15, 6, width - 6, _F("fardroidPermissionGroup")),
     /*07*/FDI_LABEL(5, 7, (farStr *)fileTypeTitle),
     /*08*/FDI_FILE,
-    /*09*/FDI_LABEL(5, 9, _F("User")),
-    /*10*/FDI_LABEL(5, 10, _F("Group")),
-    /*11*/FDI_LABEL(5, 11, _F("Others")),
-    /*12*/FDI_CHECK(13, 9, _F("R")),
-    /*13*/FDI_CHECK(20, 9, _F("W")),
-    /*14*/FDI_CHECK(27, 9, _F("X")),
-    /*15*/FDI_CHECK(13, 10, _F("R")),
-    /*16*/FDI_CHECK(20, 10, _F("W")),
-    /*17*/FDI_CHECK(27, 10, _F("X")),
-    /*18*/FDI_CHECK(13, 11, _F("R")),
-    /*19*/FDI_CHECK(20, 11, _F("W")),
-    /*20*/FDI_CHECK(27, 11, _F("X")),
-    /*21*/FDI_CHECK(34, 9, _F("SUID")),
-    /*22*/FDI_CHECK(34, 10, _F("SGID")),
-    /*23*/FDI_CHECK(34, 11, _F("Sticky")),
-    /*24*/FDI_LABEL(5, 12, _F("Octal")),
-    /*25*/FDI_FIXEDIT(13, 12, 16, _F("9999")),
-    /*26*/FDI_BUTTON(22, 12, (farStr *)MPermNone),
-    /*27*/FDI_BUTTON(34, 12, (farStr *)MPermAll),
-    /*28*/FDI_CHECK(5, 14, (farStr *)MPermChangeSelected),
-    /*29*/FDI_DEFCBUTTON(16, (farStr *)MOk),
-    /*30*/FDI_CBUTTON(16,(farStr *)MCancel),
+    /*09*/FDI_CHECK(5, 9, (farStr *)MPermChownSelected),
+    /*10*/FDI_LABEL(5, 11, _F("User")),
+    /*11*/FDI_LABEL(5, 12, _F("Group")),
+    /*12*/FDI_LABEL(5, 13, _F("Others")),
+    /*13*/FDI_CHECK(13, 11, _F("R")),
+    /*14*/FDI_CHECK(20, 11, _F("W")),
+    /*15*/FDI_CHECK(27, 11, _F("X")),
+    /*16*/FDI_CHECK(13, 12, _F("R")),
+    /*17*/FDI_CHECK(20, 12, _F("W")),
+    /*18*/FDI_CHECK(27, 12, _F("X")),
+    /*19*/FDI_CHECK(13, 13, _F("R")),
+    /*20*/FDI_CHECK(20, 13, _F("W")),
+    /*21*/FDI_CHECK(27, 13, _F("X")),
+    /*22*/FDI_CHECK(34, 11, _F("SUID")),
+    /*23*/FDI_CHECK(34, 12, _F("SGID")),
+    /*24*/FDI_CHECK(34, 13, _F("Sticky")),
+    /*25*/FDI_LABEL(5, 14, _F("Octal")),
+    /*26*/FDI_FIXEDIT(13, 14, 16, _F("9999")),
+    /*27*/FDI_BUTTON(22, 14, (farStr *)MPermNone),
+    /*28*/FDI_BUTTON(34, 14, (farStr *)MPermAll),
+    /*29*/FDI_CHECK(5, 16, (farStr *)MPermChmodSelected),
+    /*30*/FDI_DEFCBUTTON(18, (farStr *)MOk),
+    /*31*/FDI_CBUTTON(18,(farStr *)MCancel),
     /*--*/FDI_SEPARATOR(4,_F("")),
-    /*--*/FDI_SEPARATOR(8, (farStr *)static_cast<const wchar_t *>(separator)),
-    /*--*/FDI_SEPARATOR(13,_F("")),
+    /*--*/FDI_SEPARATOR(8,_F("")),
+    /*--*/FDI_SEPARATOR(10, (farStr *)static_cast<const wchar_t *>(separator)),
     /*--*/FDI_SEPARATOR(15,_F("")),
+    /*--*/FDI_SEPARATOR(17,_F("")),
   };
   const int size = sizeof InitItems / sizeof InitItems[0];
 
@@ -972,18 +974,23 @@ void fardroid::ChangePermissionsDialog(int selected)
   DialogItems[IDPRM_Octal].Data = octal;
 
   if (selected == 1 && fileName == GetFileName(false, true, 0))
-    DialogItems[IDPRM_Selected].Flags |= DIF_DISABLE;
+  {
+    DialogItems[IDPRM_ChownSelected].Flags |= DIF_DISABLE;
+    DialogItems[IDPRM_ChmodSelected].Flags |= DIF_DISABLE;
+  }
 
   CString newUser, newGroup, newOctal;
-  int checkSelected = 0;
+  auto chownSelected = 0;
+  auto chmodSelected = 0;
   HANDLE hDlg;
-  auto res = ShowDialog(width, 19, _F(""), DialogItems, size, hDlg, PermissionDlgProc);
+  auto res = ShowDialog(width, 21, _F(""), DialogItems, size, hDlg, PermissionDlgProc);
   if (res == IDPRM_Ok)
   {
     newUser = GetItemData(hDlg, IDPRM_Owner);
     newGroup = GetItemData(hDlg, IDPRM_Group);
     newOctal = GetItemData(hDlg, IDPRM_Octal);
-    checkSelected = GetItemSelected(hDlg, IDPRM_Selected);
+    chownSelected = GetItemSelected(hDlg, IDPRM_ChownSelected);
+    chmodSelected = GetItemSelected(hDlg, IDPRM_ChmodSelected);
   }
   fInfo.DialogFree(hDlg);
 
@@ -1003,7 +1010,7 @@ void fardroid::ChangePermissionsDialog(int selected)
     return;
   }
 
-  if (checkSelected == 0)
+  if (chmodSelected == 0 && chownSelected == 0)
     return;
 
   for (auto i = 0; i < selected; i++)
@@ -1012,9 +1019,18 @@ void fardroid::ChangePermissionsDialog(int selected)
     if (selectedName == fileName)
       continue;
 
+    item = GetFileRecord(selectedName);
+    octal.Format(_T("%04o"), item->mode & S_ISRWX);
     sname.Format(_T("%s/%s"), m_currentPath, selectedName);
     NormilizePath(sname);
-    if (!ADB_chown(sname, newUser, newGroup, sRes) || !ADB_chmod(sname, newOctal, sRes))
+
+    if (chownSelected && (newUser != item->owner || newGroup != item->grp) && !ADB_chown(sname, newUser, newGroup, sRes))
+    {
+      ShowError(sRes);
+      break;
+    }
+
+    if (chmodSelected && newOctal != octal && !ADB_chmod(sname, newOctal, sRes))
     {
       ShowError(sRes);
       break;
