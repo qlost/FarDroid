@@ -208,8 +208,10 @@ int fardroid::FileExistsDialog(LPCTSTR sName)
 
 int fardroid::CopyErrorDialog(LPCTSTR sTitle, CString sRes)
 {
+  sRes.TrimRight();
   if (!sRes.IsEmpty()) 
     sRes += _T("\n\n");
+
   sRes += conf.WorkMode == WORKMODE_NATIVE ? (conf.SU ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm)) : LOC(MNeedNativeSuperuserPerm);
 
   auto ret = 2;
@@ -252,8 +254,8 @@ int fardroid::CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sName)
 
 void fardroid::ShowError(CString& error)
 {
-  CString msg;
   error.TrimRight();
+  CString msg;
   msg.Format(L"%s\n%s\n%s", LOC(MError), error, LOC(MOk));
   ShowMessage(msg, 1, nullptr, true);
 }
@@ -394,8 +396,12 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       }
     }
 
+    CString tname;
+    tname.Format(_T("%s.fardroid"), files[i]->dst);
+    CString tsname;
+    tsname.Format(_T("/sdcard/%s.fardroid"), ExtractName(files[i]->src));
+
     CString sRes;
-    CString tname = files[i]->dst + TMP_SUFFIX;
     do {
       if (m_procStruct.Lock())
       {
@@ -404,9 +410,21 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
         m_procStruct.Unlock();
       }
 
-      result = ADB_pull(files[i]->src, tname, sRes, bSilent, files[i]->time);
+      sRes.Empty();
+      if (conf.SU && conf.CopySD)
+      {
+        result = ADB_copy(files[i]->src, tsname, sRes);
+        if (result)
+          result = ADB_pull(tsname, tname, sRes, bSilent, files[i]->time);
+        DeleteFileFrom(tsname, true);
+      }
+      else
+      {
+        result = ADB_pull(files[i]->src, tname, sRes, bSilent, files[i]->time);
+      }
+
       if (result == FALSE)
-        result = CopyErrorDialog(LOC(MPutFile), sRes);
+        result = CopyErrorDialog(LOC(MGetFile), sRes);
     } while (result == RETRY);
 
     if (result == FALSE || m_bForceBreak)
@@ -545,9 +563,17 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       permissions = "0666";
     }
 
-    CString sRes;
-    CString tname = files[i]->dst + TMP_SUFFIX;
+    CString tname;
+    if (conf.SU && conf.CopySD)
+    {
+      tname.Format(_T("/sdcard/%s.fardroid"), ExtractName(files[i]->dst));
+    }
+    else
+    {
+      tname.Format(_T("%s.fardroid"), files[i]->dst);
+    }
 
+    CString sRes;
     do {
       if (m_procStruct.Lock())
       {
@@ -556,6 +582,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
         m_procStruct.Unlock();
       }
 
+      sRes.Empty();
       result = ADB_push(files[i]->src, tname, sRes, bSilent);
       if (result == FALSE)
         result = CopyErrorDialog(LOC(MPutFile), sRes);
@@ -586,10 +613,21 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       }
     }
 
-    ADB_chmod(tname, permissions, sRes);
-    result = RenameFile(tname, files[i]->dst, false);
+    do {
+      sRes.Empty();
+      result = RenameFile(tname, files[i]->dst, sRes);
+      if (result == FALSE)
+        result = CopyErrorDialog(LOC(MPutFile), sRes);
+    } while (result == RETRY);
+    
     if (result == FALSE)
+    {
+      DeleteFileFrom(tname, true);
       break;
+    }
+
+    sRes.Empty();
+    ADB_chmod(files[i]->dst, permissions, sRes);
   }
 
   DeleteRecords(files);
@@ -1818,7 +1856,7 @@ BOOL fardroid::ADB_rm(LPCTSTR sDir, CString& sRes, bool bSilent)
 BOOL fardroid::ADB_mkdir(LPCTSTR sDir, CString& sRes, bool bSilent)
 {
   CString s;
-  s.Format(_T("mkdir \"%s\""), WtoUTF8(sDir));
+  s.Format(_T("mkdir -p \"%s\""), WtoUTF8(sDir));
   ADBShellExecute(s, sRes, bSilent);
   return sRes.GetLength() == 0;
 }
@@ -1827,6 +1865,14 @@ BOOL fardroid::ADB_rename(LPCTSTR sSource, LPCTSTR sDest, CString& sRes)
 {
   CString s;
   s.Format(_T("mv \"%s\" \"%s\""), WtoUTF8(sSource), WtoUTF8(sDest));
+  ADBShellExecute(s, sRes, false);
+  return sRes.GetLength() == 0;
+}
+
+BOOL fardroid::ADB_copy(LPCTSTR sSource, LPCTSTR sDest, CString& sRes)
+{
+  CString s;
+  s.Format(_T("cp \"%s\" \"%s\""), WtoUTF8(sSource), WtoUTF8(sDest));
   ADBShellExecute(s, sRes, false);
   return sRes.GetLength() == 0;
 }
@@ -2404,19 +2450,31 @@ int fardroid::Rename(CString& DestPath)
 }
 
 
-int fardroid::RenameFile(const CString& src, const CString& dst, bool bSilent)
+int fardroid::RenameFile(const CString& src, const CString& dst, CString& sRes)
 {
-  CString sRes;
-  if (ADB_rename(src, dst, sRes))
-    return TRUE;
+  sRes.Empty();
+  BOOL result;
 
-  if (!bSilent && m_procStruct.Hide())
+  auto path = ExtractPath(dst);
+  auto otherFolder = path != ExtractPath(src);
+  if (otherFolder)
   {
-    ShowError(sRes);
-    m_procStruct.Restore();
+    result = ADB_mkdir(path, sRes, false);
+    if (!result) 
+      return result;
   }
 
-  return FALSE;
+  result = ADB_rename(src, dst, sRes);
+
+  if (!result && otherFolder)
+  {
+    sRes.Empty();
+    result = ADB_copy(src, dst, sRes);
+    if (result)
+      DeleteFileFrom(src, true);
+  }
+
+  return result;
 }
 
 

@@ -9,12 +9,14 @@ const enum ConfigID
   ID_WorkModeBB = 6,
   ID_ShowLinksAsDir = 7,
   ID_UseSU = 8,
-  ID_UseExtendedAccess = 9,
-  ID_RemountSystem = 10,
-  ID_ADBPath = 12,
-  ID_KillServer = 13,
-  ID_Ok = 15,
-  ID_Cancel = 16,
+  ID_CopySD = 9,
+  ID_CopySDWarning,
+  ID_RemountSystem = 11,
+  ID_ADBPath = 13,
+  ID_KillServer = 14,
+  ID_KillServerWarning,
+  ID_Ok = 16,
+  ID_Cancel = 17,
 };
 
 BOOL	APIENTRY DllMain( HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved);

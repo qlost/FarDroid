@@ -1,7 +1,10 @@
 ﻿ "+" - new
- "-" - fixed
  "*" - changed
- "!" - warning
+
+ 29.09.16 v2.9.0
+  + New Option: Copy to /sdcard before operations.
+  + Change Permissions (Ctrl+A) : chmod & chown for Selected files.
+  * Remove Extended Access
 
  27.09.16 v2.8.0
   + New Change Permissions and Owner (Ctrl+A).

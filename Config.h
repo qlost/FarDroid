@@ -24,7 +24,7 @@ public:
 	BOOL		KillServer;
   BOOL    SU;
   BOOL		UseSU;
-	BOOL		UseExtendedAccess;
+	BOOL		CopySD;
 	BOOL		RemountSystem;
 
 	CConfig(void);

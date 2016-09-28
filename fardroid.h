@@ -17,8 +17,6 @@
 #define SWAP_WORD(x)  x = (x>>8) | (x<<8)
 #define SWAP_DWORD(x)  x = (x>>24) | ((x<<8) & 0x00FF0000) | ((x>>8) & 0x0000FF00) | (x<<24)
 
-#define TMP_SUFFIX ".fardroid";
-
 #define SIZE_PB 1125899906842624ULL
 #define SIZE_TB 1099511627776ULL
 #define SIZE_GB 1073741824ULL
@@ -326,6 +324,7 @@ private:
   BOOL ADB_rm(LPCTSTR sDir, CString & sRes, bool bSilent);
   BOOL ADB_mkdir(LPCTSTR sDir, CString & sRes, bool bSilent);
   BOOL ADB_rename(LPCTSTR sSource, LPCTSTR sDest, CString& sRes);
+  BOOL ADB_copy(LPCTSTR sSource, LPCTSTR sDest, CString& sRes);
   BOOL ADB_chmod(LPCTSTR sSource, LPCTSTR octal, CString& sRes);
   BOOL ADB_chown(LPCTSTR sSource, LPCTSTR user, LPCTSTR group, CString& sRes);
   BOOL ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent, const time_t& mtime);
@@ -390,7 +389,7 @@ public:
   int DeleteFiles(PluginPanelItem *PanelItem, int ItemsNumber, OPERATION_MODES OpMode);
   int CreateDir(CString &DestPath, OPERATION_MODES OpMode);
   int Rename(CString& DestPath);
-  int RenameFile(const CString& src, const CString& dst, bool bSilent);
+  int RenameFile(const CString& src, const CString& dst, CString& sRes);
   int GetFramebuffer();
   void Reread();
 

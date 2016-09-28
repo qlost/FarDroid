@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "Config.h"
 
-CConfig::CConfig(void): PanelMode(0), SortMode(0), SortOrder(0), WorkMode(0), AddToDiskMenu(0), ShowLinksAsDir(0), KillServer(0), SU(0), UseSU(0), UseExtendedAccess(0), RemountSystem(0)
+CConfig::CConfig(void): PanelMode(0), SortMode(0), SortOrder(0), WorkMode(0), AddToDiskMenu(0), ShowLinksAsDir(0), KillServer(0), SU(0), UseSU(0), CopySD(0), RemountSystem(0)
 {
   hHandle = nullptr;
 }
@@ -114,7 +114,7 @@ bool CConfig::Load()
   Get(0, _T("ShowLinksAsDir"), ShowLinksAsDir,FALSE);
   Get(0, _T("KillServer"), KillServer,FALSE);
   Get(0, _T("UseSU"), UseSU, FALSE);
-  Get(0, _T("UseExtendedAccess"), UseExtendedAccess,FALSE);
+  Get(0, _T("CopySD"), CopySD,FALSE);
   Get(0, _T("AddToDiskMenu"), AddToDiskMenu,FALSE);
   Get(0, _T("RemountSystem"), RemountSystem,FALSE);
   Get(0, _T("Prefix"), Prefix,_T("fardroid"));
@@ -136,7 +136,7 @@ void CConfig::Save()
   Set(0, _T("ShowLinksAsDir"), ShowLinksAsDir);
   Set(0, _T("KillServer"), KillServer);
   Set(0, _T("UseSU"), UseSU);
-  Set(0, _T("UseExtendedAccess"), UseExtendedAccess);
+  Set(0, _T("CopySD"), CopySD);
   Set(0, _T("RemountSystem"), RemountSystem);
 
   FreeHandle();
