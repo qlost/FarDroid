@@ -117,10 +117,10 @@ void WINAPI ClosePanelW(const struct ClosePanelInfo* Info)
 
 intptr_t WINAPI ConfigDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void* Param2)
 {
-  if (Msg == DN_CTLCOLORDLGITEM && (Param1 == ID_CopySDWarning || Param1 == ID_KillServerWarning))
+  if (Msg == DN_CTLCOLORDLGITEM)
   {
-    auto enable = Param1 == ID_KillServerWarning || fInfo.SendDlgMessage(hDlg, DM_GETCHECK, ID_UseSU, nullptr);
-    if (enable)
+    if (Param1 == ID_KillServerWarning && GetChecked(hDlg, ID_KillServer) ||
+      Param1 == ID_CopySDWarning && GetChecked(hDlg, ID_UseSU) && GetChecked(hDlg, ID_CopySD))
     {
       auto color = static_cast<FarDialogItemColors*>(Param2);
       if (color) color->Colors[0].ForegroundColor = 0x4;

@@ -20,13 +20,17 @@ void ShowMessageWait(const farStr* const* msg, int msgsize)
 int ShowDialog(int width, int height, const farStr* help, FarDialogItem* items, int count, HANDLE& hDlg, FARWINDOWPROC dlgProc)
 {
   hDlg = static_cast<int*>(fInfo.DialogInit(&MainGuid, &DialogGuid, -1, -1, width, height, help, items, count, 0, 0, dlgProc, nullptr));
-  auto res = static_cast<int>(fInfo.DialogRun(hDlg));
-  return res;
+  return static_cast<int>(fInfo.DialogRun(hDlg));
 }
 
 int ShowMenu(const farStr* title, const farStr* bottom, const farStr* help, const FarKey *breakKeys, intptr_t * breakCode, const FarMenuItem* items, int count)
 {
   return static_cast<int>(fInfo.Menu(&MainGuid, &MenuGuid, -1, -1, 0, FMENU_WRAPMODE | FMENU_AUTOHIGHLIGHT | FMENU_CHANGECONSOLETITLE, title, bottom, help, breakKeys, breakCode, items, count));
+}
+
+int GetChecked(const HANDLE& hDlg, int item)
+{
+  return static_cast<int>(fInfo.SendDlgMessage(hDlg, DM_GETCHECK, item, nullptr));
 }
 
 CString GetPanelPath(bool another /*= false*/)

@@ -32,6 +32,7 @@ int ShowMenu(const farStr* title, const farStr* bottom, const farStr* help, cons
 DWORD GetFileAttributes( bool another, bool selected, int i ) ;
 CString GetFileName( bool another, bool selected, int i );
 FarDialogItem * GetFarDialogItem(const HANDLE &hDlg, DWORD item);
+int GetChecked(const HANDLE& hDlg, int item);
 bool SetItemData( const HANDLE & hDlg, DWORD item, const CString &data);
 bool SetItemSelected(const HANDLE& hDlg, DWORD item, int selected);
 int GetItemSelected(const HANDLE& hDlg, DWORD item);
