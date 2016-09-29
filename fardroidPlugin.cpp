@@ -145,7 +145,7 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
 {
   const auto width = 55;
   struct InitDialogItem InitItems[] = {
-    /*00*/FDI_DOUBLEBOX(width - 4,19,(farStr *)MConfTitle),
+    /*00*/FDI_DOUBLEBOX(width - 4,20,(farStr *)MConfTitle),
     /*01*/FDI_CHECK(5, 2,(farStr *)MConfAddToDisk),
     /*02*/FDI_LABEL(5, 3, (farStr *)MConfPrefix),
     /*03*/FDI_EDIT(13, 3, 28, _F("fardroidPrefix")),
@@ -200,7 +200,7 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
   lstrcpyW(editbuf2, conf.ADBPath);
   DialogItems[ID_ADBPath].Data = editbuf2;
 
-  HANDLE hdlg = fInfo.DialogInit(&MainGuid, &DialogGuid, -1, -1, width, 21, _F("Config"), DialogItems, size, 0, 0, ConfigDlgProc, nullptr);
+  HANDLE hdlg = fInfo.DialogInit(&MainGuid, &DialogGuid, -1, -1, width, 22, _F("Config"), DialogItems, size, 0, 0, ConfigDlgProc, nullptr);
   BOOL result = static_cast<int>(fInfo.DialogRun(hdlg)) == ID_Ok;
   if (result)
   {
