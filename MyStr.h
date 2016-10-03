@@ -35,3 +35,4 @@ CString UTF8toW(LPCTSTR str);
 CString FormatNumber(UINT64 str);
 CString FormatSize(CString formatNum, CString formatText, UINT64 cb, bool clean=true);
 CString FormatTime(int time);
+CString CleanWindowsName(const CString& name);

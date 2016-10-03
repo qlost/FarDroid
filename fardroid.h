@@ -314,7 +314,6 @@ private:
   bool		ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString &sRes);
   void ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
   BOOL		ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, const time_t &mtime);
-  bool		ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
   void ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
   static void		CloseADBSocket(SOCKET sockADB);
 

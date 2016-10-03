@@ -211,6 +211,7 @@ int fardroid::CopyErrorDialog(LPCTSTR sTitle, CString sRes)
   sRes.TrimRight();
   if (!sRes.IsEmpty()) 
     sRes += _T("\n\n");
+  sRes.Replace(_T("\r"), _T(""));
 
   sRes += conf.WorkMode == WORKMODE_NATIVE ? (conf.SU ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm)) : LOC(MNeedNativeSuperuserPerm);
 
@@ -255,6 +256,7 @@ int fardroid::CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sName)
 void fardroid::ShowError(CString& error)
 {
   error.TrimRight();
+  error.Replace(_T("\r"), _T(""));
   CString msg;
   msg.Format(L"%s\n%s\n%s", LOC(MError), error, LOC(MOk));
   ShowMessage(msg, 1, nullptr, true);
@@ -318,7 +320,7 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       return ABORT;
 
     sname.Format(_T("%s%s"), sdir, PanelItem[i].FileName);
-    dname.Format(_T("%s%s"), ddir, PanelItem[i].FileName);
+    dname.Format(_T("%s%s"), ddir, CleanWindowsName(PanelItem[i].FileName));
 
     if (IsDirectory(PanelItem[i].FileAttributes))
     {
@@ -355,7 +357,8 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
     if (m_bForceBreak)
       break;
 
-    files[i]->dst.Replace(_T("\""), _T(""));
+
+
     if (m_procStruct.Lock())
     {
       totalTransmitted = m_procStruct.nTotalTransmitted;
@@ -677,6 +680,7 @@ deltry:
       return FALSE;
 
     sRes.TrimRight();
+    sRes.Replace(_T("\r"), _T(""));
     int ret = CopyDeleteErrorDialog(LOC(MDelFile), sRes);
     switch (ret)
     {
@@ -1507,51 +1511,6 @@ BOOL fardroid::ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent)
   return TRUE;
 }
 
-bool fardroid::ADBPullDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes)
-{
-  MakeDirs(sDst);
-
-  CString ddir = sDst;
-  CString sdir = sSrc;
-  sRes.Empty();
-  AddEndSlash(sdir, true);
-  AddEndSlash(ddir);
-  CString ssaved = sdir;
-  CString dsaved = ddir;
-
-  CFileRecords recs;
-  if (ADB_ls(sSrc, recs, sRes, true))
-  {
-    CString sname, dname;
-    for (int i = 0; i < recs.GetSize(); i++)
-    {
-      sname.Format(_T("%s%s"), ssaved, recs[i]->filename);
-      dname.Format(_T("%s%s"), dsaved, recs[i]->filename);
-      dname.Replace(_T("\""), _T(""));
-
-      if (!IsDirectoryMode(recs[i]->mode))
-      {
-        if (m_procStruct.Lock())
-        {
-          m_procStruct.nStartTime = GetTickCount();
-          m_procStruct.from = sname;
-          m_procStruct.to = dname;
-          m_procStruct.nTransmitted = 0;
-          m_procStruct.nFileSize = recs[i]->size;
-          m_procStruct.Unlock();
-        }
-
-        ADBPullFile(sockADB, sname, dname, sRes, recs[i]->time);
-      }
-      else
-        ADBPullDir(sockADB, sname, dname, sRes);
-    }
-  }
-
-  DeleteRecords(recs);
-  return true;
-}
-
 void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files)
 {
   if (m_procStruct.Lock())
@@ -1577,7 +1536,7 @@ void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
         break;
 
       sname.Format(_T("%s%s"), sdir, recs[i]->filename);
-      dname.Format(_T("%s%s"), ddir, recs[i]->filename);
+      dname.Format(_T("%s%s"), ddir, CleanWindowsName(recs[i]->filename));
 
       if (IsDirectoryMode(recs[i]->mode))
       {
@@ -1729,13 +1688,6 @@ BOOL fardroid::ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent,
   }
   if (IS_FLAG(mode, S_IFREG) || IS_FLAG(mode, S_IFCHR) || IS_FLAG(mode, S_IFBLK))
   {
-    if (IsDirectoryLocal(dest))
-    {
-      AddEndSlash(dest);
-      dest += ExtractName(sSrc);
-    }
-
-    dest.Replace(_T("\""), _T(""));
     if (!ADBPullFile(sock, sSrc, dest, sRes, mtime))
     {
       CloseADBSocket(sock);
@@ -1745,7 +1697,7 @@ BOOL fardroid::ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent,
   }
   else if (IS_FLAG(mode, S_IFDIR))
   {
-    if (!ADBPullDir(sock, sSrc, dest, sRes))
+    if (!ADB_mkdir(dest, sRes, false))
     {
       CloseADBSocket(sock);
       return FALSE;
@@ -2157,6 +2109,7 @@ void fardroid::ShowADBExecError(CString err, bool bSilent)
 
     err.TrimLeft();
     err.TrimRight();
+    err.Replace(_T("\r"), _T(""));
     msg.Format(_T("%s\n%s\n%s"), LOC(MTitle), err, LOC(MOk));
     ShowMessage(msg, 1, nullptr, true);
 
@@ -2990,7 +2943,12 @@ BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent, bool d
   BOOL bOK = FALSE;
   CString cmd;
   if (!disableSU && conf.SU)
-    cmd.Format(_T("shell:su -c \"%s\""), sCMD);
+  {
+    CString command = sCMD;
+    command.Replace(_T("\\"), _T("\\\\"));
+    command.Replace(_T("\""), _T("\\\""));
+    cmd.Format(_T("shell:su -c \"%s\""), command);
+  }
   else
     cmd.Format(_T("shell:%s"), sCMD);
   if (SendADBCommand(sockADB, cmd))

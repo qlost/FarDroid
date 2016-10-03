@@ -445,8 +445,10 @@ CString WtoUTF8(LPCTSTR str, bool escape)
   UnicodeToutf8(str, lstrlen(str), buf, len);
   CString res = CString(buf);
   my_free(buf);
-  if (escape)
+  if (escape) {
+    res.Replace(_T("\\"), _T("\\\\"));
     res.Replace(_T("\""), _T("\\\""));
+  }
   return res;
 }
 
@@ -538,4 +540,12 @@ CString FormatTime(int time)
   CString res;
   res.Format(_T("%2.2d:%2.2d:%2.2d"), time / 3600, (time % 3600) / 60, time % 3600 % 60);
   return res;
+}
+
+CString CleanWindowsName(const CString& name)
+{
+  CString result = name;
+  result.Replace(_T("\\"), _T(""));
+  result.Replace(_T("\""), _T(""));
+  return result;
 }
