@@ -1,5 +1,8 @@
 #pragma once
 
+#define TICKS_PER_SECOND 10000000LL
+#define EPOCH_DIFFERENCE 11644473600LL
+
 #pragma warning (disable : 4005)
 /* Traditional mask definitions for st_mode. */
 #define S_IFMT   0170000	/* type of file */
@@ -43,18 +46,18 @@
 
 enum
 {
-	CodePage_Unicode,
-	CodePage_ANSI,
-	CodePage_OEM
+  CodePage_Unicode,
+  CodePage_ANSI,
+  CodePage_OEM
 };
 
-void		MakeDirs(CString path);
-bool		FileExists(const CString &path);
-DWORD		GetFileSizeS(const CString &path);
+void MakeDirs(CString path);
+bool FileExists(const CString& path);
+DWORD GetFileSizeS(const CString& path);
 CString GetVersionString();
-bool WriteLine( HANDLE stream, const CString &line, int CodePage);
+bool WriteLine(HANDLE stream, const CString& line, int CodePage);
 bool CheckForKey(const int key);
-int  rnd(int maxRnd);
+int rnd(int maxRnd);
 bool IsDevice(DWORD attr);
 bool IsLinkMode(int attr);
 bool IsLink(DWORD attr);
@@ -62,22 +65,23 @@ bool IsDirectoryMode(int attr);
 bool IsDirectory(DWORD attr);
 bool IsDirectory(uintptr_t attr);
 bool IsDirectoryLocal(LPCTSTR sPath);
-void PrepareInfoLine(const wchar_t * str, void *ansi, CString& line, CString format = _T("%s%s\n"));
-void PrepareInfoLineDate(const wchar_t * str, time_t * time, CString& line, bool b64);
+void PrepareInfoLine(const wchar_t* str, void* ansi, CString& line, CString format = _T("%s%s\n"));
+void PrepareInfoLineDate(const wchar_t* str, time_t* time, CString& line, bool b64);
 
 FILETIME UnixTimeToFileTime(time_t time);
-time_t StringTimeToUnixTime( CString sDay, CString sMonth, CString sYear, CString sTime );
-time_t StringTimeToUnixTime( CString sData, CString sTime );
+time_t StringTimeToUnixTime(CString sData);
+time_t StringTimeToUnixTime(CString sDay, CString sMonth, CString sYear, CString sTime);
+time_t StringTimeToUnixTime(CString sData, CString sTime);
 void FileTimeToUnixTime(LPFILETIME pft, time_t* pt);
-time_t *SystemTimeToUnixTime(LPSYSTEMTIME pst, time_t* pt);
+time_t* SystemTimeToUnixTime(LPSYSTEMTIME pst, time_t* pt);
 CString SystemTimeToString(LPSYSTEMTIME pst);
 
 int StringToMode(const CString& sAttr);
 CString ModeToType(const int p);
 int SgringOctalToMode(CString attr);
 DWORD StringToAttr(const CString& sAttr);
-DWORD ModeToAttr( int mode );
+DWORD ModeToAttr(int mode);
 
-BOOL DeletePanelItems(CString &sPath, struct PluginPanelItem *PanelItem,int ItemsNumber);
+BOOL DeletePanelItems(CString& sPath, struct PluginPanelItem* PanelItem, int ItemsNumber);
 
-BOOL ExecuteCommandLine(const CString & command, const CString& path, const CString & parameters, bool wait);
+BOOL ExecuteCommandLine(const CString& command, const CString& path, const CString& parameters, bool wait);

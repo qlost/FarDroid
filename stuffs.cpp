@@ -147,6 +147,28 @@ void PrepareInfoLine(const wchar_t* str, void* ansi, CString& line, CString form
   line.Format(format, str, ansi);
 }
 
+time_t StringTimeToUnixTime(CString sData)
+{
+  static const CString regexpDate1 = "/(\\d{4}-\\d{2}-\\d{2})\\s+(\\d{2}:\\d{2})/";
+  static const CString regexpDate2 = "/(\\w{3})\\s+(\\d+)\\s+(\\d{4})/";
+  static const CString regexpDate3 = "/(\\w{3})\\s+(\\d+)\\s+(\\d{2}:\\d{2})/";
+
+  strvec a;
+  RegExTokenize(sData, regexpDate1, a);
+  if (a.GetSize() == 2)
+    return StringTimeToUnixTime(a[0], a[1]);
+
+  RegExTokenize(sData, regexpDate2, a);
+  if (a.GetSize() == 3)
+    return StringTimeToUnixTime(a[1], a[0], a[2], "");
+
+  RegExTokenize(sData, regexpDate3, a);
+  if (a.GetSize() == 3)
+    return StringTimeToUnixTime(a[1], a[0], "", a[2]);
+
+  return 0;
+}
+
 time_t StringTimeToUnixTime(CString sData, CString sTime)
 {
   SYSTEMTIME time = {0};
@@ -158,7 +180,7 @@ time_t StringTimeToUnixTime(CString sData, CString sTime)
     time.wMonth = _ttoi(a[1]);
     time.wDay = _ttoi(a[2]);
   }
-  a.RemoveAll();
+
   Tokenize(sTime, a, _T(":"), false);
   if (a.GetSize() == 2)
   {
@@ -174,7 +196,6 @@ time_t StringTimeToUnixTime(CString sData, CString sTime)
 time_t StringTimeToUnixTime(CString sDay, CString sMonth, CString sYear, CString sTime)
 {
   SYSTEMTIME time = {0};
-  time.wYear = _ttoi(sYear);
   time.wDay = _ttoi(sDay);
 
   if (sMonth.CompareNoCase(_T("Jan")) == 0)
@@ -202,13 +223,25 @@ time_t StringTimeToUnixTime(CString sDay, CString sMonth, CString sYear, CString
   else if (sMonth.CompareNoCase(_T("Dec")) == 0)
     time.wMonth = 12;
 
+  if (sYear.IsEmpty())
+  {
+    SYSTEMTIME cstime;
+    GetSystemTime(&cstime);
+    time.wYear = cstime.wYear;
+  }
+  else
+  {
+    time.wYear = _ttoi(sYear);
+  }
+
   strvec a;
   Tokenize(sTime, a, _T(":"), false);
-  if (a.GetSize() == 3)
+  if (a.GetSize() >= 2)
   {
     time.wHour = _ttoi(a[0]);
     time.wMinute = _ttoi(a[1]);
-    time.wSecond = _ttoi(a[2]);
+    if (a.GetSize() == 3)
+      time.wSecond = _ttoi(a[2]);
   }
 
   time_t t = 0;
@@ -219,7 +252,9 @@ time_t StringTimeToUnixTime(CString sDay, CString sMonth, CString sYear, CString
 time_t* SystemTimeToUnixTime(LPSYSTEMTIME pst, time_t* pt)
 {
   FILETIME ft;
-  SystemTimeToFileTime(pst, &ft);
+  FILETIME lft;
+  SystemTimeToFileTime(pst, &lft);
+  LocalFileTimeToFileTime(&lft, &ft);
   FileTimeToUnixTime(&ft, pt);
   return pt;
 }
@@ -233,20 +268,18 @@ CString SystemTimeToString(LPSYSTEMTIME pst)
 
 FILETIME UnixTimeToFileTime(time_t time)
 {
-  FILETIME ft = {0};
-  UINT64 i64 = time;
-  i64 *= 10000000;
-  i64 += 116444736000000000;
-  ft.dwLowDateTime = static_cast<DWORD>(i64);
-  ft.dwHighDateTime = static_cast<DWORD>(i64 >> 32);
+  FILETIME ft = { 0 };
+  auto ticks = (static_cast<LONGLONG>(time) + EPOCH_DIFFERENCE) * TICKS_PER_SECOND;
+  ft.dwLowDateTime = static_cast<DWORD>(ticks);
+  ft.dwHighDateTime = static_cast<DWORD>(ticks >> 32);
   return ft;
 }
 
 void FileTimeToUnixTime(LPFILETIME pft, time_t* pt)
 {
-  LONGLONG ll; // 64 bit value 
-  ll = (static_cast<LONGLONG>(pft->dwHighDateTime) << 32) + pft->dwLowDateTime;
-  *pt = static_cast<time_t>((ll - 116444736000000000ui64) / 10000000ui64);
+  auto ticks = (static_cast<LONGLONG>(pft->dwHighDateTime) << 32) + static_cast<LONGLONG>(pft->dwLowDateTime);
+  auto sec = ticks / TICKS_PER_SECOND - EPOCH_DIFFERENCE;
+  *pt = static_cast<time_t>(sec);
 }
 
 int StringToMode(const CString& sAttr)

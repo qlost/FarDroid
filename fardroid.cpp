@@ -1264,10 +1264,8 @@ bool fardroid::ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t& mtime)
     return false;
 
   FILETIME ft;
-  FILETIME lt;
   GetFileTime(hFile, nullptr, nullptr, &ft);
-  LocalFileTimeToFileTime(&ft, &lt);
-  FileTimeToUnixTime(&lt, &mtime);
+  FileTimeToUnixTime(&ft, &mtime);
 
   syncsendbuf* sbuf = new syncsendbuf;
   sbuf->id = ID_DATA;
@@ -1724,10 +1722,10 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
     switch (conf.WorkMode)
     {
     case WORKMODE_NATIVE:
-      s.Format(_T("ls -l -a \"%s\""), WtoUTF8(sDir));
+      s.Format(_T("ls -la \"%s\""), WtoUTF8(sDir));
       break;
     case WORKMODE_BUSYBOX:
-      s.Format(_T("busybox ls -lAe%s --color=never \"%s\""), conf.LinksAsDir() ? _T("") : _T("L"), WtoUTF8(sDir));
+      s.Format(_T("busybox ls -la%s --color=never \"%s\""), conf.LinksAsDir() ? _T("") : _T("L"), WtoUTF8(sDir));
       break;
     }
 
@@ -1855,15 +1853,7 @@ BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files, bool bSilen
   auto size = list.GetSize();
   for (auto i = 0; i < size; i++)
   {
-    switch (conf.WorkMode)
-    {
-    case WORKMODE_BUSYBOX:
-      ParseFileLineBB(list[i], files);
-      break;
-    case WORKMODE_NATIVE:
-      ParseFileLine(list[i], files);
-      break;
-    }
+    ParseFileLine(list[i], files);
   }
 
   if (size == 1 && files.GetSize() == 0)
@@ -1881,170 +1871,46 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
   strvec tokens;
   CString regex;
   CFileRecord* rec = nullptr;
-  if (sLine.IsEmpty())
-    return true;
-  if (sLine.Left(5) == _T("total") || sLine.Left(3) == _T("ls:"))
-    return true;
-  if (sLine.Right(1) == _T("\r"))
-    sLine.Delete(sLine.GetLength()-1, 1);
 
-  switch (sLine[0])
+  sLine.Replace(_T("\r"), _T(""));
+  if (sLine.IsEmpty() || sLine.Left(5) == _T("total") || sLine.Left(3) == _T("ls:"))
+    return true;
+
+  auto isLink = sLine[0] == 'l';
+  auto isDevice = sLine[0] == 'b' || sLine[0] == 'c' || sLine[0] == 's';
+
+  static const CString regexpDate1 = "\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}";
+  static const CString regexpDate2 = "\\w{3}\\s+\\d+\\s+\\d{4}";
+  static const CString regexpDate3 = "\\w{3}\\s+\\d+\\s+\\d{2}:\\d{2}";
+
+  CString regexpDate = "("+ regexpDate1 + "|" + regexpDate2 +"|"+ regexpDate3 +")";
+  CString regexpFile = isLink? "(.+(?=\\s->))\\s->\\s(.+)": "(.+)";
+  CString regexpSize = isDevice ? "(\\d+,\\s*\\d+)" : "(\\d+)?";
+
+  CString regexpBase = "/^([\\w-]{10})\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+%s\\s+%s\\s%s$/";
+
+  regex.Format(regexpBase, regexpSize, regexpDate, regexpFile);
+  RegExTokenize(sLine, regex, tokens);
+  if (tokens.GetSize() > 5)
   {
-  case 'd': //directory
-    regex = _T("/^([\\w-]+)\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+(?:\\d+\\s+)?([\\w-]+)\\s+([\\w:]+)\\s(.+)$/");
-    RegExTokenize(sLine, regex, tokens);
-    if (tokens.GetSize() == 6)
+    rec = new CFileRecord;
+    rec->mode = StringToMode(tokens[0]);
+    rec->owner = tokens[1];
+    rec->grp = tokens[2];
+    rec->size = isDevice || tokens[3].IsEmpty() ? 0 : _ttoi(tokens[3]);
+    rec->desc = isDevice ? tokens[3] : "";
+    rec->time = StringTimeToUnixTime(tokens[4]);
+
+    if (isLink)
     {
-      rec = new CFileRecord;
-      rec->mode = StringToMode(tokens[0]);
-      rec->owner = tokens[1];
-      rec->grp = tokens[2];
-      rec->time = StringTimeToUnixTime(tokens[3], tokens[4]);
-      rec->size = 0;
-      rec->filename = UTF8toW(tokens[5]);
-    }
-    break;
-  case 'l': //symlink
-    regex = _T("/^([\\w-]+)\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+(?:\\d+\\s+)?([\\w-]+)\\s+([\\w:]+)\\s(.+(?=\\s->))\\s->\\s(.+)$/");
-    RegExTokenize(sLine, regex, tokens);
-    if (tokens.GetSize() == 7)
-    {
-      rec = new CFileRecord;
-      rec->mode = StringToMode(tokens[0]);
-      rec->owner = tokens[1];
-      rec->grp = tokens[2];
-      rec->time = StringTimeToUnixTime(tokens[3], tokens[4]);
-      rec->size = 0;
       rec->filename = ExtractName(UTF8toW(tokens[5]));
       rec->linkto = UTF8toW(tokens[6]);
       rec->desc.Format(_T("-> %s"), UTF8toW(tokens[6]));
     }
-    break;
-  case 'c': //device
-  case 'b':
-  case 's': //socket
-    regex = _T("/^([\\w-]+)\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+([\\w,]+\\s+\\w+)\\s+([\\w-]+)\\s+([\\w:]+)\\s(.+)$/");
-    RegExTokenize(sLine, regex, tokens);
-    if (tokens.GetSize() == 7)
-    {
-      rec = new CFileRecord;
-      rec->mode = StringToMode(tokens[0]);
-      rec->owner = tokens[1];
-      rec->grp = tokens[2];
-      rec->size = 0;
-      rec->desc = tokens[3];
-      rec->time = StringTimeToUnixTime(tokens[4], tokens[5]);
-      rec->filename = UTF8toW(tokens[6]);
-    }
     else
     {
-    case '-': //file
-    case 'p': //FIFO	
-      regex = _T("/^([\\w-]+)\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+([\\w-]+)\\s+([\\w:]+)\\s(.+)$/");
-      RegExTokenize(sLine, regex, tokens);
-      if (tokens.GetSize() == 7)
-      {
-        rec = new CFileRecord;
-        rec->mode = StringToMode(tokens[0]);
-        rec->owner = tokens[1];
-        rec->grp = tokens[2];
-        rec->size = _ttoi(tokens[3]);
-        rec->time = StringTimeToUnixTime(tokens[4], tokens[5]);
-        rec->filename = UTF8toW(tokens[6]);
-      }
-      else
-      {
-        regex = _T("/^([\\w-]+)\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+(?:\\d+\\s+)?([\\w-]+)\\s+([\\w:]+)\\s(.+)$/");
-        RegExTokenize(sLine, regex, tokens);
-        if (tokens.GetSize() == 6)
-        {
-          rec = new CFileRecord;
-          rec->mode = StringToMode(tokens[0]);
-          rec->owner = tokens[1];
-          rec->grp = tokens[2];
-          rec->size = 0;
-          rec->time = StringTimeToUnixTime(tokens[3], tokens[4]);
-          rec->filename = UTF8toW(tokens[5]);
-        }
-      }
+      rec->filename = UTF8toW(tokens[5]);
     }
-    break;
-  }
-
-  if (rec && rec->filename != "." && rec->filename != "..")
-  {
-    files.Add(rec);
-    return true;
-  }
-
-  return false;
-}
-
-bool fardroid::ParseFileLineBB(CString& sLine, CFileRecords& files) const
-{
-  strvec tokens;
-  CString regex;
-  CFileRecord* rec = nullptr;
-  if (sLine.IsEmpty())
-    return true;
-  if (sLine.Left(5) == _T("total") || sLine.Left(3) == _T("ls:"))
-    return true;
-  if (sLine.Right(1) == _T("\r"))
-    sLine.Delete(sLine.GetLength() - 1, 1);
-
-  switch (sLine[0])
-  {
-  case 'l': //symlink
-    regex = _T("/^([\\w-]+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+([\\w:]+)\\s(\\w+)\\s(.+(?=\\s->))\\s->\\s(.+)$/");
-    RegExTokenize(sLine, regex, tokens);
-    if (tokens.GetSize() == 12)
-    {
-      rec = new CFileRecord;
-      rec->mode = StringToMode(tokens[0]);
-      rec->owner = tokens[2];
-      rec->grp = tokens[3];
-      rec->size = _ttoi(tokens[4]);
-      rec->time = StringTimeToUnixTime(tokens[7], tokens[6], tokens[9], tokens[8]);
-      rec->filename = ExtractName(UTF8toW(tokens[10]));
-      rec->linkto = UTF8toW(tokens[11]);
-      rec->desc.Format(_T("-> %s"), UTF8toW(tokens[11]));
-    }
-    break;
-  case 'd': //directory
-  case '-': //file
-  case 'p': //FIFO
-    regex = _T("/^([\\w-]+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+([\\w:]+)\\s(\\w+)\\s(.+)$/");
-    RegExTokenize(sLine, regex, tokens);
-    if (tokens.GetSize() == 11)
-    {
-      rec = new CFileRecord;
-      rec->mode = StringToMode(tokens[0]);
-      //tokens[1] - links count
-      rec->owner = tokens[2];
-      rec->grp = tokens[3];
-      rec->size = _ttoi(tokens[4]);
-      //tokens[5] - day of week
-      rec->time = StringTimeToUnixTime(tokens[7], tokens[6], tokens[9], tokens[8]);
-      rec->filename = UTF8toW(tokens[10]);
-    }
-    break;
-  case 'c': //device
-  case 'b':
-  case 's':
-    regex = _T("/^([\\w-]+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+([\\w,]+\\s+\\w+)\\s+(\\w+)\\s+(\\w+)\\s+(\\w+)\\s+([\\w:]+)\\s(\\w+)\\s(.+)$/");
-    RegExTokenize(sLine, regex, tokens);
-    if (tokens.GetSize() == 11)
-    {
-      rec = new CFileRecord;
-      rec->mode = StringToMode(tokens[0]);
-      rec->owner = tokens[2];
-      rec->grp = tokens[3];
-      rec->size = 0;
-      rec->desc = tokens[4];
-      rec->time = StringTimeToUnixTime(tokens[7], tokens[6], tokens[9], tokens[8]);
-      rec->filename = UTF8toW(tokens[10]);
-    }
-    break;
   }
 
   if (rec && rec->filename != "." && rec->filename != "..")

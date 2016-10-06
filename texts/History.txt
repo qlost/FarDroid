@@ -1,4 +1,9 @@
-﻿ 03.10.16 v2.9.2
+﻿ 06.10.16 v2.10.0
+  + Support TWRP in Native Mode.
+  * Refactor ls for Native and Busybox modes.
+  * Fix DateTime calculation.
+
+ 03.10.16 v2.9.2
   + Support names with back slashes ('\').
   * Fix SuperUser quotation.
 

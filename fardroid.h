@@ -331,7 +331,6 @@ private:
   BOOL ADB_findmount(LPCTSTR sFS, strvec &fs_params, CString & sRes, bool bSilent);
   BOOL ADB_mount(LPCTSTR sFS, BOOL bAsRW, CString & sRes, bool bSilent);
 
-  bool		ParseFileLineBB(CString & sLine, CFileRecords & files) const;
   bool		ParseFileLine(CString & sLine, CFileRecords & files) const;
   BOOL		ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent) const;
   BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent);
