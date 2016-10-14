@@ -209,11 +209,12 @@ int fardroid::FileExistsDialog(LPCTSTR sName)
 int fardroid::CopyErrorDialog(LPCTSTR sTitle, CString sRes)
 {
   sRes.TrimRight();
-  if (!sRes.IsEmpty()) 
-    sRes += _T("\n\n");
   sRes.Replace(_T("\r"), _T(""));
 
-  sRes += conf.WorkMode == WORKMODE_NATIVE ? (conf.SU ? LOC(MNeedFolderExePerm) : LOC(MNeedSuperuserPerm)) : LOC(MNeedNativeSuperuserPerm);
+  if (!sRes.IsEmpty())
+    sRes += _T("\n\n");
+
+  sRes += LOC(MNeedSuperuserPerm);
 
   auto ret = 2;
   if (m_procStruct.Hide())
@@ -840,7 +841,7 @@ int fardroid::UpdateInfoLines()
 
 void fardroid::PreparePanel(OpenPanelInfo* Info)
 {
-  panelTitle.Format(_T("%s%s"), m_currentDeviceName, m_currentPath);
+  panelTitle.Format(_T("%s%s%s"), conf.SU ? _T("root#") : _T("shell@"), m_currentDeviceName, m_currentPath);
 
   Info->PanelTitle = _C(panelTitle);
   Info->CurDir = _C(m_currentPath);

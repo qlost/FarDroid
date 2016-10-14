@@ -83,9 +83,7 @@ enum
   MPermAll,
   MPermNone,
 
-	MNeedFolderExePerm,
 	MNeedSuperuserPerm, 
-	MNeedNativeSuperuserPerm,
 };
 
 #endif

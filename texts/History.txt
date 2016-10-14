@@ -1,4 +1,8 @@
-﻿ 06.10.16 v2.10.0
+﻿ 14.10.16 v2.10.1
+  + Add prefixes for active mode: 'root#' and 'shell@'.
+  * Update Help.
+
+ 06.10.16 v2.10.0
   + Support TWRP in Native Mode.
   * Refactor ls for Native and Busybox modes.
   * Fix DateTime calculation.

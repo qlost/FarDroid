@@ -80,6 +80,4 @@
 "&All"
 "&None"
 
-"It's possible, that a top level folder doesn't have\nthe execute permission for all (others) users.\n\nTo check use Ctrl+A."
-"For this operation the Superuser permissions may be need."
-"For this operation the Native mode and the Superuser permissions may be need."
+"For this operation settings "Superuser" or "Copy to /sdcard" may be needed"
