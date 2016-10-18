@@ -331,7 +331,7 @@ private:
   BOOL ADB_findmount(LPCTSTR sFS, strvec &fs_params, CString & sRes, bool bSilent);
   BOOL ADB_mount(LPCTSTR sFS, BOOL bAsRW, CString & sRes, bool bSilent);
 
-  bool		ParseFileLine(CString & sLine, CFileRecords & files) const;
+  CFileRecord* ParseFileLine(CString & sLine) const;
   BOOL		ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent) const;
   BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent);
 
@@ -346,7 +346,7 @@ private:
   void ParsePartitionInfo(CString s);
   void GetPartitionsInfo();
   int UpdateInfoLines();
-  CString GetPermissionsFile(const CString& sSource);
+  CFileRecord* ReadFileRecord(const CString& sSource);
   static CString PermissionsFileToMask(CString Permission);
 public:
   bool m_bForceBreak;

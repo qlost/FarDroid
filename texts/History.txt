@@ -1,4 +1,8 @@
-﻿ 14.10.16 v2.10.1
+﻿ 18.10.16 v2.10.2
+  + Restore Owner/Group for Overwrite operations.
+  * Improve memory allocation for 'ls' parsing.
+
+ 14.10.16 v2.10.1
   + Add prefixes for active mode: 'root#' and 'shell@'.
   * Update Help.
 

@@ -535,9 +535,8 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       m_procStruct.Unlock();
     }
 
-    auto permissions = GetPermissionsFile(files[i]->dst);
-    auto exist = !permissions.IsEmpty();
-    if (exist)
+    auto record = ReadFileRecord(files[i]->dst);
+    if (record)
     {
       if (!noPromt)
       {
@@ -561,10 +560,6 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
         }
         continue;
       }
-    }
-    else
-    {
-      permissions = "0666";
     }
 
     CString tname;
@@ -607,7 +602,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       continue;
     }
 
-    if (exist)
+    if (record)
     {
       result = DeleteFileFrom(files[i]->dst, false);
       if (result == FALSE)
@@ -631,7 +626,21 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
     }
 
     sRes.Empty();
-    ADB_chmod(files[i]->dst, permissions, sRes);
+
+    if (record) 
+    {
+      CString octal;
+      octal.Format(_T("%04o"), record->mode & S_ISRWX);
+      ADB_chmod(files[i]->dst, octal, sRes);
+      sRes.Empty();
+      ADB_chown(files[i]->dst, record->owner, record->grp, sRes);
+
+      delete record;
+    }
+    else
+    {
+      ADB_chmod(files[i]->dst, _T("666"), sRes);
+    }
   }
 
   DeleteRecords(files);
@@ -1854,7 +1863,9 @@ BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files, bool bSilen
   auto size = list.GetSize();
   for (auto i = 0; i < size; i++)
   {
-    ParseFileLine(list[i], files);
+    auto rec = ParseFileLine(list[i]);
+    if (rec)
+      files.Add(rec);
   }
 
   if (size == 1 && files.GetSize() == 0)
@@ -1867,15 +1878,14 @@ BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files, bool bSilen
   return TRUE;
 }
 
-bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
+CFileRecord* fardroid::ParseFileLine(CString& sLine) const
 {
   strvec tokens;
   CString regex;
-  CFileRecord* rec = nullptr;
 
   sLine.Replace(_T("\r"), _T(""));
   if (sLine.IsEmpty() || sLine.Left(5) == _T("total") || sLine.Left(3) == _T("ls:"))
-    return true;
+    return nullptr;
 
   auto isLink = sLine[0] == 'l';
   auto isDevice = sLine[0] == 'b' || sLine[0] == 'c' || sLine[0] == 's';
@@ -1894,7 +1904,7 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
   RegExTokenize(sLine, regex, tokens);
   if (tokens.GetSize() > 5)
   {
-    rec = new CFileRecord;
+    auto rec = new CFileRecord;
     rec->mode = StringToMode(tokens[0]);
     rec->owner = tokens[1];
     rec->grp = tokens[2];
@@ -1912,15 +1922,14 @@ bool fardroid::ParseFileLine(CString& sLine, CFileRecords& files) const
     {
       rec->filename = UTF8toW(tokens[5]);
     }
+
+    if (rec->filename != "." && rec->filename != "..")
+      return rec;
+
+    delete rec;
   }
 
-  if (rec && rec->filename != "." && rec->filename != "..")
-  {
-    files.Add(rec);
-    return true;
-  }
-
-  return false;
+  return nullptr;
 }
 
 BOOL fardroid::OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent)
@@ -2550,24 +2559,22 @@ void fardroid::GetPartitionsInfo()
     ParsePartitionInfo(str[i]);
 }
 
-CString fardroid::GetPermissionsFile(const CString& sSource)
+CFileRecord* fardroid::ReadFileRecord(const CString& sSource)
 {
   CString s;
   CString res;
   CString sRes;
+  strvec token;
   s.Format(_T("ls -l -a -d \"%s\""), WtoUTF8(sSource));
   if (ADBShellExecute(s, sRes, false))
   {
-    strvec perm;
-    Tokenize(sRes, perm, _T(" "));
-
-    if (!sRes.IsEmpty() && sRes.Find(_T("No such file or directory")) == -1 &&
-      perm[0].GetLength() == 10)
-    {
-      res.Format(_T("%04o"), StringToMode(perm[0]) & S_ISRWX);
-    }
+    Tokenize(sRes, token, _T("\n"), true, false);
+    auto size = token.GetSize();
+    if (size == 1)
+      return ParseFileLine(token[0]);
   }
-  return res;
+
+  return nullptr;
 }
 
 CString fardroid::PermissionsFileToMask(const CString permissions)
