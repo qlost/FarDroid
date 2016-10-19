@@ -332,7 +332,7 @@ private:
   BOOL ADB_mount(LPCTSTR sFS, BOOL bAsRW, CString & sRes, bool bSilent);
 
   CFileRecord* ParseFileLine(CString & sLine) const;
-  BOOL		ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent) const;
+  BOOL		ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent);
   BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent);
 
   int		DeleteFileFrom(const CString& src, bool bSilent);
@@ -395,7 +395,7 @@ public:
   bool BreakProcessDialog();
   int CopyErrorDialog(LPCTSTR sTitle, CString sErr);
   int CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sErr);
-  static void ShowError(CString& error);
+  void ShowError(CString& error);
   int FileExistsDialog(LPCTSTR sName);
 };
 

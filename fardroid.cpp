@@ -281,11 +281,16 @@ int fardroid::CopyDeleteErrorDialog(LPCTSTR sTitle, LPCTSTR sName)
 
 void fardroid::ShowError(CString& error)
 {
-  error.TrimRight();
-  error.Replace(_T("\r"), _T(""));
-  CString msg;
-  msg.Format(L"%s\n%s\n%s", LOC(MError), error, LOC(MOk));
-  ShowMessage(msg, 1, nullptr, true);
+  if (m_procStruct.Hide())
+  {
+    error.TrimRight();
+    error.Replace(_T("\r"), _T(""));
+    CString msg;
+    msg.Format(L"%s\n%s\n%s", LOC(MError), error, LOC(MOk));
+    ShowMessage(msg, 1, nullptr, true);
+
+    m_procStruct.Restore();
+  }
 }
 
 HANDLE fardroid::OpenFromCommandLine(const CString& cmd)
@@ -1251,8 +1256,11 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
   if (OpenPanel(tempPath, updateInfo, bSilent))
     return TRUE;
 
-  if (OpMode != 0 || lastError != S_OK)
+  if (OpMode != 0 || lastError != S_OK || tempPath == _T("/"))
     return FALSE;
+
+  if (tempPath == m_currentPath) 
+    m_currentPath = _T("/");
 
   return OpenPanel(m_currentPath, updateInfo, bSilent);
 }
@@ -1878,7 +1886,7 @@ BOOL fardroid::ADB_chown(LPCTSTR sSource, LPCTSTR user, LPCTSTR group, CString& 
   return sRes.GetLength() == 0;
 }
 
-BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files, bool bSilent) const
+BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files, bool bSilent)
 {
   DeleteRecords(files);
   strvec list;
