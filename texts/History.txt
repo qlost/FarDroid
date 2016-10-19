@@ -1,4 +1,9 @@
-﻿ 18.10.16 v2.10.2
+﻿ 19.10.16 v2.11.0
+  + Add 'Retry with Superuser' action.
+  + Support Android 7.0 Emulator default root.
+  * Allow configure 'Copy to /sdcard/' when Superuser is disabled.
+
+ 18.10.16 v2.10.2
   + Restore Owner/Group for Overwrite operations.
   * Improve memory allocation for 'ls' parsing.
 

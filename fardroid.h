@@ -303,7 +303,7 @@ private:
   static int			ReadADBPacket(SOCKET sockADB, void * packet, int size);
   static bool		CheckADBResponse(SOCKET sockADB);
   static bool		ReadADBSocket(SOCKET sockADB, char * buf, int bufSize);
-  BOOL ADBShellExecute(LPCTSTR sCMD, CString & sRes, bool bSilent, bool disableSU = false);
+  BOOL ADBShellExecute(LPCTSTR sCMD, CString & sRes, bool bSilent);
   int ADBReadFramebuffer(struct fb* fb);
   static void		ADBSyncQuit(SOCKET sockADB);
   bool		ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t & mtime);

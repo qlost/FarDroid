@@ -9,6 +9,8 @@
 "&Always Yes"
 "A&lways No"
 "&Retry"
+"Retry with Super&user"
+"&Skip"
 
 "FARdroid: Settings"
 "Add FARdroid label to &disk menu"
@@ -58,7 +60,7 @@
 "Enter Destination Directory:"
 "Enter File Name:"
 "File already exists. \n%s\n Overwrite it?"
-"Operation error. Try repeat?"
+"Operation Error!"
 "Deleting"
 "Are you sure?"
 "Error deleting file. \n%s\n Try repeat?"

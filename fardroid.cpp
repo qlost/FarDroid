@@ -208,21 +208,43 @@ int fardroid::FileExistsDialog(LPCTSTR sName)
 
 int fardroid::CopyErrorDialog(LPCTSTR sTitle, CString sRes)
 {
-  sRes.TrimRight();
-  sRes.Replace(_T("\r"), _T(""));
+  auto ret = -1;
+  auto su = conf.SU || conf.UseSU;
 
-  if (!sRes.IsEmpty())
-    sRes += _T("\n\n");
-
-  sRes += LOC(MNeedSuperuserPerm);
-
-  auto ret = 2;
   if (m_procStruct.Hide())
   {
     CString errmsg;
-    errmsg.Format(_T("%s\n%s\n\n%s\n\n%s\n%s\n%s"), sTitle, LOC(MCopyError), sRes, LOC(MYes), LOC(MNo), LOC(MCancel));
-    ret = ShowMessage(errmsg, 3, _F("copyerror"), true);
+
+    sRes.TrimRight();
+    sRes.Replace(_T("\r"), _T(""));
+    if (su)
+    {
+      if (sRes.IsEmpty())
+        sRes += LOC(MNeedSuperuserPerm);
+      errmsg.Format(_T("%s\n%s\n\n%s\n\n%s\n%s\n%s"), sTitle, LOC(MCopyError), sRes, LOC(MRetry), LOC(MSkip), LOC(MCancel));
+    }
+    else
+    {
+      if (!sRes.IsEmpty())
+        sRes += _T("\n\n");
+      sRes += LOC(MNeedSuperuserPerm);
+      errmsg.Format(_T("%s\n%s\n\n%s\n\n%s\n%s\n%s\n%s"), sTitle, LOC(MCopyError), sRes, LOC(MRetry), LOC(MRetryRoot), LOC(MSkip), LOC(MCancel));
+    }
+
+    ret = ShowMessage(errmsg, su ? 3 : 4, _F("copyerror"), true);
     m_procStruct.Restore();
+  }
+
+  if (su) {
+    switch (ret)
+    {
+    case 0:
+      return RETRY;
+    case 1:
+      return SKIP;
+    default:
+      return FALSE;
+    }
   }
 
   switch (ret)
@@ -230,6 +252,9 @@ int fardroid::CopyErrorDialog(LPCTSTR sTitle, CString sRes)
   case 0:
     return RETRY;
   case 1:
+    conf.SU = TRUE;
+    return RETRY;
+  case 2:
     return SKIP;
   default:
     return FALSE;
@@ -535,45 +560,38 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       m_procStruct.Unlock();
     }
 
-    auto record = ReadFileRecord(files[i]->dst);
-    if (record)
-    {
-      if (!noPromt)
-      {
-        auto exResult = FileExistsDialog(files[i]->dst);
-        if (exResult < 0 || exResult > 3)
-        {
-          m_bForceBreak = true;
-          break;
-        }
-
-        ansYes = exResult == 0 || exResult == 2;
-        noPromt = exResult == 2 || exResult == 3;
-      }
-
-      if (!ansYes)
-      {
-        if (m_procStruct.Lock())
-        {
-          m_procStruct.nTotalFileSize -= m_procStruct.nFileSize;
-          m_procStruct.Unlock();
-        }
-        continue;
-      }
-    }
-
+    CFileRecord* record;
     CString tname;
-    if (conf.SU && conf.CopySD)
-    {
-      tname.Format(_T("/sdcard/%s.fardroid"), ExtractName(files[i]->dst));
-    }
-    else
-    {
-      tname.Format(_T("%s.fardroid"), files[i]->dst);
-    }
-
     CString sRes;
+
     do {
+      record = ReadFileRecord(files[i]->dst);
+      if (record)
+      {
+        if (!noPromt)
+        {
+          auto exResult = FileExistsDialog(files[i]->dst);
+          if (exResult < 0 || exResult > 3)
+          {
+            m_bForceBreak = true;
+            break;
+          }
+
+          ansYes = exResult == 0 || exResult == 2;
+          noPromt = exResult == 2 || exResult == 3;
+        }
+
+        if (!ansYes)
+        {
+          if (m_procStruct.Lock())
+          {
+            m_procStruct.nTotalFileSize -= m_procStruct.nFileSize;
+            m_procStruct.Unlock();
+          }
+          continue;
+        }
+      }
+
       if (m_procStruct.Lock())
       {
         m_procStruct.nTransmitted = 0;
@@ -581,8 +599,14 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
         m_procStruct.Unlock();
       }
 
+      if (conf.SU && conf.CopySD)
+        tname.Format(_T("/sdcard/%s.fardroid"), ExtractName(files[i]->dst));
+      else
+        tname.Format(_T("%s.fardroid"), files[i]->dst);
+
       sRes.Empty();
       result = ADB_push(files[i]->src, tname, sRes, bSilent);
+
       if (result == FALSE)
         result = CopyErrorDialog(LOC(MPutFile), sRes);
     } while (result == RETRY);
@@ -618,7 +642,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       if (result == FALSE)
         result = CopyErrorDialog(LOC(MPutFile), sRes);
     } while (result == RETRY);
-    
+
     if (result == FALSE)
     {
       DeleteFileFrom(tname, true);
@@ -627,7 +651,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
 
     sRes.Empty();
 
-    if (record) 
+    if (record)
     {
       CString octal;
       octal.Format(_T("%04o"), record->mode & S_ISRWX);
@@ -833,6 +857,7 @@ int fardroid::UpdateInfoLines()
   pl.separator = TRUE;
   lines.Add(pl);
 
+  conf.SU = FALSE;
   GetDeviceInfo();
 
   conf.SU = conf.UseSU;
@@ -2394,7 +2419,7 @@ unsigned long long fardroid::ParseSizeInfo(CString s)
 void fardroid::GetDeviceInfo()
 {
   CString sRes;
-  ADBShellExecute(_T("getprop"), sRes, true, true);
+  ADBShellExecute(_T("getprop"), sRes, true);
 
   strvec str;
   Tokenize(sRes, str, _T("\n"));
@@ -2810,21 +2835,17 @@ int fardroid::ReadADBPacket(SOCKET sockADB, void* packet, int size)
   return received;
 }
 
-BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent, bool disableSU)
+BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent)
 {
   SOCKET sockADB = PrepareADBSocket();
 
   BOOL bOK = FALSE;
   CString cmd;
-  if (!disableSU && conf.SU)
-  {
-    CString command = sCMD;
-    command.Replace(_T("\\"), _T("\\\\"));
-    command.Replace(_T("\""), _T("\\\""));
-    cmd.Format(_T("shell:su -c \"%s\""), command);
-  }
+  if (conf.SU)
+    cmd.Format(_T("shell:su 0 %s"), sCMD);
   else
     cmd.Format(_T("shell:%s"), sCMD);
+
   if (SendADBCommand(sockADB, cmd))
   {
     char* buf = new char[4097];

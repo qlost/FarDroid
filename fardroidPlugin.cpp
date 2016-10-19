@@ -120,7 +120,7 @@ intptr_t WINAPI ConfigDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void* 
   if (Msg == DN_CTLCOLORDLGITEM)
   {
     if (Param1 == ID_KillServerWarning && GetChecked(hDlg, ID_KillServer) ||
-      Param1 == ID_CopySDWarning && GetChecked(hDlg, ID_UseSU) && GetChecked(hDlg, ID_CopySD))
+      Param1 == ID_CopySDWarning && GetChecked(hDlg, ID_CopySD))
     {
       auto color = static_cast<FarDialogItemColors*>(Param2);
       if (color) color->Colors[0].ForegroundColor = 0x4;
@@ -131,10 +131,6 @@ intptr_t WINAPI ConfigDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void* 
     {
     case ID_WorkModeBB:
       fInfo.SendDlgMessage(hDlg, DM_ENABLE, ID_ShowLinksAsDir, Param2);
-      break;
-    case ID_UseSU:
-      fInfo.SendDlgMessage(hDlg, DM_ENABLE, ID_CopySD, Param2);
-      fInfo.SendDlgMessage(hDlg, DM_ENABLE, ID_CopySDWarning, Param2);
       break;
     }
 
@@ -190,11 +186,6 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
 
   if (conf.WorkMode != WORKMODE_BUSYBOX)
     DialogItems[ID_ShowLinksAsDir].Flags |= DIF_DISABLE;
-  if (!conf.UseSU)
-  {
-    DialogItems[ID_CopySD].Flags |= DIF_DISABLE;
-    DialogItems[ID_CopySDWarning].Flags |= DIF_DISABLE;
-  }
 
   auto editbuf2 = static_cast<wchar_t *>(my_malloc(1024));
   lstrcpyW(editbuf2, conf.ADBPath);

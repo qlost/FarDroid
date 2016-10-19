@@ -12,6 +12,8 @@ enum
 	MAlwaysYes,
 	MAlwaysNo,
 	MRetry,
+  MRetryRoot,
+  MSkip,
 
   MConfTitle,
 	MConfAddToDisk,
