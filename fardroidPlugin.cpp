@@ -141,24 +141,24 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
 {
   const auto width = 55;
   struct InitDialogItem InitItems[] = {
-    /*00*/FDI_DOUBLEBOX(width - 4,20,(farStr *)MConfTitle),
-    /*01*/FDI_CHECK(5, 2,(farStr *)MConfAddToDisk),
-    /*02*/FDI_LABEL(5, 3, (farStr *)MConfPrefix),
+    /*00*/FDI_DOUBLEBOX(width - 4,20,(farStr *)LOC(MConfTitle)),
+    /*01*/FDI_CHECK(5, 2,(farStr *)LOC(MConfAddToDisk)),
+    /*02*/FDI_LABEL(5, 3, (farStr *)LOC(MConfPrefix)),
     /*03*/FDI_EDIT(13, 3, 28, _F("fardroidPrefix")),
-    /*04*/FDI_RADIO(5, 5, (farStr*)MConfSafeMode),
-    /*05*/FDI_RADIO(5, 6, (farStr*)MConfNative),
-    /*06*/FDI_RADIO(5, 7, (farStr*)MConfBusybox),
-    /*07*/FDI_CHECK(9, 8, (farStr*)MConfShowLinksAsDirs),
-    /*08*/FDI_CHECK(5,10, (farStr*)MConfUseSU),
-    /*09*/FDI_CHECK(9,11, (farStr*)MConfCopySD),
-    /*10*/FDI_LABEL(13,12, (farStr*)MConfCopySDWarning),
-    /*11*/FDI_CHECK(5,13, (farStr*)MConfRemountSystem),
-    /*12*/FDI_LABEL(5,15, (farStr*)MConfADBPath),
+    /*04*/FDI_RADIO(5, 5, (farStr *)LOC(MConfSafeMode)),
+    /*05*/FDI_RADIO(5, 6, (farStr *)LOC(MConfNative)),
+    /*06*/FDI_RADIO(5, 7, (farStr *)LOC(MConfBusybox)),
+    /*07*/FDI_CHECK(9, 8, (farStr *)LOC(MConfShowLinksAsDirs)),
+    /*08*/FDI_CHECK(5,10, (farStr *)LOC(MConfUseSU)),
+    /*09*/FDI_CHECK(9,11, (farStr *)LOC(MConfCopySD)),
+    /*10*/FDI_LABEL(13,12, (farStr *)LOC(MConfCopySDWarning)),
+    /*11*/FDI_CHECK(5,13, (farStr *)LOC(MConfRemountSystem)),
+    /*12*/FDI_LABEL(5,15, (farStr *)LOC(MConfADBPath)),
     /*13*/FDI_EDIT(18,15, 48, _F("fardroidADBPath")),
-    /*14*/FDI_CHECK(5,16, (farStr*)MConfKillServer),
-    /*15*/FDI_LABEL(9,17,(farStr*)MConfKillServerWarning),
-    /*16*/FDI_DEFCBUTTON(19,(farStr *)MOk),
-    /*17*/FDI_CBUTTON(19,(farStr *)MCancel),
+    /*14*/FDI_CHECK(5,16, (farStr *)LOC(MConfKillServer)),
+    /*15*/FDI_LABEL(9,17,(farStr *)LOC(MConfKillServerWarning)),
+    /*16*/FDI_DEFCBUTTON(19,(farStr *)LOC(MOk)),
+    /*17*/FDI_CBUTTON(19,(farStr *)LOC(MCancel)),
     /*--*/FDI_SEPARATOR(4,_F("")),
     /*--*/FDI_SEPARATOR(9,_F("")),
     /*--*/FDI_SEPARATOR(14,_F("")),
@@ -307,6 +307,17 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
   {
     switch (Info->Rec.Event.KeyEvent.wVirtualKeyCode)
     {
+    case VK_F5:
+    {
+      CString file = GetCurrentFileName();
+      if (android->Copy(file) == TRUE)
+      {
+        android->Reread();
+        fInfo.PanelControl(Info->hPanel, FCTL_UPDATEPANEL, 1, nullptr);
+        fInfo.PanelControl(Info->hPanel, FCTL_REDRAWPANEL, 0, nullptr);
+      }
+      return TRUE;
+    }
     case VK_F6:
     {
       CString file = GetCurrentFileName();

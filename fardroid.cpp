@@ -42,15 +42,15 @@ fardroid::~fardroid(void)
   DeleteRecords(records);
 }
 
-bool fardroid::CopyFilesDialog(CString& dest, const wchar_t* title)
+bool fardroid::CopyFilesDialog(CString& dest, const wchar_t* title, const wchar_t* name)
 {
   const auto width = 55;
   struct InitDialogItem InitItems[] = {
     /*00*/FDI_DOUBLEBOX(width - 4, 6, (farStr *)title),
-    /*01*/FDI_LABEL(5, 2, (farStr *)MCopyDest),
+    /*01*/FDI_LABEL(5, 2, (farStr *)name),
     /*02*/FDI_EDIT(5, 3, width - 6, _F("fardroidDestinationDir")),
-    /*03*/FDI_DEFCBUTTON(5,(farStr *)MOk),
-    /*04*/FDI_CBUTTON(5,(farStr *)MCancel),
+    /*03*/FDI_DEFCBUTTON(5,(farStr *)LOC(MOk)),
+    /*04*/FDI_CBUTTON(5,(farStr *)LOC(MCancel)),
     /*--*/FDI_SEPARATOR(4,_F("")),
   };
   const int size = sizeof InitItems / sizeof InitItems[0];
@@ -77,11 +77,11 @@ bool fardroid::CreateDirDialog(CString& dest)
 {
   const auto width = 55;
   struct InitDialogItem InitItems[] = {
-    /*00*/FDI_DOUBLEBOX(width - 4, 6,(farStr *)MCreateDir),
-    /*01*/FDI_LABEL(5, 2, (farStr *)MDirName),
+    /*00*/FDI_DOUBLEBOX(width - 4, 6,(farStr *)LOC(MCreateDir)),
+    /*01*/FDI_LABEL(5, 2, (farStr *)LOC(MDirName)),
     /*02*/FDI_EDIT(5, 3,width - 6, _F("fardroidDirName")),
-    /*03*/FDI_DEFCBUTTON(5,(farStr *)MOk),
-    /*04*/FDI_CBUTTON(5,(farStr *)MCancel),
+    /*03*/FDI_DEFCBUTTON(5,(farStr *)LOC(MOk)),
+    /*04*/FDI_CBUTTON(5,(farStr *)LOC(MCancel)),
     /*--*/FDI_SEPARATOR(4,_F("")),
   };
   const int size = sizeof InitItems / sizeof InitItems[0];
@@ -114,10 +114,10 @@ bool fardroid::DeviceNameDialog(const CString &name, CString &alias)
   const auto width = 55;
   struct InitDialogItem InitItems[] = {
     /*00*/FDI_DOUBLEBOX(width - 4, 6, (farStr *)static_cast<const wchar_t*>(name)),
-    /*01*/FDI_LABEL(5, 2, (farStr *)MRenameDeviceName),
+    /*01*/FDI_LABEL(5, 2, (farStr *)LOC(MRenameDeviceName)),
     /*02*/FDI_EDIT(5, 3,width - 6, _F("fardroidDevice")),
-    /*03*/FDI_DEFCBUTTON(5,(farStr *)MOk),
-    /*04*/FDI_CBUTTON(5,(farStr *)MCancel),
+    /*03*/FDI_DEFCBUTTON(5,(farStr *)LOC(MOk)),
+    /*04*/FDI_CBUTTON(5,(farStr *)LOC(MCancel)),
     /*--*/FDI_SEPARATOR(4,_F("")),
   };
   const int size = sizeof InitItems / sizeof InitItems[0];
@@ -823,7 +823,7 @@ int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& Des
 
   if (!bSilent && !IS_FLAG(OpMode, OPM_QUICKVIEW) && !IS_FLAG(OpMode, OPM_VIEW) && !IS_FLAG(OpMode, OPM_EDIT))
   {
-    if (!CopyFilesDialog(DestPath, Move ? LOC(MMoveFile) : LOC(MGetFile)))
+    if (!CopyFilesDialog(DestPath, Move ? LOC(MMoveFile) : LOC(MGetFile), LOC(MCopyDest)))
       return ABORT;
   }
 
@@ -991,11 +991,11 @@ void fardroid::ChangePermissionsDialog(int selected)
   const auto width = 50;
 
   InitDialogItem FDI_FILE;
-  auto fileTypeTitle = MPermType;
+  auto fileTypeTitle = LOC(MPermType);
   auto fileType = ModeToType(item->mode);
   if (conf.WorkMode != WORKMODE_SAFE && IsLinkMode(item->mode))
   {
-    fileTypeTitle = MPermLink;
+    fileTypeTitle = LOC(MPermLink);
     FDI_FILE = FDI_ROEDIT(15, 7, width - 6, (farStr *)static_cast<const wchar_t *>(item->linkto));
   }
   else
@@ -1003,16 +1003,16 @@ void fardroid::ChangePermissionsDialog(int selected)
     FDI_FILE = FDI_LABEL(15, 7, (farStr *)static_cast<const wchar_t *>(fileType));
   }
   struct InitDialogItem InitItems[] = {
-    /*00*/FDI_DOUBLEBOX(width - 4, 19, (farStr *)MPermTitle),
-    /*01*/FDI_CLABEL(5, 2, (farStr *)MPermChange),
+    /*00*/FDI_DOUBLEBOX(width - 4, 19, (farStr *)LOC(MPermTitle)),
+    /*01*/FDI_CLABEL(5, 2, (farStr *)LOC(MPermChange)),
     /*02*/FDI_CLABEL(5, 3, (farStr *)static_cast<const wchar_t *>(fileName)),
-    /*03*/FDI_LABEL(5, 5, (farStr *)MPermOwner),
+    /*03*/FDI_LABEL(5, 5, (farStr *)LOC(MPermOwner)),
     /*04*/FDI_EDIT(15, 5, width - 6, _F("fardroidPermissionOwner")),
-    /*05*/FDI_LABEL(5, 6, (farStr *)MPermGroup),
+    /*05*/FDI_LABEL(5, 6, (farStr *)LOC(MPermGroup)),
     /*06*/FDI_EDIT(15, 6, width - 6, _F("fardroidPermissionGroup")),
     /*07*/FDI_LABEL(5, 7, (farStr *)fileTypeTitle),
     /*08*/FDI_FILE,
-    /*09*/FDI_CHECK(5, 9, (farStr *)MPermChownSelected),
+    /*09*/FDI_CHECK(5, 9, (farStr *)LOC(MPermChownSelected)),
     /*10*/FDI_LABEL(5, 11, _F("User")),
     /*11*/FDI_LABEL(5, 12, _F("Group")),
     /*12*/FDI_LABEL(5, 13, _F("Others")),
@@ -1030,11 +1030,11 @@ void fardroid::ChangePermissionsDialog(int selected)
     /*24*/FDI_CHECK(34, 13, _F("Sticky")),
     /*25*/FDI_LABEL(5, 14, _F("Octal")),
     /*26*/FDI_FIXEDIT(13, 14, 16, _F("9999")),
-    /*27*/FDI_BUTTON(22, 14, (farStr *)MPermNone),
-    /*28*/FDI_BUTTON(34, 14, (farStr *)MPermAll),
-    /*29*/FDI_CHECK(5, 16, (farStr *)MPermChmodSelected),
-    /*30*/FDI_DEFCBUTTON(18, (farStr *)MOk),
-    /*31*/FDI_CBUTTON(18,(farStr *)MCancel),
+    /*27*/FDI_BUTTON(22, 14, (farStr *)LOC(MPermNone)),
+    /*28*/FDI_BUTTON(34, 14, (farStr *)LOC(MPermAll)),
+    /*29*/FDI_CHECK(5, 16, (farStr *)LOC(MPermChmodSelected)),
+    /*30*/FDI_DEFCBUTTON(18, (farStr *)LOC(MOk)),
+    /*31*/FDI_CBUTTON(18,(farStr *)LOC(MCancel)),
     /*--*/FDI_SEPARATOR(4,_F("")),
     /*--*/FDI_SEPARATOR(8,_F("")),
     /*--*/FDI_SEPARATOR(10, (farStr *)static_cast<const wchar_t *>(separator)),
@@ -2295,12 +2295,36 @@ int fardroid::Rename(CString& DestPath)
   AddEndSlash(srcdir, true);
 
   CString src = srcdir + DestPath;
-  if (!CopyFilesDialog(DestPath, LOC(MRenameFile)))
+  CString msg = FormatFileNameTo(LOC(MRenameFileDest), DestPath);
+  if (!CopyFilesDialog(DestPath, LOC(MRenameFile), msg))
     return ABORT;
   CString dst = srcdir + DestPath;
 
   CString sRes;
   if (ADB_rename(src, dst, sRes))
+  {
+    Reread();
+  }
+  else
+  {
+    ShowError(sRes);
+  }
+  return TRUE;
+}
+
+int fardroid::Copy(CString& DestPath)
+{
+  CString srcdir = m_currentPath;
+  AddEndSlash(srcdir, true);
+
+  CString src = srcdir + DestPath;
+  CString msg = FormatFileNameTo(LOC(MCopyFileDest), DestPath);
+  if (!CopyFilesDialog(DestPath, LOC(MCopyFile), msg))
+    return ABORT;
+  CString dst = srcdir + DestPath;
+
+  CString sRes;
+  if (ADB_copy(src, dst, sRes))
   {
     Reread();
   }

@@ -549,3 +549,18 @@ CString CleanWindowsName(const CString& name)
   result.Replace(_T("\""), _T(""));
   return result;
 }
+
+CString FormatFileNameTo(const CString& msg, const CString& file)
+{
+  CString res;
+  auto size = 48 - msg.GetLength();
+  if (file.GetLength() >= size)
+  {
+    res.Format(msg, "..." + file.Right(size - 4));
+  }
+  else
+  {
+    res.Format(msg, file);
+  }
+  return res;
+}

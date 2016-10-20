@@ -110,7 +110,7 @@ void InitDialogItems(struct InitDialogItem* Init, struct FarDialogItem* Item, in
 {
   auto PItem = Item;
   auto PInit = Init;
-  for (auto i = 0; i < ItemsNumber; i++ , PItem++ , PInit++)
+  for (auto i = 0; i < ItemsNumber; i++, PItem++, PInit++)
   {
     memset(static_cast<void *>(PItem), 0, sizeof(*PItem));
     PItem->Type = static_cast<FARDIALOGITEMTYPES>(PInit->Type);
@@ -126,10 +126,7 @@ void InitDialogItems(struct InitDialogItem* Init, struct FarDialogItem* Item, in
       PItem->Mask = reinterpret_cast<const farStr *>(PInit->Selected);
     else
       PItem->History = reinterpret_cast<const farStr *>(PInit->Selected);
-    if (static_cast<unsigned int>(reinterpret_cast<DWORD_PTR>(PInit->Data)) < 2000)
-      PItem->Data = LOC(static_cast<unsigned int>(reinterpret_cast<DWORD_PTR>(PInit->Data)));
-    else
-      PItem->Data = PInit->Data;
+    PItem->Data = PInit->Data;
   }
 }
 

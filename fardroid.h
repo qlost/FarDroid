@@ -367,7 +367,7 @@ public:
   static bool		CreateDirDialog(CString &dest);
   bool DeviceNameDialog();
   static bool DeviceNameDialog(const CString& name, CString& alias);
-  static bool		CopyFilesDialog(CString &dest, const wchar_t* title);
+  static bool		CopyFilesDialog(CString &dest, const wchar_t* title, const wchar_t* name);
   static CString GetDeviceName(const CString & device);
   static CString GetDeviceAliasName(const CString& device);
   static CString GetDeviceCaption(const CString& device);
@@ -387,6 +387,7 @@ public:
   int DeleteFiles(PluginPanelItem *PanelItem, int ItemsNumber, OPERATION_MODES OpMode);
   int CreateDir(CString &DestPath, OPERATION_MODES OpMode);
   int Rename(CString& DestPath);
+  int Copy(CString& DestPath);
   int RenameFile(const CString& src, const CString& dst, CString& sRes);
   int GetFramebuffer();
   void Reread();
