@@ -880,14 +880,6 @@ int fardroid::UpdateInfoLines()
 
 void fardroid::PreparePanel(OpenPanelInfo* Info)
 {
-  panelTitle.Format(_T("%s%s%s"), conf.SU ? _T("root#") : _T("shell@"), m_currentDeviceName, m_currentPath);
-
-  Info->PanelTitle = _C(panelTitle);
-  Info->CurDir = _C(m_currentPath);
-
-  if (m_currentPath != "/")
-    Info->Flags |= OPIF_ADDDOTS;
-
   if (InfoPanelLineArray)
   {
     delete InfoPanelLineArray;
@@ -916,6 +908,14 @@ void fardroid::PreparePanel(OpenPanelInfo* Info)
         size = infoSize[i].free;
     }
   }
+
+  panelTitle.Format(_T("%s%s %s"), m_currentDeviceName, m_currentPath, conf.SU ? _T("#") : _T("$"));
+
+  Info->PanelTitle = _C(panelTitle);
+  Info->CurDir = _C(m_currentPath);
+
+  if (m_currentPath != "/")
+    Info->Flags |= OPIF_ADDDOTS;
 
   Info->FreeSize = size;
   Info->InfoLines = InfoPanelLineArray;

@@ -212,6 +212,22 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
     conf.KillServer = GetItemSelected(hdlg, ID_KillServer);
 
     conf.Save();
+
+    PanelInfo PInfo;
+    fInfo.PanelControl(PANEL_ACTIVE, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
+    auto android = static_cast<fardroid *>(PInfo.PluginHandle);
+    if (!android)
+    {
+      fInfo.PanelControl(PANEL_PASSIVE, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
+      android = static_cast<fardroid *>(PInfo.PluginHandle);
+    }
+
+    if (android)
+    {
+      android->Reread();
+      fInfo.PanelControl(PInfo.PluginHandle, FCTL_UPDATEPANEL, 1, nullptr);
+      fInfo.PanelControl(PInfo.PluginHandle, FCTL_REDRAWPANEL, 0, nullptr);
+    }
   }
 
   fInfo.DialogFree(hdlg);

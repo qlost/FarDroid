@@ -1,4 +1,11 @@
-﻿ 21.10.16 v2.11.1
+﻿ 24.10.16 v2.11.2
+  + Root indicator postfix (' #' for root or ' $')
+  + Update Panel on Settings changes.
+  * Remove root indicator prefix.
+  * Fix root indicator on 'Retry with Superuser' action.
+  * Update Help.
+
+ 21.10.16 v2.11.1
   + Shift+F5: Copy on Device
   * Change Dialog texts.
 
