@@ -863,12 +863,19 @@ int fardroid::UpdateInfoLines()
   lines.Add(pl);
 
   conf.SU = FALSE;
+  conf.SU0 = FALSE;
   GetDeviceInfo();
 
   conf.SU = conf.UseSU;
   auto res = GetMemoryInfo();
+
+  if (conf.SU && !res) {
+    conf.SU0 = TRUE;
+    res = GetMemoryInfo();
+  }
+
   if (conf.SU && !res)
-  { 
+  {
     conf.SU = FALSE;
     GetMemoryInfo();
   }
@@ -1941,7 +1948,7 @@ CFileRecord* fardroid::ParseFileLine(CString& sLine) const
     rec->mode = StringToMode(tokens[0]);
     rec->owner = tokens[1];
     rec->grp = tokens[2];
-    rec->size = isDevice || tokens[3].IsEmpty() ? 0 : _ttoi(tokens[3]);
+    rec->size = isDevice || tokens[3].IsEmpty() ? 0 : _ttoll(tokens[3]);
     rec->desc = isDevice ? tokens[3] : "";
     rec->time = StringTimeToUnixTime(tokens[4]);
 
@@ -2873,8 +2880,10 @@ BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent)
 
   BOOL bOK = FALSE;
   CString cmd;
-  if (conf.SU)
+  if (conf.SU && conf.SU0)
     cmd.Format(_T("shell:su 0 %s"), sCMD);
+  else if (conf.SU)
+    cmd.Format(_T("shell:su -c \"%s\""), EscapeCommand(sCMD));
   else
     cmd.Format(_T("shell:%s"), sCMD);
 

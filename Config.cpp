@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "Config.h"
 
-CConfig::CConfig(void): PanelMode(0), SortMode(0), SortOrder(0), WorkMode(0), AddToDiskMenu(0), ShowLinksAsDir(0), KillServer(0), SU(0), UseSU(0), CopySD(0), RemountSystem(0)
+CConfig::CConfig(void): PanelMode(0), SortMode(0), SortOrder(0), WorkMode(0), AddToDiskMenu(0), ShowLinksAsDir(0), KillServer(0), SU(0), SU0(0), UseSU(0), CopySD(0), RemountSystem(0)
 {
   hHandle = nullptr;
 }

@@ -550,6 +550,14 @@ CString CleanWindowsName(const CString& name)
   return result;
 }
 
+CString EscapeCommand(const CString& cmd)
+{
+  CString result = cmd;
+  result.Replace(_T("\\"), _T("\\\\"));
+  result.Replace(_T("\""), _T("\\\""));
+  return result;
+}
+
 CString FormatFileNameTo(const CString& msg, const CString& file)
 {
   CString res;

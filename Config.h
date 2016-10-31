@@ -23,6 +23,7 @@ public:
 	BOOL		ShowLinksAsDir;
 	BOOL		KillServer;
   BOOL    SU;
+  BOOL    SU0;
   BOOL		UseSU;
 	BOOL		CopySD;
 	BOOL		RemountSystem;
