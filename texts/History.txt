@@ -1,4 +1,7 @@
-﻿ 31.10.16 v2.11.3
+﻿ 07.11.16 v2.11.4
+  * Fix Update Panel on Settings changes.
+
+ 31.10.16 v2.11.3
   + Autodetect Android 7.0 Emulator root.
   * Fix >2GB size.
   * Fallback to 'su -c' for compatibility.

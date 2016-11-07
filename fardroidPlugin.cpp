@@ -214,12 +214,16 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
     conf.Save();
 
     PanelInfo PInfo;
+    fardroid* android = nullptr;
     fInfo.PanelControl(PANEL_ACTIVE, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
-    auto android = static_cast<fardroid *>(PInfo.PluginHandle);
+    if (PInfo.PluginHandle && PInfo.PluginHandle != INVALID_HANDLE_VALUE && PInfo.OwnerGuid == MainGuid)
+      android = static_cast<fardroid *>(PInfo.PluginHandle);
+
     if (!android)
     {
       fInfo.PanelControl(PANEL_PASSIVE, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
-      android = static_cast<fardroid *>(PInfo.PluginHandle);
+      if (PInfo.PluginHandle && PInfo.PluginHandle != INVALID_HANDLE_VALUE && PInfo.OwnerGuid == MainGuid)
+        android = static_cast<fardroid *>(PInfo.PluginHandle);
     }
 
     if (android)
