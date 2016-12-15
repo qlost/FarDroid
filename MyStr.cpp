@@ -547,6 +547,12 @@ CString CleanWindowsName(const CString& name)
   CString result = name;
   result.Replace(_T("\\"), _T(""));
   result.Replace(_T("\""), _T(""));
+  result.Replace(_T(":"), _T(""));
+  result.Replace(_T("<"), _T(""));
+  result.Replace(_T(">"), _T(""));
+  result.Replace(_T("*"), _T(""));
+  result.Replace(_T("?"), _T(""));
+  result.Replace(_T("|"), _T(""));
   return result;
 }
 

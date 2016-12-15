@@ -1,4 +1,7 @@
-﻿ 07.11.16 v2.11.4
+﻿ 15.12.16 v2.11.5
+  * Support all Windows reserved characters ':<>*?"|\'.
+
+ 07.11.16 v2.11.4
   * Fix Update Panel on Settings changes.
 
  31.10.16 v2.11.3
