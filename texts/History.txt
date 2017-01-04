@@ -1,4 +1,7 @@
-﻿ 15.12.16 v2.11.5
+﻿ 04.01.17 v2.11.6
+  * Support Linux reserved character $.
+
+ 15.12.16 v2.11.5
   * Support all Windows reserved characters ':<>*?"|\'.
 
  07.11.16 v2.11.4

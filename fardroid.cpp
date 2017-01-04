@@ -2881,11 +2881,11 @@ BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent)
   BOOL bOK = FALSE;
   CString cmd;
   if (conf.SU && conf.SU0)
-    cmd.Format(_T("shell:su 0 %s"), sCMD);
+    cmd.Format(_T("shell:su 0 %s"), EscapeCommand(sCMD));
   else if (conf.SU)
-    cmd.Format(_T("shell:su -c \"%s\""), EscapeCommand(sCMD));
+    cmd.Format(_T("shell:su -c \"%s\""), EscapeCommand(sCMD, true));
   else
-    cmd.Format(_T("shell:%s"), sCMD);
+    cmd.Format(_T("shell:%s"), EscapeCommand(sCMD));
 
   if (SendADBCommand(sockADB, cmd))
   {

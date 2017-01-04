@@ -36,5 +36,5 @@ CString FormatNumber(UINT64 str);
 CString FormatSize(CString formatNum, CString formatText, UINT64 cb, bool clean=true);
 CString FormatTime(int time);
 CString CleanWindowsName(const CString& name);
-CString EscapeCommand(const CString& cmd);
+CString EscapeCommand(const CString& cmd, bool quoted = false);
 CString FormatFileNameTo(const CString& msg, const CString& file);

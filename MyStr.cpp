@@ -556,11 +556,18 @@ CString CleanWindowsName(const CString& name)
   return result;
 }
 
-CString EscapeCommand(const CString& cmd)
+CString EscapeCommand(const CString& cmd, bool quoted)
 {
   CString result = cmd;
-  result.Replace(_T("\\"), _T("\\\\"));
-  result.Replace(_T("\""), _T("\\\""));
+  if (quoted) {
+    result.Replace(_T("\\"), _T("\\\\"));
+    result.Replace(_T("\""), _T("\\\""));
+    result.Replace(_T("$"), _T("\\\\\\$"));
+  }
+  else
+  {
+    result.Replace(_T("$"), _T("\\$"));
+  }
   return result;
 }
 
