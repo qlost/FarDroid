@@ -2,14 +2,15 @@
 #include "taskbarIcon.h"
 #include <plugin.hpp>
 
-TaskBarIcon::TaskBarIcon() : last_state(S_NO_PROGRESS)
+TaskBarIcon::TaskBarIcon() : lastState(S_NO_PROGRESS)
 {
+  value.Total = 100;
 }
 
 TaskBarIcon::~TaskBarIcon()
 {
-  if (last_state != S_NO_PROGRESS)
-    SetState(S_NO_PROGRESS);
+  if (lastState != S_NO_PROGRESS)
+    fInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);
 }
 
 void TaskBarIcon::SetState(State state, double param)
@@ -17,22 +18,17 @@ void TaskBarIcon::SetState(State state, double param)
   switch (state)
   {
   case S_PROGRESS:
-    if (param > 1)
-    {
-      param = 1;
-    }
-    if (param < 0)
-    {
-      param = 0;
-    }
-    ProgressValue pv;
-    pv.Completed = int(param * 100);
-    pv.Total = 100;
-    fInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
-    fInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSVALUE, 0, &pv);
+    if (param > 1) param = 1;
+    value.Completed = int(param * 100);
+
+    if (lastState != S_PROGRESS)
+      fInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
+
+    fInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSVALUE, 0, &value);
     break;
 
   case S_NO_PROGRESS:
+    fInfo.AdvControl(&MainGuid, ACTL_PROGRESSNOTIFY, 0, nullptr);
     fInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NOPROGRESS, nullptr);
     break;
   case S_WORKING:
@@ -45,5 +41,6 @@ void TaskBarIcon::SetState(State state, double param)
     fInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_PAUSED, nullptr);
     break;
   }
-  last_state = state;
+
+  lastState = state;
 }

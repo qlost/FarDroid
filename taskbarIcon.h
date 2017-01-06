@@ -10,6 +10,7 @@ public:
   void SetState(State state, double param = 0.0);
 
 protected:
-  State last_state;
+  ProgressValue value;
+  State lastState;
 };
 

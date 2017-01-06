@@ -2202,6 +2202,7 @@ int fardroid::DeleteFiles(PluginPanelItem* PanelItem, int ItemsNumber, OPERATION
       return ABORT;
   }
 
+  taskbarIcon.SetState(taskbarIcon.S_WORKING);
   m_bForceBreak = false;
   if (m_procStruct.Lock())
   {
@@ -2238,6 +2239,7 @@ int fardroid::PutFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString SrcP
   if (IS_FLAG(OpMode, OPM_EDIT))
     noPromt = true;
 
+  taskbarIcon.SetState(taskbarIcon.S_WORKING);
   m_bForceBreak = false;
   if (m_procStruct.Lock())
   {
@@ -2373,6 +2375,7 @@ int fardroid::RenameFile(const CString& src, const CString& dst, CString& sRes)
 
 int fardroid::GetFramebuffer()
 {
+  taskbarIcon.SetState(taskbarIcon.S_WORKING);
   m_bForceBreak = false;
   if (m_procStruct.Lock())
   {
