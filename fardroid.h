@@ -355,8 +355,8 @@ public:
   CString panelTitle;
   strmap params;
 
-  fardroid(void);
-  ~fardroid(void);
+  fardroid();
+  ~fardroid();
 
   HANDLE	OpenFromMainMenu();
   HANDLE	OpenFromCommandLine(const CString &cmd);

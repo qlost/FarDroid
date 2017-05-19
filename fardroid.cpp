@@ -26,13 +26,13 @@ DWORD WINAPI ProcessThreadProc(LPVOID lpParam)
 }
 
 
-fardroid::fardroid(void): lastError(S_OK), handleAdbServer(FALSE), InfoPanelLineArray(nullptr), m_bForceBreak(false)
+fardroid::fardroid(): lastError(S_OK), handleAdbServer(FALSE), InfoPanelLineArray(nullptr), m_bForceBreak(false)
 {
   m_currentPath = _T("/");
   m_currentDevice.Empty();
 }
 
-fardroid::~fardroid(void)
+fardroid::~fardroid()
 {
   delete[] InfoPanelLineArray;
 

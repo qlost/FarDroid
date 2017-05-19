@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 perl syncVersion.pl
 
 set zip="%programfiles%\7-Zip\7z.exe"
-set msbuild="%programfiles(x86)%\MSBuild\14.0\Bin\MSBuild.exe"
+set msbuild="%programfiles(x86)%\Microsoft Visual Studio\2017\Enterprise\MSBuild\15.0\Bin\MSBuild.exe"
 set project=..\fardroid.sln
 
 for /F "tokens=3*" %%i  in (..\version.info) do set version=!version!.%%i

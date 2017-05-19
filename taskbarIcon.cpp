@@ -21,9 +21,7 @@ void TaskBarIcon::SetState(State state, double param)
     if (param > 1) param = 1;
     value.Completed = int(param * 100);
 
-    if (lastState != S_PROGRESS)
-      fInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
-
+    fInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSSTATE, TBPS_NORMAL, nullptr);
     fInfo.AdvControl(&MainGuid, ACTL_SETPROGRESSVALUE, 0, &value);
     break;
 
