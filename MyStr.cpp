@@ -562,12 +562,15 @@ CString EscapeCommand(const CString& cmd, bool quoted)
   if (quoted) {
     result.Replace(_T("\\"), _T("\\\\"));
     result.Replace(_T("\""), _T("\\\""));
-    result.Replace(_T("$"), _T("\\\\\\$"));
-  }
+		result.Replace(_T("$"), _T("\\\\\\$"));
+		result.Replace(_T("`"), _T("\\\\\\`"));
+	}
   else
   {
-    result.Replace(_T("$"), _T("\\$"));
-  }
+		result.Replace(_T("$"), _T("\\$"));
+		result.Replace(_T("`"), _T("\\`"));
+	}
+
   return result;
 }
 

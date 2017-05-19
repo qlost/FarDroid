@@ -1,5 +1,8 @@
-﻿ 09.01.17 v2.11.7
+﻿ 19.05.17 v2.12.0
+  + Viusual Studio 2017
   + Flash progress on completed when inactive.
+  + Show progress on Far Title.
+  * Escape '`' character.
   * Improve progress.
 
  04.01.17 v2.11.6

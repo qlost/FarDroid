@@ -848,6 +848,7 @@ int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& Des
   m_bForceBreak = true;
   CloseHandle(hThread);
   taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
+	SetTitle(m_procStruct.title, 1);
 
   return result;
 }
@@ -2059,6 +2060,13 @@ void fardroid::DrawProgress(CString& sProgress, int size, LPCTSTR current, LPCTS
   sProgress.Format(_T("%s%s%s"), left, center, right);
 }
 
+void fardroid::SetTitle(CString& title, double tpc)
+{
+	CString result;
+	result.Format(L"{%d%%} %s - FARDroid", static_cast<int>(tpc * 100), title);
+	::SetConsoleTitle(result);
+}
+
 void fardroid::ShowProgressMessage()
 {
   if (m_procStruct.Lock())
@@ -2071,6 +2079,7 @@ void fardroid::ShowProgressMessage()
       return;
     }
 
+		CString title = m_procStruct.title;
     time = GetTickCount();
     if (m_procStruct.pType == PS_COPY || m_procStruct.pType == PS_MOVE)
     {
@@ -2127,34 +2136,37 @@ void fardroid::ShowProgressMessage()
         ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
       }
       taskbarIcon.SetState(taskbarIcon.S_PROGRESS, tpc);
-    }
+			SetTitle(m_procStruct.title, tpc);
+		}
     else if (m_procStruct.pType == PS_DELETE)
     {
       int size = 50;
 
-      double pc = static_cast<double>(m_procStruct.nPosition) / static_cast<double>(m_procStruct.nTotalFiles);
+      double tpc = static_cast<double>(m_procStruct.nPosition) / static_cast<double>(m_procStruct.nTotalFiles);
       static CString sProgress;
-      DrawProgress(sProgress, size, pc);
+      DrawProgress(sProgress, size, tpc);
 
       const farStr* MsgItems[] = { m_procStruct.title, m_procStruct.from, sProgress };
       ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
-      taskbarIcon.SetState(taskbarIcon.S_PROGRESS, pc);
-    }
+      taskbarIcon.SetState(taskbarIcon.S_PROGRESS, tpc);
+			SetTitle(m_procStruct.title, tpc);
+		}
     else if (m_procStruct.pType == PS_FB)
     {
       CString mFrom = LOC(MScreenshotComplete);
       int size = mFrom.GetLength() - 5;
 
-      double pc = m_procStruct.nFileSize > 0 ? static_cast<double>(m_procStruct.nTransmitted) / static_cast<double>(m_procStruct.nFileSize) : 0;
+      double tpc = m_procStruct.nFileSize > 0 ? static_cast<double>(m_procStruct.nTransmitted) / static_cast<double>(m_procStruct.nFileSize) : 0;
       static CString sProgress;
-      DrawProgress(sProgress, size, pc);
+      DrawProgress(sProgress, size, tpc);
 
       const farStr* MsgItems[] = { m_procStruct.title, sProgress };
       ShowMessageWait(MsgItems, sizeof(MsgItems) / sizeof(MsgItems[0]));
-      taskbarIcon.SetState(taskbarIcon.S_PROGRESS, pc);
-    }
-
-    m_procStruct.Unlock();
+      taskbarIcon.SetState(taskbarIcon.S_PROGRESS, tpc);
+			SetTitle(m_procStruct.title, tpc);
+		}
+		
+		m_procStruct.Unlock();
   }
 }
 
@@ -2221,6 +2233,7 @@ int fardroid::DeleteFiles(PluginPanelItem* PanelItem, int ItemsNumber, OPERATION
   m_bForceBreak = true;
   CloseHandle(hThread);
   taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
+	SetTitle(m_procStruct.title, 1);
 
   return result;
 }
@@ -2261,6 +2274,7 @@ int fardroid::PutFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString SrcP
   m_bForceBreak = true;
   CloseHandle(hThread);
   taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
+	SetTitle(m_procStruct.title, 1);
 
   return result;
 }
@@ -2400,6 +2414,7 @@ int fardroid::GetFramebuffer()
   m_bForceBreak = true;
   CloseHandle(hThread);
   taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
+	SetTitle(m_procStruct.title, 1);
 
   if (result == TRUE)
   {

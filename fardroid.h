@@ -296,7 +296,8 @@ private:
   void ShowADBExecError(CString err, bool bSilent);
   static void DrawProgress(CString& sProgress, int size, double pc);
   static void DrawProgress(CString& sProgress, int size, LPCTSTR current, LPCTSTR total);
-  static SOCKET	CreateADBSocket();
+	static void SetTitle(CString& title, double tpc);
+	static SOCKET	CreateADBSocket();
   SOCKET	PrepareADBSocket();
   static bool		SendADBPacket(SOCKET sockADB, void * packet, int size);
   static bool		SendADBCommand(SOCKET sockADB, LPCTSTR sCMD);
