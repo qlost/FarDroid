@@ -35,6 +35,8 @@ $^#FARdroid#
 
    #Shift+F7#  - Свое имя для устройства 
 
+   #Alt+Shift+F10# - Remount /system as RW
+   #Alt+Shift+F11# - Remount /system as RO
 
    ~Настройка~@Config@
 

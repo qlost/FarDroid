@@ -329,8 +329,7 @@ private:
   BOOL ADB_chown(LPCTSTR sSource, LPCTSTR user, LPCTSTR group, CString& sRes);
   BOOL ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent, const time_t& mtime);
   BOOL ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent);
-  BOOL ADB_findmount(LPCTSTR sFS, strvec &fs_params, CString & sRes, bool bSilent);
-  BOOL ADB_mount(LPCTSTR sFS, BOOL bAsRW, CString & sRes, bool bSilent);
+  BOOL ADB_mount(LPCTSTR sFS, LPCTSTR sMode, CString & sRes, bool bSilent);
 
   CFileRecord* ParseFileLine(CString & sLine) const;
   BOOL		ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent);
@@ -389,7 +388,8 @@ public:
   int CreateDir(CString &DestPath, OPERATION_MODES OpMode);
   int Rename(CString& DestPath);
   int Copy(CString& DestPath);
-  int RenameFile(const CString& src, const CString& dst, CString& sRes);
+	int Remount(LPCTSTR Mode);
+	int RenameFile(const CString& src, const CString& dst, CString& sRes);
   int GetFramebuffer();
   void Reread();
 

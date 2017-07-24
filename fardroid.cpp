@@ -153,7 +153,7 @@ HANDLE fardroid::OpenFromMainMenu()
     if (conf.RemountSystem)
     {
       CString sRes;
-      ADB_mount(_T("/system"), TRUE, sRes, false);
+      ADB_mount(_T("/system"), _T("rw"), sRes, false);
     }
 
     CString lastPath;
@@ -300,7 +300,7 @@ HANDLE fardroid::OpenFromCommandLine(const CString& cmd)
 
   CString sRes;
   if (conf.RemountSystem)
-    ADB_mount(_T("/system"), TRUE, sRes, false);
+    ADB_mount(_T("/system"), _T("rw"), sRes, false);
 
   strvec tokens;
   Tokenize(cmd, tokens, _T(" -"));
@@ -321,7 +321,7 @@ HANDLE fardroid::OpenFromCommandLine(const CString& cmd)
     if (par.IsEmpty()) par = _T("rw");
     par.MakeLower();
 
-    ADB_mount(fs, par == _T("rw"), sRes, false);
+    ADB_mount(fs, par, sRes, false);
     return INVALID_HANDLE_VALUE;
   }
 
@@ -1894,6 +1894,15 @@ BOOL fardroid::ADB_chown(LPCTSTR sSource, LPCTSTR user, LPCTSTR group, CString& 
   return sRes.GetLength() == 0;
 }
 
+BOOL fardroid::ADB_mount(LPCTSTR sFS, LPCTSTR sMode, CString& sRes, bool bSilent)
+{
+	strvec fs_params;
+	CString s;
+	s.Format(_T("%smount -o %s,remount,%s %s"), conf.WorkMode == WORKMODE_BUSYBOX ? _T("busybox ") : _T(""), sMode, sMode, sFS);
+	ADBShellExecute(s, sRes, bSilent);
+	return sRes.GetLength() == 0;
+}
+
 BOOL fardroid::ReadFileList(CString& sFileList, CFileRecords& files, bool bSilent)
 {
   DeleteRecords(files);
@@ -2356,6 +2365,16 @@ int fardroid::Copy(CString& DestPath)
     ShowError(sRes);
   }
   return TRUE;
+}
+
+int fardroid::Remount(LPCTSTR Mode)
+{
+	CString sRes;
+	if (!ADB_mount(_T("/system"), Mode, sRes, false))
+	{
+		ShowError(sRes);
+	}
+	return TRUE;
 }
 
 
@@ -2983,33 +3002,3 @@ int fardroid::ADBReadFramebuffer(struct fb* fb)
   return result;
 }
 
-BOOL fardroid::ADB_findmount(LPCTSTR sFS, strvec& fs_params, CString& sRes, bool bSilent)
-{
-  sRes.Empty();
-  if (ADBShellExecute(_T("mount"), sRes, bSilent))
-  {
-    strvec tokens;
-    Tokenize(sRes, tokens, _T("\n"));
-    for (int i = 0; i < tokens.GetSize(); i++)
-    {
-      fs_params.RemoveAll();
-      Tokenize(tokens[i], fs_params, _T(" "));
-      if (fs_params.GetSize() == 6 && fs_params[1] == sFS)
-        return TRUE;
-    }
-  }
-  return FALSE;
-}
-
-BOOL fardroid::ADB_mount(LPCTSTR sFS, BOOL bAsRW, CString& sRes, bool bSilent)
-{
-  strvec fs_params;
-  if (ADB_findmount(sFS, fs_params, sRes, bSilent))
-  {
-    CString cmd;
-    cmd.Format(_T("mount -o remount,%s -t %s %s %s"), bAsRW ? _T("rw") : _T("ro"), fs_params[2], fs_params[0], sFS);
-    sRes.Empty();
-    return ADBShellExecute(cmd, sRes, bSilent);
-  }
-  return FALSE;
-}

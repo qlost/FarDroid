@@ -299,31 +299,30 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
   DWORD dwALT = dwControl & (LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED);
   DWORD dwSHIFT = dwControl & SHIFT_PRESSED;
 
-  if (dwCTRL && !dwSHIFT && !dwALT)
-  {
-    switch (Info->Rec.Event.KeyEvent.wVirtualKeyCode)
-    {
-    case 0x41:
-    {
-      PanelInfo PInfo;
-      fInfo.PanelControl(Info->hPanel, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
-      android->ChangePermissionsDialog(static_cast<int>(PInfo.SelectedItemsNumber));
-      android->Reread();
-      fInfo.PanelControl(Info->hPanel, FCTL_UPDATEPANEL, 1, nullptr);
-      fInfo.PanelControl(Info->hPanel, FCTL_REDRAWPANEL, 0, nullptr);
-      return TRUE;
-    }
-    case 0x52:
-    {
-      android->Reread();
-      fInfo.PanelControl(Info->hPanel, FCTL_UPDATEPANEL, 1, nullptr);
-      fInfo.PanelControl(Info->hPanel, FCTL_REDRAWPANEL, 0, nullptr);
-      return TRUE;
-    }
-    }
-  }
-
-  if (!dwCTRL && dwSHIFT && !dwALT)
+	if (dwCTRL && !dwSHIFT && !dwALT)
+	{
+		switch (Info->Rec.Event.KeyEvent.wVirtualKeyCode)
+		{
+		case 0x41:
+		{
+			PanelInfo PInfo;
+			fInfo.PanelControl(Info->hPanel, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
+			android->ChangePermissionsDialog(static_cast<int>(PInfo.SelectedItemsNumber));
+			android->Reread();
+			fInfo.PanelControl(Info->hPanel, FCTL_UPDATEPANEL, 1, nullptr);
+			fInfo.PanelControl(Info->hPanel, FCTL_REDRAWPANEL, 0, nullptr);
+			return TRUE;
+		}
+		case 0x52:
+		{
+			android->Reread();
+			fInfo.PanelControl(Info->hPanel, FCTL_UPDATEPANEL, 1, nullptr);
+			fInfo.PanelControl(Info->hPanel, FCTL_REDRAWPANEL, 0, nullptr);
+			return TRUE;
+		}
+		}
+	}
+	else if (!dwCTRL && dwSHIFT && !dwALT)
   {
     switch (Info->Rec.Event.KeyEvent.wVirtualKeyCode)
     {
@@ -356,8 +355,7 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
     }
     }
   }
-
-  if (!dwCTRL && !dwSHIFT && dwALT)
+	else if (!dwCTRL && !dwSHIFT && dwALT)
   {
     switch (Info->Rec.Event.KeyEvent.wVirtualKeyCode)
     {
@@ -368,6 +366,22 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
     }
     }
   }
+	else if (!dwCTRL && dwSHIFT && dwALT)
+	{
+		switch (Info->Rec.Event.KeyEvent.wVirtualKeyCode)
+		{
+		case VK_F10:
+		{
+			android->Remount(_T("rw"));
+			return TRUE;
+		}
+		case VK_F11:
+		{
+			android->Remount(_T("ro"));
+			return TRUE;
+		}
+		}
+	}
 
   return FALSE;
 }
