@@ -268,7 +268,7 @@ CString SystemTimeToString(LPSYSTEMTIME pst)
 
 FILETIME UnixTimeToFileTime(time_t time)
 {
-  FILETIME ft = { 0 };
+  FILETIME ft;
   auto ticks = (static_cast<LONGLONG>(time) + EPOCH_DIFFERENCE) * TICKS_PER_SECOND;
   ft.dwLowDateTime = static_cast<DWORD>(ticks);
   ft.dwHighDateTime = static_cast<DWORD>(ticks >> 32);
@@ -355,10 +355,10 @@ CString ModeToType(const int p)
 int SgringOctalToMode(CString attr)
 {
   auto n = _ttoi(attr);
-  int res = 0, i = 0, rem;
+  int res = 0, i = 0;
   while (n != 0)
   {
-    rem = n % 10;
+    int rem = n % 10;
     n /= 10;
     res += static_cast<int>(rem * pow(8, i));
     ++i;

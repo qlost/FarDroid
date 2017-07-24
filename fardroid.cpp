@@ -767,13 +767,11 @@ int fardroid::GetFindData(struct PluginPanelItem** pPanelItem, size_t* pItemsNum
   if (NewPanelItem == nullptr)
     return FALSE;
 
-  CFileRecord* item;
-
-  for (int i = 0; i < items; i++)
+	for (int i = 0; i < items; i++)
   {
     my_memset(&NewPanelItem[i], 0, sizeof(PluginPanelItem));
 
-    item = records[i];
+    CFileRecord * item = records[i];
     NewPanelItem[i].FileAttributes = ModeToAttr(item->mode);
     NewPanelItem[i].UserData.Data = &i;
     NewPanelItem[i].FileSize = item->size;
@@ -1377,12 +1375,11 @@ void fardroid::ReadError(SOCKET sockADB, unsigned id, unsigned len, CString& sRe
 bool fardroid::ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, int mode)
 {
   syncmsg msg;
-  int len;
 
-  CString sData;
+	CString sData;
   sData.Format(_T("%s,%d"), sDst, mode);
 
-  len = lstrlen(sDst);
+  int len = lstrlen(sDst);
   if (len > 1024) return false;
 
   msg.req.id = ID_SEND;
@@ -1609,13 +1606,11 @@ void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
 BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, const time_t& mtime)
 {
   syncmsg msg;
-  int len;
-  unsigned id;
 
-  CString file = WtoUTF8(sSrc, false);
+	CString file = WtoUTF8(sSrc, false);
   auto ft = UnixTimeToFileTime(mtime);
 
-  len = lstrlen(file);
+  int len = lstrlen(file);
   if (len > 1024) return FALSE;
 
   msg.req.id = ID_RECV;
@@ -1631,7 +1626,7 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   if (ReadADBPacket(sockADB, &msg.data, sizeof(msg.data)) <= 0)
     return FALSE;
 
-  id = msg.data.id;
+  unsigned id = msg.data.id;
   if ((id != ID_DATA) && (id != ID_DONE))
   {
     ReadError(sockADB, id, msg.data.size, sRes);
@@ -1780,7 +1775,7 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
       break;
     }
 
-    if (ADBShellExecute(s, sRes, bSilent))
+    if (ADBShellExecute(s, sRes))
       return ReadFileList(sRes, files, bSilent);
   }
   else
@@ -1791,10 +1786,9 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
     {
       syncmsg msg;
       char buf[257];
-      int len;
 
-      CString file = WtoUTF8(sDir, false);
-      len = lstrlen(file);
+	    CString file = WtoUTF8(sDir, false);
+      int len = lstrlen(file);
       if (len > 1024) return FALSE;
 
       msg.req.id = ID_LIST;
@@ -1850,7 +1844,7 @@ BOOL fardroid::ADB_rm(LPCTSTR sDir, CString& sRes, bool bSilent)
 {
   CString s;
   s.Format(_T("rm -r \"%s\""), WtoUTF8(sDir));
-  ADBShellExecute(s, sRes, bSilent);
+  ADBShellExecute(s, sRes);
   return sRes.GetLength() == 0;
 }
 
@@ -1858,7 +1852,7 @@ BOOL fardroid::ADB_mkdir(LPCTSTR sDir, CString& sRes, bool bSilent)
 {
   CString s;
   s.Format(_T("mkdir -p \"%s\""), WtoUTF8(sDir));
-  ADBShellExecute(s, sRes, bSilent);
+  ADBShellExecute(s, sRes);
   return sRes.GetLength() == 0;
 }
 
@@ -1866,7 +1860,7 @@ BOOL fardroid::ADB_rename(LPCTSTR sSource, LPCTSTR sDest, CString& sRes)
 {
   CString s;
   s.Format(_T("mv \"%s\" \"%s\""), WtoUTF8(sSource), WtoUTF8(sDest));
-  ADBShellExecute(s, sRes, false);
+  ADBShellExecute(s, sRes);
   return sRes.GetLength() == 0;
 }
 
@@ -1874,7 +1868,7 @@ BOOL fardroid::ADB_copy(LPCTSTR sSource, LPCTSTR sDest, CString& sRes)
 {
   CString s;
   s.Format(_T("cp \"%s\" \"%s\""), WtoUTF8(sSource), WtoUTF8(sDest));
-  ADBShellExecute(s, sRes, false);
+  ADBShellExecute(s, sRes);
   return sRes.GetLength() == 0;
 }
 
@@ -1882,7 +1876,7 @@ BOOL fardroid::ADB_chmod(LPCTSTR sSource, LPCTSTR octal, CString& sRes)
 {
   CString s;
   s.Format(_T("chmod %s \"%s\""), octal, WtoUTF8(sSource));
-  ADBShellExecute(s, sRes, false);
+  ADBShellExecute(s, sRes);
   return sRes.GetLength() == 0;
 }
 
@@ -1890,7 +1884,7 @@ BOOL fardroid::ADB_chown(LPCTSTR sSource, LPCTSTR user, LPCTSTR group, CString& 
 {
   CString s;
   s.Format(_T("chown %s:%s \"%s\""), user, group, WtoUTF8(sSource));
-  ADBShellExecute(s, sRes, false);
+  ADBShellExecute(s, sRes);
   return sRes.GetLength() == 0;
 }
 
@@ -1899,7 +1893,7 @@ BOOL fardroid::ADB_mount(LPCTSTR sFS, LPCTSTR sMode, CString& sRes, bool bSilent
 	strvec fs_params;
 	CString s;
 	s.Format(_T("%smount -o %s,remount,%s %s"), conf.WorkMode == WORKMODE_BUSYBOX ? _T("busybox ") : _T(""), sMode, sMode, sFS);
-	ADBShellExecute(s, sRes, bSilent);
+	ADBShellExecute(s, sRes);
 	return sRes.GetLength() == 0;
 }
 
@@ -2495,7 +2489,7 @@ unsigned long long fardroid::ParseSizeInfo(CString s)
 void fardroid::GetDeviceInfo()
 {
   CString sRes;
-  ADBShellExecute(_T("getprop"), sRes, true);
+  ADBShellExecute(_T("getprop"), sRes);
 
   strvec str;
   Tokenize(sRes, str, _T("\n"));
@@ -2549,7 +2543,7 @@ bool fardroid::GetMemoryInfo()
   const static auto showSize = 7;
 
   CString sRes;
-  ADBShellExecute(_T("cat /proc/meminfo"), sRes, true);
+  ADBShellExecute(_T("cat /proc/meminfo"), sRes);
 
   strvec str;
   Tokenize(sRes, str, _T("\n"));
@@ -2641,7 +2635,7 @@ void fardroid::GetPartitionsInfo()
 {
   CString sRes;
 
-  ADBShellExecute(_T("df"), sRes, true);
+  ADBShellExecute(_T("df"), sRes);
 
   strvec str;
   Tokenize(sRes, str, _T("\n"));
@@ -2667,7 +2661,7 @@ CFileRecord* fardroid::ReadFileRecord(const CString& sSource)
   CString sRes;
   strvec token;
   s.Format(_T("ls -l -a -d \"%s\""), WtoUTF8(sSource));
-  if (ADBShellExecute(s, sRes, false))
+  if (ADBShellExecute(s, sRes))
   {
     Tokenize(sRes, token, _T("\n"), true, false);
     auto size = token.GetSize();
@@ -2773,11 +2767,10 @@ bool fardroid::CheckADBResponse(SOCKET sockADB)
 
 bool fardroid::ReadADBSocket(SOCKET sockADB, char* buf, int bufSize)
 {
-  int nsize;
-  int received = 0;
+	int received = 0;
   while (received < bufSize)
   {
-    nsize = recv(sockADB, buf, bufSize, 0);
+    int nsize = recv(sockADB, buf, bufSize, 0);
     if (nsize == SOCKET_ERROR)//ошибко
       return false;
 
@@ -2872,12 +2865,10 @@ SOCKET fardroid::PrepareADBSocket()
 bool fardroid::SendADBPacket(SOCKET sockADB, void* packet, int size)
 {
   char* p = static_cast<char*>(packet);
-  int r;
 
-  while (size > 0)
+	while (size > 0)
   {
-    r = send(sockADB, p, size, 0);
-
+    int r = send(sockADB, p, size, 0);
     if (r > 0)
     {
       size -= r;
@@ -2892,12 +2883,11 @@ bool fardroid::SendADBPacket(SOCKET sockADB, void* packet, int size)
 int fardroid::ReadADBPacket(SOCKET sockADB, void* packet, int size)
 {
   char* p = static_cast<char*>(packet);
-  int r;
-  int received = 0;
+	int received = 0;
 
   while (size > 0)
   {
-    r = recv(sockADB, p, size, 0);
+    int r = recv(sockADB, p, size, 0);
     if (r > 0)
     {
       received += r;
@@ -2911,7 +2901,7 @@ int fardroid::ReadADBPacket(SOCKET sockADB, void* packet, int size)
   return received;
 }
 
-BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes, bool bSilent)
+BOOL fardroid::ADBShellExecute(LPCTSTR sCMD, CString& sRes)
 {
   SOCKET sockADB = PrepareADBSocket();
 
@@ -2971,10 +2961,9 @@ int fardroid::ADBReadFramebuffer(struct fb* fb)
     fb->data = my_malloc(fb->size);
     int size = fb->size;
     auto position = static_cast<char*>(fb->data);
-    int readed;
-    while (size > 0)
+	  while (size > 0)
     {
-      readed = ReadADBPacket(sockADB, position, min(size, SYNC_DATA_MAX));
+      int readed = ReadADBPacket(sockADB, position, min(size, SYNC_DATA_MAX));
       if (readed == 0) break;
 
       position += readed;
