@@ -1,7 +1,10 @@
-﻿ 24.07.17 v2.12.1
-  + Support Busybox option on remount /system
-  + Hotkey Remount /system as RW (Alt+Shift+F10)
-  + Hotkey Remount /system as RO (Alt+Shift+F11)
+﻿ 25.07.17 v2.12.2
+  * Restore FAR title after operations.
+
+ 24.07.17 v2.12.1
+  + Support Busybox option on remount /system.
+  + Hotkey Remount /system as RW (Alt+Shift+F10).
+  + Hotkey Remount /system as RO (Alt+Shift+F11).
 
  19.05.17 v2.12.0
   + Viusual Studio 2017

@@ -825,7 +825,8 @@ int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& Des
       return ABORT;
   }
 
-  m_bForceBreak = false;
+	auto title = GetTitle();
+	m_bForceBreak = false;
   if (m_procStruct.Lock())
   {
     m_procStruct.title = Move ? LOC(MMoveFile) : LOC(MGetFile);
@@ -846,7 +847,7 @@ int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& Des
   m_bForceBreak = true;
   CloseHandle(hThread);
   taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
-	SetTitle(m_procStruct.title, 1);
+	::SetConsoleTitle(title);
 
   return result;
 }
@@ -2070,6 +2071,14 @@ void fardroid::SetTitle(CString& title, double tpc)
 	::SetConsoleTitle(result);
 }
 
+CString fardroid::GetTitle()
+{
+	TCHAR szConsoleTitle[MAX_PATH];
+	GetConsoleTitle(szConsoleTitle, MAX_PATH);
+	CString result(szConsoleTitle);
+	return result;
+}
+
 void fardroid::ShowProgressMessage()
 {
   if (m_procStruct.Lock())
@@ -2217,6 +2226,7 @@ int fardroid::DeleteFiles(PluginPanelItem* PanelItem, int ItemsNumber, OPERATION
       return ABORT;
   }
 
+	auto title = GetTitle();
   taskbarIcon.SetState(taskbarIcon.S_WORKING);
   m_bForceBreak = false;
   if (m_procStruct.Lock())
@@ -2236,7 +2246,7 @@ int fardroid::DeleteFiles(PluginPanelItem* PanelItem, int ItemsNumber, OPERATION
   m_bForceBreak = true;
   CloseHandle(hThread);
   taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
-	SetTitle(m_procStruct.title, 1);
+	::SetConsoleTitle(title);
 
   return result;
 }
@@ -2255,7 +2265,8 @@ int fardroid::PutFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString SrcP
   if (IS_FLAG(OpMode, OPM_EDIT))
     noPromt = true;
 
-  taskbarIcon.SetState(taskbarIcon.S_WORKING);
+	auto title = GetTitle();
+	taskbarIcon.SetState(taskbarIcon.S_WORKING);
   m_bForceBreak = false;
   if (m_procStruct.Lock())
   {
@@ -2277,7 +2288,7 @@ int fardroid::PutFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString SrcP
   m_bForceBreak = true;
   CloseHandle(hThread);
   taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
-	SetTitle(m_procStruct.title, 1);
+	::SetConsoleTitle(title);
 
   return result;
 }
@@ -2402,7 +2413,8 @@ int fardroid::RenameFile(const CString& src, const CString& dst, CString& sRes)
 
 int fardroid::GetFramebuffer()
 {
-  taskbarIcon.SetState(taskbarIcon.S_WORKING);
+	auto title = GetTitle();
+	taskbarIcon.SetState(taskbarIcon.S_WORKING);
   m_bForceBreak = false;
   if (m_procStruct.Lock())
   {
@@ -2427,7 +2439,7 @@ int fardroid::GetFramebuffer()
   m_bForceBreak = true;
   CloseHandle(hThread);
   taskbarIcon.SetState(taskbarIcon.S_NO_PROGRESS);
-	SetTitle(m_procStruct.title, 1);
+	::SetConsoleTitle(title);
 
   if (result == TRUE)
   {
