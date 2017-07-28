@@ -4,13 +4,10 @@
 #include <vector>
 #include <ctime>
 
-DWORD WINAPI ProcessThreadProc(LPVOID lpParam)
+unsigned __stdcall ProcessThreadProc(void* lpParam)
 {
   auto android = static_cast<fardroid *>(lpParam);
-  if (!android)
-    return 0;
-
-  while (true)
+  while (android)
   {
     if (CheckForKey(VK_ESCAPE) && android->BreakProcessDialog()) 
       android->m_bForceBreak = true;
@@ -22,6 +19,7 @@ DWORD WINAPI ProcessThreadProc(LPVOID lpParam)
     Sleep(100);
   }
 
+	_endthreadex(0);
   return 0;
 }
 
@@ -387,8 +385,6 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
   {
     if (m_bForceBreak)
       break;
-
-
 
     if (m_procStruct.Lock())
     {
@@ -839,8 +835,8 @@ int fardroid::GetFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString& Des
     m_procStruct.Unlock();
   }
 
-  DWORD threadID = 0;
-  HANDLE hThread = CreateThread(nullptr, 0, ProcessThreadProc, this, 0, &threadID);
+  unsigned threadID = 0;
+	auto hThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, ProcessThreadProc, this, 0, &threadID));
 
   auto result = GetItems(PanelItem, ItemsNumber, srcdir, DestPath, noPromt, noPromt, bSilent);
 
@@ -2238,8 +2234,8 @@ int fardroid::DeleteFiles(PluginPanelItem* PanelItem, int ItemsNumber, OPERATION
     m_procStruct.Unlock();
   }
 
-  DWORD threadID = 0;
-  HANDLE hThread = CreateThread(nullptr, 0, ProcessThreadProc, this, 0, &threadID);
+	unsigned threadID = 0;
+	auto hThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, ProcessThreadProc, this, 0, &threadID));
 
   auto result = DelItems(PanelItem, ItemsNumber, noPromt, noPromt, bSilent);
 
@@ -2280,8 +2276,8 @@ int fardroid::PutFiles(PluginPanelItem* PanelItem, int ItemsNumber, CString SrcP
     m_procStruct.Unlock();
   }
 
-  DWORD threadID = 0;
-  HANDLE hThread = CreateThread(nullptr, 0, ProcessThreadProc, this, 0, &threadID);
+	unsigned threadID = 0;
+	auto hThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, ProcessThreadProc, this, 0, &threadID));
 
   auto result = PutItems(PanelItem, ItemsNumber, srcdir, path, noPromt, noPromt, bSilent);
 
@@ -2426,8 +2422,8 @@ int fardroid::GetFramebuffer()
     m_procStruct.Unlock();
   }
 
-  DWORD threadID = 0;
-  HANDLE hThread = CreateThread(nullptr, 0, ProcessThreadProc, this, 0, &threadID);
+	unsigned threadID = 0;
+	auto hThread = reinterpret_cast<HANDLE>(_beginthreadex(nullptr, 0, ProcessThreadProc, this, 0, &threadID));
 
   fb fb;
   auto result = ADBReadFramebuffer(&fb);

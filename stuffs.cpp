@@ -20,7 +20,7 @@ void MakeDirs(CString path)
 
 bool FileExists(const CString& path)
 {
-  return (GetFileAttributes(path) != 0xFFFFFFFF) ? true : false;
+  return GetFileAttributes(path) != 0xFFFFFFFF;
 }
 
 DWORD GetFileSizeS(const CString& path)
