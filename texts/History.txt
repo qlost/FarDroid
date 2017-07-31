@@ -1,4 +1,9 @@
-﻿ 25.07.17 v2.12.2
+﻿ 31.07.17 v2.13.0
+  + Create empty directories on Copy.
+  * Thread improvements.
+  * Code refactoring.
+
+ 25.07.17 v2.12.2
   * Restore FAR title after operations.
 
  24.07.17 v2.12.1

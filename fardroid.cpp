@@ -151,7 +151,7 @@ HANDLE fardroid::OpenFromMainMenu()
     if (conf.RemountSystem)
     {
       CString sRes;
-      ADB_mount(_T("/system"), _T("rw"), sRes, false);
+      ADB_mount(_T("/system"), _T("rw"), sRes);
     }
 
     CString lastPath;
@@ -298,7 +298,7 @@ HANDLE fardroid::OpenFromCommandLine(const CString& cmd)
 
   CString sRes;
   if (conf.RemountSystem)
-    ADB_mount(_T("/system"), _T("rw"), sRes, false);
+    ADB_mount(_T("/system"), _T("rw"), sRes);
 
   strvec tokens;
   Tokenize(cmd, tokens, _T(" -"));
@@ -319,7 +319,7 @@ HANDLE fardroid::OpenFromCommandLine(const CString& cmd)
     if (par.IsEmpty()) par = _T("rw");
     par.MakeLower();
 
-    ADB_mount(fs, par, sRes, false);
+    ADB_mount(fs, par, sRes);
     return INVALID_HANDLE_VALUE;
   }
 
@@ -351,19 +351,18 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
     sname.Format(_T("%s%s"), sdir, PanelItem[i].FileName);
     dname.Format(_T("%s%s"), ddir, CleanWindowsName(PanelItem[i].FileName));
 
-    if (IsDirectory(PanelItem[i].FileAttributes))
-    {
-      ADBPullDirGetFiles(sname, dname, files);
-    }
-    else
-    {
-      auto rec = new CCopyRecord;
-      rec->src = sname;
-      rec->dst = dname;
-      rec->size = PanelItem[i].FileSize;
-      FileTimeToUnixTime(&PanelItem[i].LastWriteTime, &rec->time);
-      files.Add(rec);
-    }
+		auto rec = new CCopyRecord;
+		rec->src = sname;
+		rec->dst = dname;
+		rec->size = PanelItem[i].FileSize;
+		rec->dir = 0;
+		FileTimeToUnixTime(&PanelItem[i].LastWriteTime, &rec->time);
+		files.Add(rec);
+
+		if (IsDirectory(PanelItem[i].FileAttributes))
+		{
+			rec->dir = ADBPullDirGetFiles(sname, dname, files);
+		}
   }
 
   UINT64 totalSize = 0;
@@ -398,6 +397,12 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       m_procStruct.nFileSize = files[i]->size;
       m_procStruct.Unlock();
     }
+
+		if (files[i]->dir > 0)
+		{
+			CreateDirectory(files[i]->dst, nullptr);
+			continue;
+		}
 
     auto exist = FileExists(files[i]->dst);
     if (exist)
@@ -445,12 +450,12 @@ int fardroid::GetItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       {
         result = ADB_copy(files[i]->src, tsname, sRes);
         if (result)
-          result = ADB_pull(tsname, tname, sRes, bSilent, files[i]->time);
+          result = ADB_pull(tsname, tname, sRes, files[i]->time);
         DeleteFileFrom(tsname, true);
       }
       else
       {
-        result = ADB_pull(files[i]->src, tname, sRes, bSilent, files[i]->time);
+        result = ADB_pull(files[i]->src, tname, sRes, files[i]->time);
       }
 
       if (result == FALSE)
@@ -513,18 +518,17 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
     sname.Format(_T("%s%s"), sdir, PanelItem[i].FileName);
     dname.Format(_T("%s%s"), ddir, PanelItem[i].FileName);
 
+		auto rec = new CCopyRecord;
+		rec->src = sname;
+		rec->dst = dname;
+		rec->size = PanelItem[i].FileSize;
+		rec->dir = 0;
+		FileTimeToUnixTime(&PanelItem[i].LastWriteTime, &rec->time);
+		files.Add(rec);
+
     if (IsDirectory(PanelItem[i].FileAttributes))
     {
-      ADBPushDirGetFiles(sname, dname, files);
-    }
-    else
-    {
-      auto rec = new CCopyRecord;
-      rec->src = sname;
-      rec->dst = dname;
-      rec->size = PanelItem[i].FileSize;
-      FileTimeToUnixTime(&PanelItem[i].LastWriteTime, &rec->time);
-      files.Add(rec);
+			rec->dir = ADBPushDirGetFiles(sname, dname, files);
     }
   }
 
@@ -560,6 +564,15 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
       m_procStruct.nFileSize = files[i]->size;
       m_procStruct.Unlock();
     }
+
+		if (files[i]->dir == 1)
+		{
+			CString sRes;
+			ADB_mkdir(files[i]->dst, sRes);
+		}
+
+		if (files[i]->dir > 0)
+			continue;
 
     CFileRecord* record;
     CString tname;
@@ -606,7 +619,7 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
         tname.Format(_T("%s.fardroid"), files[i]->dst);
 
       sRes.Empty();
-      result = ADB_push(files[i]->src, tname, sRes, bSilent);
+      result = ADB_push(files[i]->src, tname, sRes);
 
       if (result == FALSE)
         result = CopyErrorDialog(LOC(MPutFile), sRes);
@@ -708,7 +721,7 @@ int fardroid::DeleteFileFrom(const CString& src, bool bSilent)
   CString sRes;
 
 deltry:
-  BOOL res = ADB_rm(src, sRes, bSilent);
+  BOOL res = ADB_rm(src, sRes);
   if (!res)
   {
     if (bSilent)
@@ -1413,7 +1426,7 @@ bool fardroid::ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
 
 bool fardroid::ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes)
 {
-  if (!ADB_mkdir(sDst, sRes, true))
+  if (!ADB_mkdir(sDst, sRes))
     return false;
 
   CString ddir = sDst;
@@ -1450,7 +1463,7 @@ bool fardroid::ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& s
   return true;
 }
 
-void fardroid::ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files)
+int fardroid::ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files)
 {
   if (m_procStruct.Lock())
   {
@@ -1466,10 +1479,11 @@ void fardroid::ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
   WIN32_FIND_DATA fd;
   HANDLE h = FindFirstFile(sdir + _T("*.*"), &fd);
   if (h == INVALID_HANDLE_VALUE)
-    return;
+    return -1;
 
   CString sname;
   CString dname;
+	auto child = 1;
   do {
     if (m_bForceBreak)
       break;
@@ -1480,23 +1494,26 @@ void fardroid::ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
     sname.Format(_T("%s%s"), sdir, fd.cFileName);
     dname.Format(_T("%s%s"), ddir, fd.cFileName);
 
-    if (IsDirectory(fd.dwFileAttributes))
-    {
-      ADBPushDirGetFiles(sname, dname, files);
-    } 
-    else
-    {
-      auto rec = new CCopyRecord;
-      rec->src = sname;
-      rec->dst = dname;
-      rec->size = fd.nFileSizeHigh * (MAXDWORD + UINT64(1)) + fd.nFileSizeLow;
-      FileTimeToUnixTime(&fd.ftLastWriteTime, &rec->time);
-      files.Add(rec);
-    }
+		auto rec = new CCopyRecord;
+		rec->src = sname;
+		rec->dst = dname;
+		rec->size = fd.nFileSizeHigh * (MAXDWORD + UINT64(1)) + fd.nFileSizeLow;
+		rec->dir = 0;
+		FileTimeToUnixTime(&fd.ftLastWriteTime, &rec->time);
+		files.Add(rec);
 
+		if (IsDirectory(fd.dwFileAttributes))
+    {
+			rec->dir = ADBPushDirGetFiles(sname, dname, files);
+    } 
+		else
+		{
+			child++;
+		}
   } while (FindNextFile(h, &fd) != 0);
 
   FindClose(h);
+	return child;
 }
 
 BOOL fardroid::ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes)
@@ -1521,7 +1538,7 @@ BOOL fardroid::ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   return TRUE;
 }
 
-BOOL fardroid::ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent)
+BOOL fardroid::ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes)
 {
   SOCKET sock = PrepareADBSocket();
 
@@ -1554,7 +1571,7 @@ BOOL fardroid::ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent)
   return TRUE;
 }
 
-void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files)
+int fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files)
 {
   if (m_procStruct.Lock())
   {
@@ -1567,37 +1584,41 @@ void fardroid::ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& file
   AddEndSlash(sdir, true);
   AddEndSlash(ddir);
 
+	auto child = 1;
   CString sRes;
   CFileRecords recs;
   if (ADB_ls(sSrc, recs, sRes, true))
   {
     CString sname;
     CString dname;
-    for (auto i = 0; i < recs.GetSize(); i++)
-    {
-      if (m_bForceBreak)
-        break;
+		for (auto i = 0; i < recs.GetSize(); i++)
+		{
+			if (m_bForceBreak)
+				break;
 
-      sname.Format(_T("%s%s"), sdir, recs[i]->filename);
-      dname.Format(_T("%s%s"), ddir, CleanWindowsName(recs[i]->filename));
+			sname.Format(_T("%s%s"), sdir, recs[i]->filename);
+			dname.Format(_T("%s%s"), ddir, CleanWindowsName(recs[i]->filename));
 
-      if (IsDirectoryMode(recs[i]->mode))
-      {
-        sname.Format(_T("%s%s"), sdir, recs[i]->filename);
-        ADBPullDirGetFiles(sname, dname, files);
-      }
-      else
-      {
-        auto rec = new CCopyRecord;
-        rec->src = sname;
-        rec->dst = dname;
-        rec->size = recs[i]->size;
-        rec->time = recs[i]->time;
-        files.Add(rec);
-      }
-    }
+			auto rec = new CCopyRecord;
+			rec->src = sname;
+			rec->dst = dname;
+			rec->size = recs[i]->size;
+			rec->time = recs[i]->time;
+			rec->dir = 0;
+			files.Add(rec);
+
+			if (IsDirectoryMode(recs[i]->mode))
+			{
+				rec->dir = ADBPullDirGetFiles(sname, dname, files);
+			}
+			else
+			{
+				child++;
+			}
+		}
   }
   DeleteRecords(recs);
+	return child;
 }
 
 BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, const time_t& mtime)
@@ -1709,7 +1730,7 @@ BOOL fardroid::ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& 
   return TRUE;
 }
 
-BOOL fardroid::ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent, const time_t& mtime)
+BOOL fardroid::ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, const time_t& mtime)
 {
   int mode;
   CString dest = sDst;
@@ -1738,7 +1759,7 @@ BOOL fardroid::ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString& sRes, bool bSilent,
   }
   else if (IS_FLAG(mode, S_IFDIR))
   {
-    if (!ADB_mkdir(dest, sRes, false))
+    if (!ADB_mkdir(dest, sRes))
     {
       CloseADBSocket(sock);
       return FALSE;
@@ -1837,7 +1858,7 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
   return FALSE;
 }
 
-BOOL fardroid::ADB_rm(LPCTSTR sDir, CString& sRes, bool bSilent)
+BOOL fardroid::ADB_rm(LPCTSTR sDir, CString& sRes)
 {
   CString s;
   s.Format(_T("rm -r \"%s\""), WtoUTF8(sDir));
@@ -1845,7 +1866,7 @@ BOOL fardroid::ADB_rm(LPCTSTR sDir, CString& sRes, bool bSilent)
   return sRes.GetLength() == 0;
 }
 
-BOOL fardroid::ADB_mkdir(LPCTSTR sDir, CString& sRes, bool bSilent)
+BOOL fardroid::ADB_mkdir(LPCTSTR sDir, CString& sRes)
 {
   CString s;
   s.Format(_T("mkdir -p \"%s\""), WtoUTF8(sDir));
@@ -1885,7 +1906,7 @@ BOOL fardroid::ADB_chown(LPCTSTR sSource, LPCTSTR user, LPCTSTR group, CString& 
   return sRes.GetLength() == 0;
 }
 
-BOOL fardroid::ADB_mount(LPCTSTR sFS, LPCTSTR sMode, CString& sRes, bool bSilent)
+BOOL fardroid::ADB_mount(LPCTSTR sFS, LPCTSTR sMode, CString& sRes)
 {
 	strvec fs_params;
 	CString s;
@@ -2311,7 +2332,7 @@ int fardroid::CreateDir(CString& DestPath, OPERATION_MODES OpMode)
   srcdir += path;
 
   CString sRes;
-  if (ADB_mkdir(srcdir, sRes, bSilent))
+  if (ADB_mkdir(srcdir, sRes))
   {
     Reread();
   }
@@ -2371,7 +2392,7 @@ int fardroid::Copy(CString& DestPath)
 int fardroid::Remount(LPCTSTR Mode)
 {
 	CString sRes;
-	if (!ADB_mount(_T("/system"), Mode, sRes, false))
+	if (!ADB_mount(_T("/system"), Mode, sRes))
 	{
 		ShowError(sRes);
 	}
@@ -2388,7 +2409,7 @@ int fardroid::RenameFile(const CString& src, const CString& dst, CString& sRes)
   auto otherFolder = path != ExtractPath(src);
   if (otherFolder)
   {
-    result = ADB_mkdir(path, sRes, false);
+    result = ADB_mkdir(path, sRes);
     if (!result) 
       return result;
   }

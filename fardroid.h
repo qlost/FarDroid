@@ -138,6 +138,7 @@ struct CCopyRecord
   CString dst;
   UINT64	size;
   time_t	time;
+	int	dir;
 };
 
 typedef CSimpleArrayEx<CCopyRecord*, CCopyRecord*> CCopyRecords;
@@ -314,23 +315,22 @@ private:
   static bool		ADBReadMode(SOCKET sockADB, LPCTSTR path, int &mode);
   BOOL		ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
   bool		ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString &sRes);
-  void ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
+	int ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
   BOOL		ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, const time_t &mtime);
-  void ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
+	int ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
   static void		CloseADBSocket(SOCKET sockADB);
 
   bool DeviceTest();
-  //BOOL ADB_execute(LPCTSTR sCMD, CString & sRes, bool bSilent);
   BOOL ADB_ls(LPCTSTR sDir, CFileRecords & files, CString & sRes, bool bSilent);
-  BOOL ADB_rm(LPCTSTR sDir, CString & sRes, bool bSilent);
-  BOOL ADB_mkdir(LPCTSTR sDir, CString & sRes, bool bSilent);
+  BOOL ADB_rm(LPCTSTR sDir, CString & sRes);
+  BOOL ADB_mkdir(LPCTSTR sDir, CString & sRes);
   BOOL ADB_rename(LPCTSTR sSource, LPCTSTR sDest, CString& sRes);
   BOOL ADB_copy(LPCTSTR sSource, LPCTSTR sDest, CString& sRes);
   BOOL ADB_chmod(LPCTSTR sSource, LPCTSTR octal, CString& sRes);
   BOOL ADB_chown(LPCTSTR sSource, LPCTSTR user, LPCTSTR group, CString& sRes);
-  BOOL ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent, const time_t& mtime);
-  BOOL ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, bool bSilent);
-  BOOL ADB_mount(LPCTSTR sFS, LPCTSTR sMode, CString & sRes, bool bSilent);
+  BOOL ADB_pull(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, const time_t& mtime);
+  BOOL ADB_push(LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
+  BOOL ADB_mount(LPCTSTR sFS, LPCTSTR sMode, CString & sRes);
 
   CFileRecord* ParseFileLine(CString & sLine) const;
   BOOL		ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent);
