@@ -452,7 +452,7 @@ CString WtoUTF8(LPCTSTR str, bool escape)
   return res;
 }
 
-CString UTF8toW(LPCTSTR str)
+CString UTF8toW(LPCTSTR str, bool unescape)
 {
   CString s;
   char* ansi = getAnsiString(str);
@@ -460,6 +460,10 @@ CString UTF8toW(LPCTSTR str)
   utf8ToUnicode(ansi, s.GetBuffer(len), len);
   my_free(ansi);
   s.ReleaseBuffer();
+	if (unescape) {
+		s.Replace(_T("\\ "), _T(" "));
+		s.Replace(_T("\\\\"), _T("\\"));
+	}
   return s;
 }
 

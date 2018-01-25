@@ -1,4 +1,8 @@
-﻿ 31.07.17 v2.13.0
+﻿ 25.01.18 v2.13.1
+  * Fix 'Always No' option in copy dialog.
+  * Fix escape characters ' ' and  '\' in Native mode.
+
+ 31.07.17 v2.13.0
   + Create empty directories on Copy.
   * Thread improvements.
   * Code refactoring.

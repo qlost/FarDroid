@@ -30,7 +30,7 @@ int __cdecl my_mbstowcsz(wchar_t* wcstr, const char* mbstr, size_t count, UINT C
 void strcpyC(char * dst, const CString& src, bool Ansi);
 
 CString WtoUTF8(LPCTSTR str, bool escape = true);
-CString UTF8toW(LPCTSTR str);
+CString UTF8toW(LPCTSTR str, bool unescape = true);
 
 CString FormatNumber(UINT64 str);
 CString FormatSize(CString formatNum, CString formatText, UINT64 cb, bool clean=true);

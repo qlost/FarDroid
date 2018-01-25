@@ -602,6 +602,8 @@ int fardroid::PutItems(PluginPanelItem* PanelItem, int ItemsNumber, const CStrin
             m_procStruct.nTotalFileSize -= m_procStruct.nFileSize;
             m_procStruct.Unlock();
           }
+
+          result = SKIP;
           continue;
         }
       }
@@ -1844,7 +1846,7 @@ BOOL fardroid::ADB_ls(LPCTSTR sDir, CFileRecords& files, CString& sRes, bool bSi
               rec->time = msg.dent.time;
 
               CString s = buf;
-              rec->filename = UTF8toW(s);
+              rec->filename = UTF8toW(s, false);
 
               files.Add(rec);
             }
