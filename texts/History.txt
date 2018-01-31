@@ -1,4 +1,7 @@
-﻿ 25.01.18 v2.13.1
+﻿ 31.01.18 v2.13.1
+  * Fix Panel Mode save.
+
+ 25.01.18 v2.13.1
   * Fix 'Always No' option in copy dialog.
   * Fix escape characters ' ' and  '\' in Native mode.
 

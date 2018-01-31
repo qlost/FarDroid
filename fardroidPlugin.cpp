@@ -214,6 +214,7 @@ intptr_t WINAPI ConfigureW(const struct ConfigureInfo* Info)
     conf.Save();
 
     PanelInfo PInfo;
+    PInfo.StructSize = sizeof(PanelInfo);
     fardroid* android = nullptr;
     fInfo.PanelControl(PANEL_ACTIVE, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
     if (PInfo.PluginHandle && PInfo.PluginHandle != INVALID_HANDLE_VALUE && PInfo.OwnerGuid == MainGuid)
@@ -250,9 +251,6 @@ void WINAPI GetOpenPanelInfoW(struct OpenPanelInfo* Info)
   Info->StructSize = sizeof *Info;
   Info->Flags = OPIF_SHOWPRESERVECASE | OPIF_USEFREESIZE;
 
-  Info->StartSortMode = static_cast<OPENPANELINFO_SORTMODES>(conf.SortMode);
-  Info->StartSortOrder = conf.SortOrder;
-
   Info->Format = LOC(MTitle);
 
   android->PreparePanel(Info);
@@ -261,6 +259,9 @@ void WINAPI GetOpenPanelInfoW(struct OpenPanelInfo* Info)
   Info->DescrFilesNumber = 0;
 
   Info->StartPanelMode = _F('0') + conf.PanelMode;
+  Info->StartSortMode = static_cast<OPENPANELINFO_SORTMODES>(conf.SortMode);
+  Info->StartSortOrder = conf.SortOrder;
+
   Info->PanelModesArray = nullptr;
   Info->PanelModesNumber = 0;
 
@@ -306,6 +307,7 @@ intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo* Info)
 		case 0x41:
 		{
 			PanelInfo PInfo;
+      PInfo.StructSize = sizeof(PanelInfo);
 			fInfo.PanelControl(Info->hPanel, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
 			android->ChangePermissionsDialog(static_cast<int>(PInfo.SelectedItemsNumber));
 			android->Reread();
@@ -395,11 +397,16 @@ intptr_t WINAPI ProcessPanelEventW(const struct ProcessPanelEventInfo* Info)
   {
   case FE_CHANGEVIEWMODE:
     PanelInfo PInfo;
+    PInfo.StructSize = sizeof(PanelInfo);
     fInfo.PanelControl(Info->hPanel, FCTL_GETPANELINFO, 0, static_cast<void *>(&PInfo));
-    conf.SortMode = PInfo.SortMode;
-    conf.PanelMode = static_cast<int>(PInfo.ViewMode);
-    conf.SortOrder = IS_FLAG(PInfo.Flags, PFLAGS_REVERSESORTORDER);
-    conf.SavePanel();
+
+    if (IS_FLAG(PInfo.Flags, PFLAGS_PLUGIN) && IS_FLAG(PInfo.Flags, PFLAGS_VISIBLE))
+    {
+      conf.SortMode = PInfo.SortMode;
+      conf.PanelMode = static_cast<int>(PInfo.ViewMode);
+      conf.SortOrder = IS_FLAG(PInfo.Flags, PFLAGS_REVERSESORTORDER);
+      conf.SavePanel();
+    }
     break;
   }
 
