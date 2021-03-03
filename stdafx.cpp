@@ -16,3 +16,13 @@ struct KeyBarLabel Label[4] = {
 	{ { VK_F11, SHIFT_PRESSED | LEFT_ALT_PRESSED | RIGHT_ALT_PRESSED }, L"Sys RO", L"Mount /system RO" },
 };
 struct KeyBarTitles KeyBar = {4, Label};
+
+HANDLE hRegexpDate1 = nullptr
+     , hRegexpDate2 = nullptr
+     , hRegexpDate3 = nullptr
+     , hRegexpProp = nullptr
+     , hRegexpSize = nullptr
+     , hRegexpMem = nullptr
+     , hRegexpPart1 = nullptr
+     , hRegexpPart2 = nullptr
+     , hRegexpFile[2][2] = {};

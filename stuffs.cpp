@@ -149,20 +149,16 @@ void PrepareInfoLine(const wchar_t* str, void* ansi, CString& line, CString form
 
 time_t StringTimeToUnixTime(CString sData)
 {
-  static const CString regexpDate1 = "/(\\d{4}-\\d{2}-\\d{2})\\s+(\\d{2}:\\d{2})/";
-  static const CString regexpDate2 = "/(\\w{3})\\s+(\\d+)\\s+(\\d{4})/";
-  static const CString regexpDate3 = "/(\\w{3})\\s+(\\d+)\\s+(\\d{2}:\\d{2})/";
-
   strvec a;
-  RegExTokenize(sData, regexpDate1, a);
+  RegExTokenize(sData, hRegexpDate1, a);
   if (a.GetSize() == 2)
     return StringTimeToUnixTime(a[0], a[1]);
 
-  RegExTokenize(sData, regexpDate2, a);
+  RegExTokenize(sData, hRegexpDate2, a);
   if (a.GetSize() == 3)
     return StringTimeToUnixTime(a[1], a[0], a[2], "");
 
-  RegExTokenize(sData, regexpDate3, a);
+  RegExTokenize(sData, hRegexpDate3, a);
   if (a.GetSize() == 3)
     return StringTimeToUnixTime(a[1], a[0], "", a[2]);
 
@@ -502,4 +498,32 @@ BOOL ExecuteCommandLine(const CString &command, const CString& path, const CStri
   }
 
   return FALSE;
+}
+
+void DebugLog(LPCTSTR s) {
+  DWORD size;
+  HANDLE f = CreateFile(_T("C:\\TEMP\\fardroid.log"), GENERIC_WRITE, FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE, NULL, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+  SetFilePointer(f, 0, NULL, FILE_END);
+
+  SYSTEMTIME st;
+  TCHAR stime[25];
+  GetLocalTime(&st);
+  int len = wsprintf(stime, _T("%04d.%02d.%02d %02d:%02d:%02d.%03d\t"), st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+  WriteFile(f, stime, len*sizeof(stime[0]), &size, NULL);
+
+  WriteFile(f, s, lstrlen(s)*sizeof(s[0]), &size, NULL);
+  WriteFile(f, _T("\r\n"), 4, &size, NULL);
+  CloseHandle(f);
+}
+
+HANDLE RegexpMake(LPTSTR regex) {
+  HANDLE hRegex = nullptr;
+  if (fInfo.RegExpControl(nullptr, RECTL_CREATE, 0, static_cast<void *>(&hRegex)))
+    fInfo.RegExpControl(hRegex, RECTL_COMPILE, 0, static_cast<void *>(regex));
+  return hRegex;
+}
+
+void RegexpFree(HANDLE hRegex) {
+  if (hRegex)
+    fInfo.RegExpControl(hRegex, RECTL_FREE, 0, nullptr);
 }

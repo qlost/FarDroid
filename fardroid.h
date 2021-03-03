@@ -292,7 +292,7 @@ private:
   CString m_currentDeviceName;
 
   CFileRecord * GetFileRecord(LPCTSTR sFileName);
-  static unsigned long long ParseSizeInfo(CString s);
+  unsigned long long ParseSizeInfo(CString s);
   void GetDeviceInfo();
   void ShowADBExecError(CString err, bool bSilent);
   static void DrawProgress(CString& sProgress, int size, double pc);
@@ -401,4 +401,3 @@ public:
   void ShowError(CString& error);
   int FileExistsDialog(LPCTSTR sName);
 };
-

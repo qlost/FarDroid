@@ -24,6 +24,7 @@ void	WINAPI GetGlobalInfoW(struct GlobalInfo *Info);
 void	WINAPI  SetStartupInfoW(const struct PluginStartupInfo *Info);
 void	WINAPI  GetPluginInfoW(struct PluginInfo *Info);
 HANDLE	WINAPI OpenW(const struct OpenInfo *Info);
+void  WINAPI ExitFARW(const struct ExitInfo*);
 void	WINAPI ClosePanelW(const struct ClosePanelInfo *Info);
 intptr_t WINAPI ConfigDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void *Param2);
 intptr_t WINAPI ConfigureW(const struct ConfigureInfo *Info);

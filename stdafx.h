@@ -81,6 +81,7 @@ extern PluginStartupInfo fInfo;
 extern FarStandardFunctions FSF;
 extern HMODULE hInst;
 extern CConfig conf;
+extern HANDLE hRegexpDate1, hRegexpDate2, hRegexpDate3, hRegexpProp, hRegexpSize, hRegexpMem, hRegexpPart1, hRegexpPart2, hRegexpFile[2][2];
 
 extern struct KeyBarTitles KeyBar;
 #include <initguid.h>

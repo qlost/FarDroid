@@ -85,3 +85,7 @@ DWORD ModeToAttr(int mode);
 BOOL DeletePanelItems(CString& sPath, struct PluginPanelItem* PanelItem, int ItemsNumber);
 
 BOOL ExecuteCommandLine(const CString& command, const CString& path, const CString& parameters, bool wait);
+
+void DebugLog(LPCTSTR);
+HANDLE RegexpMake(LPTSTR);
+void RegexpFree(HANDLE);

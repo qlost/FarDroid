@@ -78,6 +78,39 @@ void WINAPI GetPluginInfoW(struct PluginInfo* Info)
 
 HANDLE WINAPI OpenW(const struct OpenInfo* Info)
 {
+  if (!hRegexpDate1)
+    hRegexpDate1 = RegexpMake(_T("/(\\d{4}-\\d{2}-\\d{2})\\s+(\\d{2}:\\d{2})/"));
+  if (!hRegexpDate2)
+    hRegexpDate2 = RegexpMake(_T("/(\\w{3})\\s+(\\d+)\\s+(\\d{4})/"));
+  if (!hRegexpDate3)
+    hRegexpDate3 = RegexpMake(_T("/(\\w{3})\\s+(\\d+)\\s+(\\d{2}:\\d{2})/"));
+  if (!hRegexpProp)
+    hRegexpProp = RegexpMake(_T("/^\\[([\\w.]+)\\]:\\s*\\[(.*)\\]$/"));
+  if (!hRegexpSize)
+    hRegexpSize = RegexpMake(_T("/([\\d.]+)(.*)/"));
+  if (!hRegexpMem)
+    hRegexpMem = RegexpMake(_T("/(\\w+):\\s+(.+)$/"));
+  if (!hRegexpPart1)
+    hRegexpPart1 = RegexpMake(_T("/(.*(?=:)):\\W+(\\w+(?=\\stotal)).+,\\s(\\w+(?=\\savailable))/"));
+  if (!hRegexpPart2)
+    hRegexpPart2 = RegexpMake(_T("/^(\\S+)\\s+([\\d.]+\\S*)\\s+([\\d.]+\\S*)\\s+([\\d.]+\\S*)\\s+(?:[\\d.]+%\\s+)?(\\S+)/"));
+
+  if (!hRegexpFile[0][0]) {
+    static const char *rx[2][2] = {
+      {"(\\d+)?", "(\\d+,\\s*\\d+)"},//regexpSize = isDevice ?
+      {"(.+)", "(.+(?=\\s->))\\s->\\s(.+)"}//regexpFile = isLink ?
+    };
+    static const CString regexpBase = "/^([\\w-]{10})\\s+(?:\\d+\\s+)?(\\w+)\\s+(\\w+)\\s+%S\\s+(\\d{4}-\\d{2}-\\d{2}\\s+\\d{2}:\\d{2}|\\w{3}\\s+\\d+\\s+\\d{4}|\\w{3}\\s+\\d+\\s+\\d{2}:\\d{2})\\s%S$/";
+    CString regex;
+
+    for (int rxSize = 0; rxSize < 2; rxSize++) {
+      for (int rxFile = 0; rxFile < 2; rxFile++) {
+        regex.Format(regexpBase, rx[0][rxSize], rx[1][rxFile]);
+        hRegexpFile[rxSize][rxFile] = RegexpMake((LPTSTR)(LPCTSTR)regex);
+      }
+    }
+  }
+
   switch (Info->OpenFrom)
   {
   case OPEN_LEFTDISKMENU:
@@ -105,6 +138,22 @@ HANDLE WINAPI OpenW(const struct OpenInfo* Info)
     break;
   }
   return INVALID_HANDLE_VALUE;
+}
+
+void WINAPI ExitFARW(const struct ExitInfo*)
+{
+  for (int rxSize = 0; rxSize < 2; rxSize++)
+    for (int rxFile = 0; rxFile < 2; rxFile++)
+      RegexpFree(hRegexpFile[rxSize][rxFile]);
+
+  RegexpFree(hRegexpPart2);
+  RegexpFree(hRegexpPart1);
+  RegexpFree(hRegexpMem);
+  RegexpFree(hRegexpSize);
+  RegexpFree(hRegexpProp);
+  RegexpFree(hRegexpDate3);
+  RegexpFree(hRegexpDate2);
+  RegexpFree(hRegexpDate1);
 }
 
 void WINAPI ClosePanelW(const struct ClosePanelInfo* Info)
