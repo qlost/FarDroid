@@ -10,11 +10,11 @@ All rights reserved.
 
 Copyright / Usage Details:
 
-You are allowed to include the source code in any product (commercial, shareware, freeware or otherwise) 
-when your product is released in binary form. You are allowed to modify the source code in any way you want 
-except you cannot modify the copyright details at the top of each module. If you want to distribute source 
-code with your application, then you are only allowed to distribute versions released by the author. This is 
-to maintain a single distribution point for the source code. 
+You are allowed to include the source code in any product (commercial, shareware, freeware or otherwise)
+when your product is released in binary form. You are allowed to modify the source code in any way you want
+except you cannot modify the copyright details at the top of each module. If you want to distribute source
+code with your application, then you are only allowed to distribute versions released by the author. This is
+to maintain a single distribution point for the source code.
 
 */
 
@@ -48,7 +48,7 @@ public:
 			m_aT = aT;
     }
 
-    //Move the existing elements at the insertion position  
+    //Move the existing elements at the insertion position
 		if (m_nSize && (nIndex != (m_nSize - 1)))
 		{
 			int size = m_nSize-nIndex;

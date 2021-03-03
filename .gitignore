@@ -3,6 +3,8 @@
 [Rr]elease*/
 _ReSharper*/
 ipch/
+.vs
+*.vcxproj.user
 *.opendb
 *.VC.db
 

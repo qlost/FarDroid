@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl
 
 open F, "../version.info";
-while (<F>) 
+while (<F>)
 {
   /#define\s+\w+\s+(\d+)/;
   push @version,$1;

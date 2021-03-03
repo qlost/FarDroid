@@ -386,7 +386,7 @@ DWORD ModeToAttr(int p)
 {
   if (p == -1)
     return FILE_ATTRIBUTE_OFFLINE;
-  
+
   auto res = IS_FLAG(p, S_IWRITE) ? 0 : FILE_ATTRIBUTE_READONLY;
   if (IS_FLAG(p, S_IFSOCK))
     res |= FILE_ATTRIBUTE_DEVICE;

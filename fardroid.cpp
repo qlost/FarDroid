@@ -9,7 +9,7 @@ unsigned __stdcall ProcessThreadProc(void* lpParam)
   auto android = static_cast<fardroid *>(lpParam);
   while (android)
   {
-    if (CheckForKey(VK_ESCAPE) && android->BreakProcessDialog()) 
+    if (CheckForKey(VK_ESCAPE) && android->BreakProcessDialog())
       android->m_bForceBreak = true;
 
     if (android->m_bForceBreak)
@@ -1263,7 +1263,7 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
     s = item->linkto;
 
   CString tempPath;
-  if (s == "\\") 
+  if (s == "\\")
     s = "/";
   if (s[0] == '/')
     tempPath = s;
@@ -1277,7 +1277,7 @@ int fardroid::ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode, bool updateInfo)
   if (OpMode != 0 || lastError != S_OK || tempPath == _T("/"))
     return FALSE;
 
-  if (tempPath == m_currentPath) 
+  if (tempPath == m_currentPath)
     m_currentPath = _T("/");
 
   return OpenPanel(m_currentPath, updateInfo, bSilent);
@@ -1442,7 +1442,7 @@ bool fardroid::ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString& s
 
   WIN32_FIND_DATA fd;
   HANDLE h = FindFirstFile(sdir, &fd);
-  if (h == INVALID_HANDLE_VALUE) 
+  if (h == INVALID_HANDLE_VALUE)
     return false;
 
   CString sname, dname;
@@ -1507,7 +1507,7 @@ int fardroid::ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files
 		if (IsDirectory(fd.dwFileAttributes))
     {
 			rec->dir = ADBPushDirGetFiles(sname, dname, files);
-    } 
+    }
 		else
 		{
 			child++;
@@ -2196,7 +2196,7 @@ void fardroid::ShowProgressMessage()
       taskbarIcon.SetState(taskbarIcon.S_PROGRESS, tpc);
 			SetTitle(m_procStruct.title, tpc);
 		}
-		
+
 		m_procStruct.Unlock();
   }
 }
@@ -2412,7 +2412,7 @@ int fardroid::RenameFile(const CString& src, const CString& dst, CString& sRes)
   if (otherFolder)
   {
     result = ADB_mkdir(path, sRes);
-    if (!result) 
+    if (!result)
       return result;
   }
 
@@ -2618,7 +2618,7 @@ void fardroid::ParsePartitionInfo(CString s)
     free = ParseSizeInfo(tokens[2]);
     used = total - free;
   }
-  else 
+  else
   {
     regex = _T("/^(\\S+)\\s+([\\d.]+\\S*)\\s+([\\d.]+\\S*)\\s+([\\d.]+\\S*)\\s+(?:[\\d.]+%\\s+)?(\\S+)/");
     RegExTokenize(s, regex, tokens);

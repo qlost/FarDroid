@@ -56,11 +56,11 @@ typedef union {
 	struct {
 		unsigned id;
 		unsigned msglen;
-	} status;    
+	} status;
 } syncmsg;
 
 #define SYNC_DATA_MAX (64*1024)
-struct syncsendbuf 
+struct syncsendbuf
 {
 	unsigned id;
 	unsigned size;

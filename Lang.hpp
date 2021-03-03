@@ -87,7 +87,7 @@ enum
   MPermAll,
   MPermNone,
 
-	MNeedSuperuserPerm, 
+	MNeedSuperuserPerm,
 };
 
 #endif

@@ -49,7 +49,7 @@ namespace WTL
 #define SPLIT_GRADIENTBAR		0x00000008
 #define SPLIT_FIXEDBARSIZE		0x00000010
 
-// Note: SPLIT_PROPORTIONAL and SPLIT_RIGHTALIGNED/SPLIT_BOTTOMALIGNED are 
+// Note: SPLIT_PROPORTIONAL and SPLIT_RIGHTALIGNED/SPLIT_BOTTOMALIGNED are
 // mutually exclusive. If both are set, splitter defaults to SPLIT_PROPORTIONAL.
 // SPLIT_GRADIENTBAR doesn't work with _ATL_NO_MSIMG
 
@@ -81,11 +81,11 @@ public:
 	bool m_bProportionalDefPos;     // porportinal def pos
 
 // Constructor
-	CSplitterImpl(bool bVertical = true) : 
-	              m_bVertical(bVertical), m_xySplitterPos(-1), m_xySplitterPosNew(-1), m_hWndFocusSave(NULL), 
-	              m_nDefActivePane(SPLIT_PANE_NONE), m_cxySplitBar(4), m_hCursor(NULL), m_cxyMin(0), m_cxyBarEdge(0), 
+	CSplitterImpl(bool bVertical = true) :
+	              m_bVertical(bVertical), m_xySplitterPos(-1), m_xySplitterPosNew(-1), m_hWndFocusSave(NULL),
+	              m_nDefActivePane(SPLIT_PANE_NONE), m_cxySplitBar(4), m_hCursor(NULL), m_cxyMin(0), m_cxyBarEdge(0),
 	              m_bFullDrag(true), m_cxyDragOffset(0), m_nProportionalPos(0), m_bUpdateProportionalPos(true),
-	              m_dwExtendedStyle(SPLIT_PROPORTIONAL), m_nSinglePane(SPLIT_PANE_NONE), 
+	              m_dwExtendedStyle(SPLIT_PROPORTIONAL), m_nSinglePane(SPLIT_PANE_NONE),
 	              m_xySplitterDefPos(-1), m_bProportionalDefPos(false)
 	{
 		m_hWndPane[SPLIT_PANE_LEFT] = NULL;

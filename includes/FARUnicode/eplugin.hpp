@@ -137,7 +137,7 @@ enum{
 };
 
 // "std" кнопки :-)
-wchar_t *_stdButton[7]={
+/*wchar_t *_stdButton[7]={
   L"Ok",
   L"Cancel",
   L"Abort",
@@ -145,7 +145,7 @@ wchar_t *_stdButton[7]={
   L"Ignore",
   L"Yes",
   L"No"
-};
+};*/
 
 #if defined(__BORLANDC__)
 #ifdef __cplusplus

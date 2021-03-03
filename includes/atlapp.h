@@ -1441,7 +1441,7 @@ using ATL::CTempBuffer;
 #else // !(_ATL_VER >= 0x0700)
 
 #ifndef SIZE_MAX
-  #ifdef _WIN64 
+  #ifdef _WIN64
     #define SIZE_MAX _UI64_MAX
   #else
     #define SIZE_MAX UINT_MAX
@@ -1812,7 +1812,7 @@ public:
 					break;
 			}
 		}
-		// This handle should be valid now. If it isn't, 
+		// This handle should be valid now. If it isn't,
 		// check if _Module.Term was called first (it shouldn't)
 		if(::CloseHandle(m_hEventShutdown))
 			m_hEventShutdown = NULL;
@@ -1907,9 +1907,9 @@ public:
 		USES_CONVERSION;
 		LPCTSTR lpstr = OLE2CT(szGUID);
 #ifndef _UNICODE
-		if(lpstr == NULL) 
+		if(lpstr == NULL)
 			return E_OUTOFMEMORY;
-#endif	
+#endif
 		return SetStringValue(pszValueName, lpstr);
 	}
 
@@ -1993,10 +1993,10 @@ public:
 		USES_CONVERSION;
 		LPOLESTR lpstr = T2OLE(szGUID);
 #ifndef _UNICODE
-		if(lpstr == NULL) 
+		if(lpstr == NULL)
 			return E_OUTOFMEMORY;
-#endif	
-		
+#endif
+
 		HRESULT hr = ::CLSIDFromString(lpstr, &guidValue);
 		if (FAILED(hr))
 			return ERROR_INVALID_DATA;
@@ -2060,7 +2060,7 @@ public:
 		DWORD dwType = 0;
 		*pnChars = 0;
 		LONG lRes = ::RegQueryValueEx(m_hKey, pszValueName, NULL, &dwType, reinterpret_cast<LPBYTE>(pszValue), &nBytes);
-	
+
 		if (lRes != ERROR_SUCCESS)
 		{
 			return lRes;
@@ -2096,7 +2096,7 @@ public:
 
 		if (pszValue != NULL && *pnChars < 2)
 			return ERROR_INSUFFICIENT_BUFFER;
-		
+
 		ULONG nBytes = (*pnChars) * sizeof(TCHAR);
 		DWORD dwType = 0;
 		*pnChars = 0;

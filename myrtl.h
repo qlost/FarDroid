@@ -4,7 +4,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-/* stdlib.h */ 
+/* stdlib.h */
 void *my_malloc(size_t size);
 void *my_realloc(void *block, size_t size);
 void my_free(void *block);

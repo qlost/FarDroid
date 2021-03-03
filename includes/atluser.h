@@ -1335,7 +1335,7 @@ inline int AtlLoadString(UINT uID, LPTSTR lpBuffer, int nBufferMax)
 	return ::LoadString(ModuleHelper::GetResourceInstance(), uID, lpBuffer, nBufferMax);
 }
 #else
-    
+
 using ATL::AtlLoadString;
 
 #endif // (_ATL_VER < 0x0700)

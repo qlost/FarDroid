@@ -25,7 +25,7 @@
 #define S_IXGRP   00010		/* group:  -----x--- */
 #define S_IRWXG   (S_IRGRP | S_IWGRP | S_IXGRP)
 
-#define S_IROTH   00004		/* others: ------r-- */ 
+#define S_IROTH   00004		/* others: ------r-- */
 #define S_IWOTH   00002		/* others: -------w- */
 #define S_IXOTH   00001		/* others: --------x */
 #define S_IRWXO   (S_IROTH | S_IWOTH | S_IXOTH)

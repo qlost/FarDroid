@@ -15,14 +15,14 @@ History: PJN / 12-01-2000 Fixed a stack overflow in CSortedArray::Sort
          PJN / 29-05-2002 1. Fixed a problem in CSortedArray::OrderedInsert. Thanks to John Young
                           for spotting and fixing this problem.
                           2. Updated copyright and usage instructions
-         PJN / 06-12-2002 1. Rewrote the Sort method following reports of further problems by 
+         PJN / 06-12-2002 1. Rewrote the Sort method following reports of further problems by
                           Serhiy Pavlov and Brian Rhodes
          PJN / 11-12-2002 1. Optimized code by replacing all calls to CArray<>::ElementAt with CArray<>::GetData
          PJN / 24-01-2003 1. Made CSortedArray::Find method const. Thanks to Serhiy Pavlov for reporting this.
-         PJN / 18-08-2003 1. Made the class optionally independent of MFC. If the class detects than MFC is 
-                          not being included, then the code will use CSimpleArray instead of CArray. This is 
+         PJN / 18-08-2003 1. Made the class optionally independent of MFC. If the class detects than MFC is
+                          not being included, then the code will use CSimpleArray instead of CArray. This is
                           a class provided in ATL as a substitute for CArray. Please note that the function
-                          "OrderedInsert" is not available when using CSimpleArray as the parent class as 
+                          "OrderedInsert" is not available when using CSimpleArray as the parent class as
                           CSimpleArray does not implement an "InsertAt" method.
          PJN / 03-11-2003 1. Now includes a new class "CSimpleArrayEx" which provides InsertAt support
                           for ATL's CSimpleArray class. This is now used by CSortedArray, rather than directly
@@ -32,15 +32,15 @@ History: PJN / 12-01-2000 Fixed a stack overflow in CSortedArray::Sort
          PJN / 22-12-2004 1. ASSERT / ATLASSERT and INT_PTR / int typedefs are now all done in one place. Thanks
                           to Serhiy Pavlov for suggesting this.
                           2. All functions are now declared in the class declaration
-                          3. Reworked the classes to break the actual comparison code into a new traits class. 
+                          3. Reworked the classes to break the actual comparison code into a new traits class.
                           You now have the choice of using a traits class which specifies the comparison function
                           via a function (CSortedArrayCompareFunction) or via a functor (CSortedArrayCompareFunctor).
                           Backward compatibility is kept by defined a class called CSortedArray which uses
                           a traits class which uses a function. If you want to use the new faster functor version
-                          of the class then simply replace all instances of CSortedArray with CSortedArrayEx. 
+                          of the class then simply replace all instances of CSortedArray with CSortedArrayEx.
                           Thanks to Serhiy Pavlov for this really nice addition.
-                          4. Made CSortedArray::Find method non const again to allow use of GetData function. 
-                          5. Updated the sample app to perform some speed tests on ATL Vs MFC and function 
+                          4. Made CSortedArray::Find method non const again to allow use of GetData function.
+                          5. Updated the sample app to perform some speed tests on ATL Vs MFC and function
                           pointer Vs Functor implementations.
          PJN / 11-10-2005 1. Updated the Find function to allow <0, 0 and >0 values to be allowed for the return
                           value from the comparison function / functor. This allows CString::Compare to be easily
@@ -51,7 +51,7 @@ History: PJN / 12-01-2000 Fixed a stack overflow in CSortedArray::Sort
                           2. Minor update to the sample app to allow it to clean compile on VC 2005.
                           3. Updated the documentation to use the same style as the web site.
          PJN / 29-07-2006 1. Provided a new UniqueSort method which in addition to performing the standard sorting
-                          of the array also removes any duplicates found. Thanks to John Cullen for suggesting this 
+                          of the array also removes any duplicates found. Thanks to John Cullen for suggesting this
                           new feature.
 
 Copyright (c) 1999 - 2006 by PJ Naughter (Web: www.naughter.com, Email: pjna@naughter.com)
@@ -60,11 +60,11 @@ All rights reserved.
 
 Copyright / Usage Details:
 
-You are allowed to include the source code in any product (commercial, shareware, freeware or otherwise) 
-when your product is released in binary form. You are allowed to modify the source code in any way you want 
-except you cannot modify the copyright details at the top of each module. If you want to distribute source 
-code with your application, then you are only allowed to distribute versions released by the author. This is 
-to maintain a single distribution point for the source code. 
+You are allowed to include the source code in any product (commercial, shareware, freeware or otherwise)
+when your product is released in binary form. You are allowed to modify the source code in any way you want
+except you cannot modify the copyright details at the top of each module. If you want to distribute source
+code with your application, then you are only allowed to distribute versions released by the author. This is
+to maintain a single distribution point for the source code.
 
 */
 
@@ -76,7 +76,7 @@ to maintain a single distribution point for the source code.
 
 #ifdef _AFX
 #ifndef __AFXTEMPL_H__
-#include <afxtempl.h> 
+#include <afxtempl.h>
 #pragma message("To avoid this message, please put afxtempl.h in your PCH (normally stdafx.h)")
 #endif
 #else
@@ -118,15 +118,15 @@ public:
     m_pCompareFunction = pCompareFunction;
   }
 
-  LPCOMPARE_FUNCTION GetCompareFunction() const 
-  { 
-    return m_pCompareFunction; 
+  LPCOMPARE_FUNCTION GetCompareFunction() const
+  {
+    return m_pCompareFunction;
   }
 
 #ifdef _DEBUG
-  BOOL IsCompareFunctionValid() const 
-  { 
-    return (m_pCompareFunction != NULL); 
+  BOOL IsCompareFunctionValid() const
+  {
+    return (m_pCompareFunction != NULL);
   }
 #endif
 
@@ -147,15 +147,15 @@ public:
     m_pCompareFunction = pCompareFunctor;
   }
 
-  COMPARE_TYPE GetCompareFunction() const 
-  { 
-    return m_pCompareFunction; 
+  COMPARE_TYPE GetCompareFunction() const
+  {
+    return m_pCompareFunction;
   }
 
 #ifdef _DEBUG
-  BOOL IsCompareFunctionValid() const 
-  { 
-    return TRUE; 
+  BOOL IsCompareFunctionValid() const
+  {
+    return TRUE;
   }
 #endif
 
@@ -182,7 +182,7 @@ public:
 	  CSA_INT hi = GetSize() - 1;
 
     TYPE* pData = GetData();
-	  
+
 	  //Find the insert location (mid) for the new element.
 	  CSA_INT mid = hi / 2;
 
@@ -201,7 +201,7 @@ public:
 
 		  if (res < 0)
 			  hi = mid - 1;	//Insert in the lower half...
-		  else 
+		  else
         lo = mid + 1; //Insert in the upper half...
 		  mid = ((hi - lo) / 2) + lo;
 	  }
@@ -221,8 +221,8 @@ public:
 	void SwapItems(int i, int j)
 	{
 		TYPE * pData = GetData();
-		if (!pData || 
-			i >= GetSize() || j >= GetSize() || 
+		if (!pData ||
+			i >= GetSize() || j >= GetSize() ||
 			i < 0 || j < 0)
 			return;
 
@@ -233,7 +233,7 @@ public:
 	bool RandomShuffle()
 	{
 		int size = GetSize();
-		if (size <= 1) 
+		if (size <= 1)
 			return false;
 
 		const int _RANDOM_BITS = 15;	// minimum random bits from rand()
@@ -267,19 +267,19 @@ public:
 
     //Sort all the data?
 	  if (nHighIndex == -1)
-      nHighIndex = nSize - 1;     
+      nHighIndex = nSize - 1;
 
-    //quick exit                  
+    //quick exit
     if ((nLowIndex == nHighIndex) || (nSize == 0))
-      return;               
+      return;
 
     //Validate the required values for this function
     ASSERT(nHighIndex <= (nSize - 1));
     ASSERT(IsCompareFunctionValid());
 
-    //Do the actual quicksort  
+    //Do the actual quicksort
     if (nLowIndex < nHighIndex)
-    {    
+    {
       CSA_INT i = nLowIndex;
       CSA_INT j = nHighIndex;
 			CSA_INT m = 1;
@@ -302,22 +302,22 @@ public:
 			Sort(i + 1, nHighIndex);
     }
   }
-  
+
   void UniqueSort(CSA_INT nLowIndex = 0, CSA_INT nHighIndex = -1)
   {
     CSA_INT nSize = GetSize();
-  
+
     //Sort all the data?
 	  if (nHighIndex == -1)
-      nHighIndex = nSize - 1;     
- 
-    //quick exit                  
+      nHighIndex = nSize - 1;
+
+    //quick exit
     if ((nLowIndex == nHighIndex) || (nSize == 0))
-      return;               
+      return;
 
     //First sort the requested elements, using the "Sort" method
     Sort(nLowIndex, nHighIndex);
-    
+
     //Now remove any duplicates
     TYPE* pData = GetData();
     ASSERT(pData);
@@ -347,7 +347,7 @@ public:
 
     ASSERT(left <= right);
     ASSERT(pData);
-  
+
     if (left == right) //Straight comparison fewer than 2 elements to search
       return (m_pCompareFunction(pData[left], element) == 0) ? left : -1;
 
@@ -397,12 +397,12 @@ public:
         nFoundIndex = nCompareIndex;
       }
     }
-  
+
     return nFoundIndex;
   }
 };
 
-//A derivation of CSortedArrayBase which provides the compare function via a pointer embedded in 
+//A derivation of CSortedArrayBase which provides the compare function via a pointer embedded in
 template<class TYPE, class ARG_TYPE>
 class CSortedArray : public CSortedArrayBase<TYPE, ARG_TYPE, CSortedArrayCompareFunction<TYPE, ARG_TYPE> >
 {
