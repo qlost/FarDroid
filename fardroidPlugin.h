@@ -19,18 +19,18 @@ const enum ConfigID
   ID_Cancel = 17,
 };
 
-BOOL	APIENTRY DllMain( HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved);
-void	WINAPI GetGlobalInfoW(struct GlobalInfo *Info);
-void	WINAPI  SetStartupInfoW(const struct PluginStartupInfo *Info);
-void	WINAPI  GetPluginInfoW(struct PluginInfo *Info);
-HANDLE	WINAPI OpenW(const struct OpenInfo *Info);
-void  WINAPI ExitFARW(const struct ExitInfo*);
-void	WINAPI ClosePanelW(const struct ClosePanelInfo *Info);
+BOOL	 APIENTRY DllMain(HMODULE hModule, DWORD  ul_reason_for_call, LPVOID lpReserved);
+void	 WINAPI GetGlobalInfoW(struct GlobalInfo *Info);
+void	 WINAPI SetStartupInfoW(const struct PluginStartupInfo *Info);
+void	 WINAPI GetPluginInfoW(struct PluginInfo *Info);
+HANDLE	 WINAPI OpenW(const struct OpenInfo *Info);
+void     WINAPI ExitFARW(const struct ExitInfo*);
+void	 WINAPI ClosePanelW(const struct ClosePanelInfo *Info);
 intptr_t WINAPI ConfigDlgProc(HANDLE hDlg, intptr_t Msg, intptr_t Param1, void *Param2);
 intptr_t WINAPI ConfigureW(const struct ConfigureInfo *Info);
-void	WINAPI GetOpenPanelInfoW(struct OpenPanelInfo *Info);
+void	 WINAPI GetOpenPanelInfoW(struct OpenPanelInfo *Info);
 intptr_t WINAPI GetFindDataW(struct GetFindDataInfo *Info);
-void	WINAPI FreeFindDataW(const struct FreeFindDataInfo *Info);
+void	 WINAPI FreeFindDataW(const struct FreeFindDataInfo *Info);
 intptr_t WINAPI ProcessPanelInputW(const struct ProcessPanelInputInfo *Info);
 intptr_t WINAPI ProcessPanelEventW(const struct ProcessPanelEventInfo *Info);
 intptr_t WINAPI GetFilesW(struct GetFilesInfo *Info);

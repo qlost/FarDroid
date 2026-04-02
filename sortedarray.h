@@ -179,9 +179,9 @@ public:
 	  ASSERT(IsCompareFunctionValid()); 	//Did you forget to call SetCompareFunction prior to calling this function?
 
 	  CSA_INT lo = 0;
-	  CSA_INT hi = GetSize() - 1;
+	  CSA_INT hi = CSimpleArray::GetSize() - 1;
 
-    TYPE* pData = GetData();
+    TYPE* pData = CSimpleArray::GetData();
 
 	  //Find the insert location (mid) for the new element.
 	  CSA_INT mid = hi / 2;
@@ -216,13 +216,13 @@ public:
   }
 	bool IsEmpty()
 	{
-		return GetSize() == 0;
+		return CSimpleArray::GetSize() == 0;
 	}
 	void SwapItems(int i, int j)
 	{
-		TYPE * pData = GetData();
+		TYPE * pData = CSimpleArray::GetData();
 		if (!pData ||
-			i >= GetSize() || j >= GetSize() ||
+			i >= CSimpleArray::GetSize() || j >= CSimpleArray::GetSize() ||
 			i < 0 || j < 0)
 			return;
 
@@ -232,7 +232,7 @@ public:
 	}
 	bool RandomShuffle()
 	{
-		int size = GetSize();
+		int size = CSimpleArray::GetSize();
 		if (size <= 1)
 			return false;
 
@@ -240,7 +240,7 @@ public:
 		const int _RANDOM_MAX = (1U << _RANDOM_BITS) - 1;
 
 		int _Next = 0;
-		for (int _Index = 2; ++_Next != GetSize(); ++_Index)
+		for (int _Index = 2; ++_Next != CSimpleArray::GetSize(); ++_Index)
 		{	// assume unsigned long big enough for _Diff count
 			unsigned long _Rm = _RANDOM_MAX;
 			unsigned long _Rn = ::rand() & _RANDOM_MAX;
@@ -258,12 +258,12 @@ public:
 		if (IsEmpty())
 			return;
 
-		for (int i = 0; i < GetSize()/2; i++)
-			SwapItems(i, GetSize()-i-1);
+		for (int i = 0; i < CSimpleArray::GetSize()/2; i++)
+			SwapItems(i, CSimpleArray::GetSize()-i-1);
 	}
   void Sort(CSA_INT nLowIndex = 0, CSA_INT nHighIndex = -1)
   {
-    CSA_INT nSize = GetSize();
+    CSA_INT nSize = CSimpleArray::GetSize();
 
     //Sort all the data?
 	  if (nHighIndex == -1)
@@ -283,7 +283,7 @@ public:
       CSA_INT i = nLowIndex;
       CSA_INT j = nHighIndex;
 			CSA_INT m = 1;
-      TYPE* pData = GetData();
+      TYPE* pData = CSimpleArray::GetData();
 
       ASSERT(pData);
 
@@ -305,7 +305,7 @@ public:
 
   void UniqueSort(CSA_INT nLowIndex = 0, CSA_INT nHighIndex = -1)
   {
-    CSA_INT nSize = GetSize();
+    CSA_INT nSize = CSimpleArray::GetSize();
 
     //Sort all the data?
 	  if (nHighIndex == -1)
@@ -319,12 +319,12 @@ public:
     Sort(nLowIndex, nHighIndex);
 
     //Now remove any duplicates
-    TYPE* pData = GetData();
+    TYPE* pData = CSimpleArray::GetData();
     ASSERT(pData);
     for (CSA_INT i=nHighIndex; i>nLowIndex; i--)
     {
       if (m_pCompareFunction(pData[i], pData[i-1]) == 0)
-        RemoveAt(i);
+        CSimpleArray::RemoveAt(i);
     }
   }
 
@@ -332,7 +332,7 @@ public:
   {
     ASSERT(IsCompareFunctionValid()); //Did you forget to call SetCompareFunction prior to calling this function
 
-    CSA_INT nSize = GetSize();
+    CSA_INT nSize = CSimpleArray::GetSize();
 
     //If there are no items in the array, then return immediately
     if (nSize == 0)
@@ -340,7 +340,7 @@ public:
 
     CSA_INT left = nLowIndex;
     CSA_INT right = nHighIndex;
-    TYPE* pData = GetData();
+    TYPE* pData = CSimpleArray::GetData();
 
     if (right == -1)
       right = nSize - 1;

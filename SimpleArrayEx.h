@@ -35,32 +35,32 @@ public:
   BOOL InsertAt(int nIndex, ARG_TYPE newElement, int nCount = 1)
   {
     //Realloc the array if necessary
-    if ((m_nSize + nCount) >= m_nAllocSize)
+    if ((CSimpleArray::m_nSize + nCount) >= CSimpleArray::m_nAllocSize)
     {
- 			int nNewAllocSize = (m_nAllocSize == 0) ? 1 : (m_nSize * 2);
-      while (nNewAllocSize < (m_nSize + nCount))
+      int nNewAllocSize = (CSimpleArray::m_nAllocSize == 0) ? 1 : (CSimpleArray::m_nSize * 2);
+      while (nNewAllocSize < (CSimpleArray::m_nSize + nCount))
         nNewAllocSize *= 2;
 
-			TYPE* aT = (TYPE*)realloc(m_aT, nNewAllocSize * sizeof(TYPE));
+			TYPE* aT = (TYPE*)realloc(CSimpleArray::m_aT, nNewAllocSize * sizeof(TYPE));
 			if (aT == NULL)
 				return FALSE;
-			m_nAllocSize = nNewAllocSize;
-			m_aT = aT;
+			CSimpleArray::m_nAllocSize = nNewAllocSize;
+			CSimpleArray::m_aT = aT;
     }
 
     //Move the existing elements at the insertion position
-		if (m_nSize && (nIndex != (m_nSize - 1)))
+		if (CSimpleArray::m_nSize && (nIndex != (CSimpleArray::m_nSize - 1)))
 		{
-			int size = m_nSize-nIndex;
+			int size = CSimpleArray::m_nSize-nIndex;
 			TYPE * data = (TYPE*)calloc(size, sizeof(TYPE));
-			memcpy(data, (void*)&m_aT[nIndex], size*sizeof(TYPE));
-			memcpy((void*)&m_aT[nIndex + nCount], data, size*sizeof(TYPE));
+			memcpy(data, (void*)&CSimpleArray::m_aT[nIndex], size*sizeof(TYPE));
+			memcpy((void*)&CSimpleArray::m_aT[nIndex + nCount], data, size*sizeof(TYPE));
 			free(data);
 			//memmove((void*)&m_aT[nIndex + nCount], (void*)&m_aT[nIndex], nCount * sizeof(TYPE));
 		}
 
     //Finally store the new values into the array
-		m_nSize += nCount;
+	CSimpleArray::m_nSize += nCount;
     for (int i=0; i<nCount; i++)
 		  SetAtIndex(nIndex+i, newElement);
 

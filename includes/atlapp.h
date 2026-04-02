@@ -2259,7 +2259,6 @@ inline HRESULT AtlGetShellVersion(LPDWORD pdwMajor, LPDWORD pdwMinor)
 // These are always included
 #include "atlwinx.h"
 #include "atluser.h"
-#include "atlgdi.h"
 
 #ifndef _WTL_NO_AUTOMATIC_NAMESPACE
 using namespace WTL;

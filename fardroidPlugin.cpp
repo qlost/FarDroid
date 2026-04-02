@@ -79,21 +79,21 @@ void WINAPI GetPluginInfoW(struct PluginInfo* Info)
 HANDLE WINAPI OpenW(const struct OpenInfo* Info)
 {
   if (!hRegexpDate1)
-    hRegexpDate1 = RegexpMake(_T("/(\\d{4}-\\d{2}-\\d{2})\\s+(\\d{2}:\\d{2})/"));
+    hRegexpDate1 = RegexpMake((LPTSTR)_T("/(\\d{4}-\\d{2}-\\d{2})\\s+(\\d{2}:\\d{2})/"));
   if (!hRegexpDate2)
-    hRegexpDate2 = RegexpMake(_T("/(\\w{3})\\s+(\\d+)\\s+(\\d{4})/"));
+    hRegexpDate2 = RegexpMake((LPTSTR)_T("/(\\w{3})\\s+(\\d+)\\s+(\\d{4})/"));
   if (!hRegexpDate3)
-    hRegexpDate3 = RegexpMake(_T("/(\\w{3})\\s+(\\d+)\\s+(\\d{2}:\\d{2})/"));
+    hRegexpDate3 = RegexpMake((LPTSTR)_T("/(\\w{3})\\s+(\\d+)\\s+(\\d{2}:\\d{2})/"));
   if (!hRegexpProp)
-    hRegexpProp = RegexpMake(_T("/^\\[([\\w.]+)\\]:\\s*\\[(.*)\\]$/"));
+    hRegexpProp = RegexpMake((LPTSTR)_T("/^\\[([\\w.]+)\\]:\\s*\\[(.*)\\]$/"));
   if (!hRegexpSize)
-    hRegexpSize = RegexpMake(_T("/([\\d.]+)(.*)/"));
+    hRegexpSize = RegexpMake((LPTSTR)_T("/([\\d.]+)(.*)/"));
   if (!hRegexpMem)
-    hRegexpMem = RegexpMake(_T("/(\\w+):\\s+(.+)$/"));
+    hRegexpMem = RegexpMake((LPTSTR)_T("/(\\w+):\\s+(.+)$/"));
   if (!hRegexpPart1)
-    hRegexpPart1 = RegexpMake(_T("/(.*(?=:)):\\W+(\\w+(?=\\stotal)).+,\\s(\\w+(?=\\savailable))/"));
+    hRegexpPart1 = RegexpMake((LPTSTR)_T("/(.*(?=:)):\\W+(\\w+(?=\\stotal)).+,\\s(\\w+(?=\\savailable))/"));
   if (!hRegexpPart2)
-    hRegexpPart2 = RegexpMake(_T("/^(\\S+)\\s+([\\d.]+\\S*)\\s+([\\d.]+\\S*)\\s+([\\d.]+\\S*)\\s+(?:[\\d.]+%\\s+)?(\\S+)/"));
+    hRegexpPart2 = RegexpMake((LPTSTR)_T("/^(\\S+)\\s+([\\d.]+\\S*)\\s+([\\d.]+\\S*)\\s+([\\d.]+\\S*)\\s+(?:[\\d.]+%\\s+)?(\\S+)/"));
 
   if (!hRegexpFile[0][0]) {
     static const char *rx[2][2] = {

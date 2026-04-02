@@ -31,103 +31,103 @@
 #include <map>
 
 typedef union {
-	unsigned id;
-	struct {
-		unsigned id;
-		unsigned namelen;
-	} req;
-	struct {
-		unsigned id;
-		unsigned mode;
-		unsigned size;
-		unsigned time;
-	} stat;
-	struct {
-		unsigned id;
-		unsigned mode;
-		unsigned size;
-		unsigned time;
-		unsigned namelen;
-	} dent;
-	struct {
-		unsigned id;
-		unsigned size;
-	} data;
-	struct {
-		unsigned id;
-		unsigned msglen;
-	} status;
+  unsigned id;
+  struct {
+    unsigned id;
+    unsigned namelen;
+  } req;
+  struct {
+    unsigned id;
+    unsigned mode;
+    unsigned size;
+    unsigned time;
+  } stat;
+  struct {
+    unsigned id;
+    unsigned mode;
+    unsigned size;
+    unsigned time;
+    unsigned namelen;
+  } dent;
+  struct {
+    unsigned id;
+    unsigned size;
+  } data;
+  struct {
+    unsigned id;
+    unsigned msglen;
+  } status;
 } syncmsg;
 
 #define SYNC_DATA_MAX (64*1024)
 struct syncsendbuf
 {
-	unsigned id;
-	unsigned size;
-	char data[SYNC_DATA_MAX];
+  unsigned id;
+  unsigned size;
+  char data[SYNC_DATA_MAX];
 };
 
 //чтение файла с проверкой результата
 #define CHECKREADOK(rd_type) \
-	res = ReadFile(hFile, &rd_type, sizeof(rd_type), &rd, NULL);\
-	if (!res)\
-	{\
-		CloseHandle(hFile); \
-		return INVALID_HANDLE_VALUE;\
-	}\
-	else if (rd != 0 && rd != sizeof(rd_type))\
-	{\
-		CloseHandle(hFile); \
-		return INVALID_HANDLE_VALUE;\
-	}\
+  res = ReadFile(hFile, &rd_type, sizeof(rd_type), &rd, NULL);\
+  if (!res)\
+  {\
+    CloseHandle(hFile); \
+    return INVALID_HANDLE_VALUE;\
+  }\
+  else if (rd != 0 && rd != sizeof(rd_type))\
+  {\
+    CloseHandle(hFile); \
+    return INVALID_HANDLE_VALUE;\
+  }\
 
 //чтение файла с проверкой результата во вложенной функции
 #define CHECKREADOK2(rd_type) \
-	res = ReadFile(hFile, &rd_type, sizeof(rd_type), &rd, NULL);\
-	if (res &&  rd == 0) \
-		return ERROR_HANDLE_EOF;\
-	else	if (!res)\
-		return ERROR_READ_FAULT;\
-	else if (rd != sizeof(rd_type))\
-		return ERROR_BAD_FORMAT
+  res = ReadFile(hFile, &rd_type, sizeof(rd_type), &rd, NULL);\
+  if (res &&  rd == 0) \
+    return ERROR_HANDLE_EOF;\
+  else  if (!res)\
+    return ERROR_READ_FAULT;\
+  else if (rd != sizeof(rd_type))\
+    return ERROR_BAD_FORMAT
 
 //подготовка и запись строки в файл
 #define WRITELINESTR(str1, str2)\
-	PrepareInfoLine(str1, str2, line);\
-	if (!WriteLine( stream, line, CodePage_ANSI)) goto exit
+  PrepareInfoLine(str1, str2, line);\
+  if (!WriteLine( stream, line, CodePage_ANSI)) goto exit
 
 //подготовка и запись числа в файл
 #define WRITELINEINT(str1, i)\
-	PrepareInfoLine(str1, i, line, _T("%s%u\n"));\
-	if (!WriteLine( stream, line, CodePage_ANSI)) goto exit
+  PrepareInfoLine(str1, i, line, _T("%s%u\n"));\
+  if (!WriteLine( stream, line, CodePage_ANSI)) goto exit
 
 //подготовка и запись даты в файл
 #define WRITELINEDATE64(str1, d)\
-	PrepareInfoLineDate(str1, d, line, true);\
-	if (!WriteLine( stream, line, CodePage_ANSI)) goto exit
+  PrepareInfoLineDate(str1, d, line, true);\
+  if (!WriteLine( stream, line, CodePage_ANSI)) goto exit
 
 //подготовка и запись даты в файл
 #define WRITELINEDATE32(str1, d)\
-	PrepareInfoLineDate(str1, d, line, false);\
-	if (!WriteLine( stream, line, CodePage_ANSI)) goto exit
+  PrepareInfoLineDate(str1, d, line, false);\
+  if (!WriteLine( stream, line, CodePage_ANSI)) goto exit
 
 
 //запись в файл перевода строки
 #define WRITELINEBRAKE\
-	line = _T("\n");\
-	if (!WriteLine( stream, line, CodePage_ANSI)) goto exit
+  line = _T("\n");\
+  if (!WriteLine( stream, line, CodePage_ANSI)) goto exit
 
 
 struct CFileRecord
 {
   CString filename;
-	CString linkto;
-	CString owner;
-	CString grp;
-	CString desc;
-	time_t	time;
-	UINT64	size;
-  int	mode;
+  CString linkto;
+  CString owner;
+  CString grp;
+  CString desc;
+  time_t  time;
+  UINT64  size;
+  int  mode;
 };
 
 typedef CSimpleArrayEx<CFileRecord*, CFileRecord*> CFileRecords;
@@ -136,9 +136,9 @@ struct CCopyRecord
 {
   CString src;
   CString dst;
-  UINT64	size;
-  time_t	time;
-	int	dir;
+  UINT64  size;
+  time_t  time;
+  int  dir;
 };
 
 typedef CSimpleArrayEx<CCopyRecord*, CCopyRecord*> CCopyRecords;
@@ -195,8 +195,8 @@ struct ProcessStruct
   bool bPrevState;
 
   CString from;
-	CString to;
-	CString title;
+  CString to;
+  CString title;
 
   int nPosition;
   int nTotalFiles;
@@ -209,59 +209,59 @@ struct ProcessStruct
   DWORD nStartTime;
   DWORD nTotalStartTime;
 
-	ProcessStruct(): pType(), bSilent(false), bPrevState(false), nPosition(0), nTotalFiles(0), nFileSize(0), nTotalFileSize(0), nTransmitted(0), nTotalTransmitted(0), nStartTime(0), nTotalStartTime(0)
-	{
-	  mutex = CreateMutex(nullptr, FALSE, nullptr);
-	}
+  ProcessStruct(): pType(), bSilent(false), bPrevState(false), nPosition(0), nTotalFiles(0), nFileSize(0), nTotalFileSize(0), nTransmitted(0), nTotalTransmitted(0), nStartTime(0), nTotalStartTime(0)
+  {
+    mutex = CreateMutex(nullptr, FALSE, nullptr);
+  }
 
   ~ProcessStruct()
-	{
-		CloseHandle(mutex);
-		mutex = nullptr;
-	}
-	bool Lock() const
-	{
-		if (mutex)
-		{
-			switch (WaitForSingleObject(mutex, 10000))
-			{
-			case WAIT_OBJECT_0:
-				return true;
-			}
-		}
-		return false;
-	}
-	bool Unlock() const
-	{
-		if (mutex)
-		{
-			ReleaseMutex(mutex);
-			return true;
-		}
-		return false;
-	}
-	bool Hide()
-	{
-		if (Lock())
-		{
-			bPrevState = bSilent;
-			bSilent = true;
-			return true;
-		}
-		return false;
-	}
-	void Restore()
-	{
-		bSilent = bPrevState;
-		Unlock();
-	}
+  {
+    CloseHandle(mutex);
+    mutex = nullptr;
+  }
+  bool Lock() const
+  {
+    if (mutex)
+    {
+      switch (WaitForSingleObject(mutex, 10000))
+      {
+      case WAIT_OBJECT_0:
+        return true;
+      }
+    }
+    return false;
+  }
+  bool Unlock() const
+  {
+    if (mutex)
+    {
+      ReleaseMutex(mutex);
+      return true;
+    }
+    return false;
+  }
+  bool Hide()
+  {
+    if (Lock())
+    {
+      bPrevState = bSilent;
+      bSilent = true;
+      return true;
+    }
+    return false;
+  }
+  void Restore()
+  {
+    bSilent = bPrevState;
+    Unlock();
+  }
 };
 
 struct CPanelLine
 {
-	CString data;
-	CString text;
-	BOOL separator;
+  CString data;
+  CString text;
+  BOOL separator;
 };
 
 struct CInfoSize
@@ -297,28 +297,28 @@ private:
   void ShowADBExecError(CString err, bool bSilent);
   static void DrawProgress(CString& sProgress, int size, double pc);
   static void DrawProgress(CString& sProgress, int size, LPCTSTR current, LPCTSTR total);
-	static void SetTitle(CString& title, double tpc);
-	static CString GetTitle();
-	static SOCKET	CreateADBSocket();
-  SOCKET	PrepareADBSocket();
-  static bool		SendADBPacket(SOCKET sockADB, void * packet, int size);
-  static bool		SendADBCommand(SOCKET sockADB, LPCTSTR sCMD);
-  static int			ReadADBPacket(SOCKET sockADB, void * packet, int size);
-  static bool		CheckADBResponse(SOCKET sockADB);
-  static bool		ReadADBSocket(SOCKET sockADB, char * buf, int bufSize);
+  static void SetTitle(CString& title, double tpc);
+  static CString GetTitle();
+  static SOCKET  CreateADBSocket();
+  SOCKET  PrepareADBSocket();
+  static bool    SendADBPacket(SOCKET sockADB, void * packet, int size);
+  static bool    SendADBCommand(SOCKET sockADB, LPCTSTR sCMD);
+  static int      ReadADBPacket(SOCKET sockADB, void * packet, int size);
+  static bool    CheckADBResponse(SOCKET sockADB);
+  static bool    ReadADBSocket(SOCKET sockADB, char * buf, int bufSize);
   BOOL ADBShellExecute(LPCTSTR sCMD, CString & sRes);
   int ADBReadFramebuffer(struct fb* fb);
-  static void		ADBSyncQuit(SOCKET sockADB);
-  bool		ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t & mtime);
+  static void    ADBSyncQuit(SOCKET sockADB);
+  bool    ADBTransmitFile(SOCKET sockADB, LPCTSTR sFileName, time_t & mtime);
   static void ReadError(SOCKET sockADB, unsigned id, unsigned len, CString& sRes);
-  bool		ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, int mode);
-  static bool		ADBReadMode(SOCKET sockADB, LPCTSTR path, int &mode);
-  BOOL		ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
-  bool		ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString &sRes);
-	int ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
-  BOOL		ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, const time_t &mtime);
-	int ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
-  static void		CloseADBSocket(SOCKET sockADB);
+  bool    ADBSendFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, int mode);
+  static bool    ADBReadMode(SOCKET sockADB, LPCTSTR path, int &mode);
+  BOOL    ADBPushFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes);
+  bool    ADBPushDir(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString &sRes);
+  int ADBPushDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
+  BOOL    ADBPullFile(SOCKET sockADB, LPCTSTR sSrc, LPCTSTR sDst, CString & sRes, const time_t &mtime);
+  int ADBPullDirGetFiles(LPCTSTR sSrc, LPCTSTR sDst, CCopyRecords& files);
+  static void    CloseADBSocket(SOCKET sockADB);
 
   bool DeviceTest();
   BOOL ADB_ls(LPCTSTR sDir, CFileRecords & files, CString & sRes, bool bSilent);
@@ -333,10 +333,10 @@ private:
   BOOL ADB_mount(LPCTSTR sFS, LPCTSTR sMode, CString & sRes);
 
   CFileRecord* ParseFileLine(CString & sLine) const;
-  BOOL		ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent);
-  BOOL		OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent);
+  BOOL    ReadFileList(CString & sFileList, CFileRecords & files, bool bSilent);
+  BOOL    OpenPanel(LPCTSTR sPath, bool updateInfo, bool bSilent);
 
-  int		DeleteFileFrom(const CString& src, bool bSilent);
+  int    DeleteFileFrom(const CString& src, bool bSilent);
 
   int GetItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
   int PutItems(PluginPanelItem *PanelItem, int ItemsNumber, const CString& srcdir, const CString& dstdir, bool noPromt, bool ansYes, bool bSilent);
@@ -359,27 +359,27 @@ public:
   fardroid();
   ~fardroid();
 
-  HANDLE	OpenFromMainMenu();
-  HANDLE	OpenFromCommandLine(const CString &cmd);
+  HANDLE  OpenFromMainMenu();
+  HANDLE  OpenFromCommandLine(const CString &cmd);
 
-  int			ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode = OPM_NONE, bool updateInfo = false);
+  int      ChangeDir(LPCTSTR sDir, OPERATION_MODES OpMode = OPM_NONE, bool updateInfo = false);
 
-  static bool		DeleteFilesDialog();
-  static bool		CreateDirDialog(CString &dest);
+  static bool    DeleteFilesDialog();
+  static bool    CreateDirDialog(CString &dest);
   bool DeviceNameDialog();
   static bool DeviceNameDialog(const CString& name, CString& alias);
-  static bool		CopyFilesDialog(CString &dest, const wchar_t* title, const wchar_t* name);
+  static bool    CopyFilesDialog(CString &dest, const wchar_t* title, const wchar_t* name);
   static CString GetDeviceName(const CString & device);
   static CString GetDeviceAliasName(const CString& device);
   static CString GetDeviceCaption(const CString& device);
   int    DeviceMenu(CString &text);
   static void SetItemText(FarMenuItem* item, const CString& text);
   static void SetItemSelected(std::vector<FarMenuItem>& items, int sel);
-  int		DeleteFileTo(const CString& name, bool bSilent);
-  static void		DeleteRecords(CFileRecords & recs);
+  int    DeleteFileTo(const CString& name, bool bSilent);
+  static void    DeleteRecords(CFileRecords & recs);
   static void DeleteRecords(CCopyRecords& recs);
-  void		PreparePanel(struct OpenPanelInfo *Info);
-  void		ChangePermissionsDialog(int selected);
+  void    PreparePanel(struct OpenPanelInfo *Info);
+  void    ChangePermissionsDialog(int selected);
 
   int GetFindData(struct PluginPanelItem **pPanelItem, size_t *pItemsNumber, OPERATION_MODES OpMode);
   static void FreeFindData(struct PluginPanelItem *PanelItem, int ItemsNumber);
@@ -389,8 +389,8 @@ public:
   int CreateDir(CString &DestPath, OPERATION_MODES OpMode);
   int Rename(CString& DestPath);
   int Copy(CString& DestPath);
-	int Remount(LPCTSTR Mode);
-	int RenameFile(const CString& src, const CString& dst, CString& sRes);
+  int Remount(LPCTSTR Mode);
+  int RenameFile(const CString& src, const CString& dst, CString& sRes);
   int GetFramebuffer();
   void Reread();
 

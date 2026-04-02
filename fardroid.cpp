@@ -2978,7 +2978,7 @@ int fardroid::ADBReadFramebuffer(struct fb* fb)
     auto position = static_cast<char*>(fb->data);
     while (size > 0)
     {
-      int readed = ReadADBPacket(sockADB, position, min(size, SYNC_DATA_MAX));
+      int readed = ReadADBPacket(sockADB, position, (size < SYNC_DATA_MAX ? size : SYNC_DATA_MAX));
       if (readed == 0) break;
 
       position += readed;
@@ -3005,4 +3005,3 @@ int fardroid::ADBReadFramebuffer(struct fb* fb)
   CloseADBSocket(sockADB);
   return result;
 }
-

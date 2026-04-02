@@ -144,7 +144,7 @@ bool IsDirectoryLocal(LPCTSTR sPath)
 
 void PrepareInfoLine(const wchar_t* str, void* ansi, CString& line, CString format)
 {
-  line.Format(format, str, ansi);
+  //line.Format(format, str, ansi);
 }
 
 time_t StringTimeToUnixTime(CString sData)
@@ -258,7 +258,7 @@ time_t* SystemTimeToUnixTime(LPSYSTEMTIME pst, time_t* pt)
 CString SystemTimeToString(LPSYSTEMTIME pst)
 {
   CString str;
-  str.Format(_T("%0d.%0d.%04d %0d:%0d:%0d"), pst->wDay, pst->wMonth, pst->wYear, pst->wHour, pst->wMinute, pst->wSecond);
+  //str.Format(_T("%0d.%0d.%04d %0d:%0d:%0d"), pst->wDay, pst->wMonth, pst->wYear, pst->wHour, pst->wMinute, pst->wSecond);
   return str;
 }
 
@@ -418,7 +418,7 @@ BOOL DeleteDir(LPCTSTR sSrc)
     if (lstrcmp(fd.cFileName, _T(".")) == 0 || lstrcmp(fd.cFileName, _T("..")) == 0)
       continue;
 
-    sname.Format(_T("%s%s"), sDir, fd.cFileName);
+    //sname.Format(_T("%s%s"), sDir, fd.cFileName);
     if (IsDirectory(fd.dwFileAttributes))
     {
       if (!DeleteDir(sname))
@@ -452,7 +452,7 @@ BOOL DeletePanelItems(CString& sPath, struct PluginPanelItem* PanelItem, int Ite
 
   for (auto i = 0; i < ItemsNumber; i++)
   {
-    sName.Format(_T("%s%s"), sPath, PanelItem[i].FileName);
+    //sName.Format(_T("%s%s"), sPath, PanelItem[i].FileName);
     if (IsDirectory(PanelItem[i].FileAttributes))
     {
       if (!DeleteDir(sName))
@@ -527,3 +527,10 @@ void RegexpFree(HANDLE hRegex) {
   if (hRegex)
     fInfo.RegExpControl(hRegex, RECTL_FREE, 0, nullptr);
 }
+
+void __cdecl _invoke_watson(wchar_t const*, wchar_t const*, wchar_t const*, unsigned int, uintptr_t) {}
+void __cdecl std::_Xlength_error(char const*) {}
+void(__cdecl* std::_Raise_handler)(class stdext::exception const&) {};
+int atexit(void(*func)(void)) {return 0;}
+void __cdecl _invalid_parameter_noinfo() {}
+int* __cdecl _errno(void) {return 0;}
